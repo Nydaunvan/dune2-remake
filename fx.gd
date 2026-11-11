@@ -59,6 +59,12 @@ static func burst(parent: Node, pos: Vector2, color: Color, amount := 30, size :
 	p.finished.connect(p.queue_free)
 
 
+## Explosion : flamme HDR + fumée.
+static func explosion(parent: Node, pos: Vector2, size := 1.0) -> void:
+	burst(parent, pos, Color(2.0, 1.0, 0.3), int(24 * size), size * 1.2)
+	burst(parent, pos, Color(0.28, 0.24, 0.24), int(16 * size), size * 1.9)
+
+
 ## MSAA 2D + (option) rendu HDR avec bloom, pour toute scène.
 static func setup_display(node: Node, glow: bool) -> void:
 	var vp := node.get_viewport()

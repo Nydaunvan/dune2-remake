@@ -38,11 +38,11 @@ func _draw() -> void:
 	for b in game.buildings:
 		var rp := _to_radar(b.position)
 		var rs := Vector2(b.cell_size * b.tile) / world_size * map_rect.size
-		draw_rect(Rect2(rp, rs), Color(0.6, 0.85, 1.0))
+		draw_rect(Rect2(rp, rs), Color(0.6, 0.85, 1.0) if b.team == 0 else Color(1.0, 0.35, 0.3))
 	for u in game.units:
 		var up := _to_radar(u.position)
 		if up.distance_to(c) < r:
-			draw_circle(up, 2.6, GameData.CYAN)
+			draw_circle(up, 2.6, GameData.CYAN if u.team == 0 else Color(2.0, 0.4, 0.3))
 
 	# Ver géant (visible sur le radar une fois l'alerte donnée)
 	if game.worm != null:

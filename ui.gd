@@ -8,7 +8,7 @@ const MARGIN := 14.0
 const COMMANDS := [
 	["stop", "ARRÊT", true],
 	["move", "DÉPLACER", true],
-	["repair", "RÉPARER", false],
+	["attack", "ATTAQUER", true],
 	["sell", "VENDRE", false],
 ]
 
@@ -174,9 +174,49 @@ func _process(_delta: float) -> void:
 		info_label.text = "Clic gauche : poser le bâtiment\nClic droit ou Échap : annuler"
 	elif game.command_mode == "move":
 		info_label.text = "Cliquez sur la carte pour déplacer les unités sélectionnées."
+	elif game.command_mode == "attack":
+		info_label.text = "Cliquez : les unités avancent en attaquant tout sur leur route."
 	else:
-		info_label.text = "%d unité(s) sélectionnée(s)\nClic droit sur une icône : annuler (remboursé)\nF11 : plein écran — F10 : menu — F9 : test ver" \
+		info_label.text = "%d unité(s) sélectionnée(s)\nClic droit sur un ennemi : attaquer\nClic droit sur une icône : annuler (remboursé)\nF11 : plein écran — F10 : menu — F9 : test ver" \
 				% game.selected.size()
+
+
+## Écran de fin de partie.
+func show_end(victory: bool) -> void:
+	var dim := ColorRect.new()
+	dim.color = Color(0.02, 0.0, 0.05, 0.0)
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(dim)
+	var cc := CenterContainer.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	dim.add_child(cc)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 26)
+	cc.add_child(vb)
+	var l := Label.new()
+	l.text = "VICTOIRE" if victory else "DÉFAITE"
+	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	l.add_theme_font_size_override("font_size", 110)
+	var col: Color = GameData.GREEN if victory else GameData.RED
+	l.add_theme_color_override("font_color", col)
+	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	l.add_theme_constant_override("outline_size", 14)
+	vb.add_child(l)
+	var sub := Label.new()
+	sub.text = "La base ennemie est détruite." if victory else "Votre base est tombée."
+	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sub.add_theme_font_size_override("font_size", 26)
+	sub.add_theme_color_override("font_color", GameData.CREAM)
+	vb.add_child(sub)
+	var b := NeonButton.new("RETOUR AU MENU")
+	b.accent = col
+	b.custom_minimum_size = Vector2(320, 60)
+	b.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://menu.tscn"))
+	vb.add_child(b)
+	var tw := create_tween()
+	tw.tween_property(dim, "color:a", 0.6, 1.2)
 
 
 # --- Barre de ressources ------------------------------------------------------
@@ -427,6 +467,11 @@ class BuildIcon extends Control:
 				draw_rect(Rect2(c + Vector2(10, -22), Vector2(9, 22)), fill)
 				draw_rect(Rect2(c + Vector2(24, -22), Vector2(9, 22)), fill)
 				draw_rect(Rect2(c + Vector2(-22, 6), Vector2(20, 7)), Color(1.9, 0.7, 0.25) if avail else fill)
+			"tourelle":
+				draw_circle(c, 20.0, fill)
+				draw_arc(c, 20.0, 0.0, TAU, 28, line, 2.0, true)
+				draw_circle(c, 9.0, line)
+				draw_line(c, c + Vector2(30, -8), line, 5.0, true)
 			"usine":
 				draw_rect(Rect2(c + Vector2(-34, -8), Vector2(68, 26)), fill)
 				draw_rect(Rect2(c + Vector2(-34, -8), Vector2(68, 26)), line, false, 2.0)

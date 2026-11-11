@@ -1,6 +1,6 @@
 extends Control
 ## Menu principal : choix de la faction, puis lancement de la partie.
-## Campagnes : à venir. Escarmouche : bac à sable pour l'instant (IA au prochain jalon).
+## Campagnes : à venir. Escarmouche : affrontement contre une IA.
 
 var selected := GameSession.faction
 var cards := {}
@@ -59,7 +59,7 @@ func _ready() -> void:
 		b.custom_minimum_size = Vector2(250, 58)
 		btns.add_child(b)
 
-	_hint = _label("Campagnes : bientôt — Escarmouche : bac à sable (IA au prochain jalon)", 15,
+	_hint = _label("Campagnes : bientôt — Escarmouche : détruisez la base adverse", 15,
 			Color(1, 1, 1, 0.55), false)
 	vb.add_child(_hint)
 

@@ -15,12 +15,29 @@ var hp := 100.0
 var max_hp := 100.0
 var alive := true
 
+# Combat
+var team := 0
+var armor := "medium"
+var weapon := ""
+var dps := 0.0
+var w_range := 0.0        # portée en px
+var cooldown := 0.0
+var target                # Unit | Building | null
+var forced := false       # cible imposée par le joueur : on ne la lâche pas
+var amove_goal := Vector2i(-1, -1)
+var control_timer := 0.0
+var special_t := 0.0
+var _orig_team := 0
+var _orig_color := Color.WHITE
+var _scan_t := 0.0
+var _repath := 0.0
+
 var cargo := 0.0
 var cargo_cap := 0.0
 var cargo_kind := "" # "spice" | "ore"
 var harvest_rate := 100.0
 
-var state := "idle" # idle | move | seek | harvest | return | flee
+var state := "idle" # idle | move | amove | attack | seek | harvest | return | flee
 var path := PackedVector2Array()
 var work_cell := Vector2i(-1, -1)
 var _seek_started := false
@@ -48,6 +65,11 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	harvest_rate = d.get("rate", 100.0)
 	cargo_kind = d.get("resource", "")
 	radius = 14.0 if is_worker() else 11.0
+	armor = d.get("armor", "medium")
+	weapon = d.get("weapon", "")
+	dps = float(d.get("dps", 0))
+	w_range = float(d.get("range", 0)) * 32.0
+	_scan_t = randf() * 0.4 # évite que toutes les unités scrutent à la même image
 	_dust = Fx.make_dust(Color(0.85, 0.65, 0.5), 10, 0.9, 0.35)
 	add_child(_dust)
 	if is_worker():
@@ -65,6 +87,9 @@ func is_worker() -> bool:
 
 ## Ordre du joueur : va quelque part, puis reprend le travail (ouvriers).
 func order_path(new_path: PackedVector2Array) -> void:
+	target = null
+	forced = false
+	amove_goal = Vector2i(-1, -1)
 	follow(new_path)
 	state = "move"
 	if _work_fx != null:
@@ -78,6 +103,9 @@ func follow(new_path: PackedVector2Array) -> void:
 
 
 func stop() -> void:
+	target = null
+	forced = false
+	amove_goal = Vector2i(-1, -1)
 	path = PackedVector2Array()
 	state = "idle" # un ordre de déplacement relance ensuite le travail
 	_seek_started = false
@@ -97,6 +125,111 @@ func flee() -> void:
 	_flee_timer = 22.0
 	if _work_fx != null:
 		_work_fx.emitting = false
+
+
+## Ordre d'attaque du joueur : poursuit et détruit la cible.
+func order_attack(t) -> void:
+	if weapon == "" or not alive:
+		return
+	amove_goal = Vector2i(-1, -1)
+	_set_target(t, true)
+
+
+## Attaque en mouvement : avance vers la case, engage tout ce qui croise sa route.
+func order_amove(goal: Vector2i) -> void:
+	if weapon == "" or not alive:
+		return
+	target = null
+	forced = false
+	amove_goal = goal
+	_go_amove()
+
+
+func _go_amove() -> void:
+	var p: PackedVector2Array = game.path_to(position, amove_goal)
+	if p.is_empty():
+		amove_goal = Vector2i(-1, -1)
+		state = "idle"
+		return
+	follow(p)
+	state = "amove"
+
+
+func _set_target(t, p_forced: bool) -> void:
+	target = t
+	forced = p_forced
+	state = "attack"
+	path = PackedVector2Array()
+	_repath = 0.0
+
+
+func _valid(t) -> bool:
+	return t != null and is_instance_valid(t) and t.alive
+
+
+func world_center() -> Vector2:
+	return position
+
+
+func radius_px() -> float:
+	return radius
+
+
+## Dégâts reçus : blindage et type d'arme comptent. Riposte ou fuite.
+func take_damage(raw: float, wpn: String, attacker = null) -> void:
+	if not alive:
+		return
+	hp -= raw * GameData.mult(wpn, armor)
+	queue_redraw()
+	if hp <= 0.0:
+		_die()
+		return
+	if _valid(attacker) and attacker.team != team:
+		if is_worker():
+			if state != "flee":
+				flee()
+		elif weapon != "" and not forced and (state == "idle" or state == "amove" or (state == "attack" and not _valid(target))):
+			_set_target(attacker, false)
+
+
+func _die() -> void:
+	if not alive:
+		return
+	alive = false
+	Fx.explosion(game, position, 1.0)
+	game.on_unit_lost(self)
+	queue_free()
+
+
+## Prise de contrôle temporaire (Mirage).
+func convert_to(new_team: int, new_color: Color, duration: float) -> void:
+	if control_timer > 0.0 or is_worker() or new_team == team:
+		return
+	_orig_team = team
+	_orig_color = faction_color
+	team = new_team
+	faction_color = new_color
+	control_timer = duration
+	target = null
+	forced = false
+	amove_goal = Vector2i(-1, -1)
+	path = PackedVector2Array()
+	state = "idle"
+	if team != 0 and selected:
+		selected = false
+		game.selected.erase(self)
+	Fx.burst(game, position, Color(1.9, 0.4, 2.0), 16, 1.0)
+	queue_redraw()
+
+
+func _revert_control() -> void:
+	team = _orig_team
+	faction_color = _orig_color
+	target = null
+	state = "idle"
+	path = PackedVector2Array()
+	Fx.burst(game, position, Color(1.9, 0.4, 2.0), 10, 0.8)
+	queue_redraw()
 
 
 func devour() -> void:
@@ -119,8 +252,79 @@ func _physics_process(delta: float) -> void:
 	if not alive:
 		return
 	_work(delta)
+	_combat(delta)
 	_move(delta)
 	_dust.emitting = not path.is_empty() and game.is_sand_at(position)
+
+
+func _combat(delta: float) -> void:
+	if role != "combat":
+		return
+	cooldown = maxf(0.0, cooldown - delta)
+	special_t = maxf(0.0, special_t - delta)
+	if control_timer > 0.0:
+		control_timer -= delta
+		if control_timer <= 0.0:
+			_revert_control()
+	match state:
+		"attack":
+			_attack(delta)
+		"move":
+			# Tir en mouvement, sans s'arrêter
+			_scan_t -= delta
+			if _scan_t <= 0.0:
+				_scan_t = 0.3
+				var t = game.find_enemy(team, position, w_range)
+				if t != null and cooldown <= 0.0:
+					_shoot(t)
+		"idle", "amove":
+			_scan_t -= delta
+			if _scan_t <= 0.0:
+				_scan_t = 0.35
+				var t = game.find_enemy(team, position, w_range + 64.0)
+				if t != null:
+					_set_target(t, false)
+
+
+func _attack(delta: float) -> void:
+	if not _valid(target):
+		target = null
+		forced = false
+		if amove_goal.x >= 0:
+			_go_amove()
+		else:
+			state = "idle"
+		return
+	var tp: Vector2 = target.world_center()
+	var dist: float = position.distance_to(tp) - float(target.radius_px())
+	if dist > w_range:
+		if not forced and dist > w_range + 192.0:
+			target = null # trop loin : on laisse tomber
+			state = "idle"
+			if amove_goal.x >= 0:
+				_go_amove()
+			return
+		_repath -= delta
+		if _repath <= 0.0 or path.is_empty():
+			_repath = 0.7
+			follow(game.path_to_target(position, target))
+		return
+	path = PackedVector2Array()
+	var want := (tp - position).angle()
+	rotation = lerp_angle(rotation, want, clampf(turn_speed * delta, 0.0, 1.0))
+	if cooldown <= 0.0 and absf(angle_difference(rotation, want)) < 0.25:
+		_shoot(target)
+
+
+func _shoot(t) -> void:
+	var wd: Dictionary = GameData.WEAPONS[weapon]
+	cooldown = wd["cd"]
+	var ctrl := false
+	if weapon == "control" and special_t <= 0.0 and t is Unit and t.role == "combat" and t.control_timer <= 0.0:
+		ctrl = true
+		special_t = 20.0
+	var from := position + Vector2.from_angle(rotation) * 16.0
+	game.fire(self, t, weapon, dps * float(wd["cd"]), from, ctrl)
 
 
 func _move(delta: float) -> void:
@@ -143,6 +347,9 @@ func _arrived() -> void:
 		"move":
 			state = "seek" if is_worker() else "idle"
 			_seek_started = false
+		"amove":
+			amove_goal = Vector2i(-1, -1)
+			state = "idle"
 		"seek":
 			state = "harvest"
 		"return":
@@ -212,7 +419,7 @@ func _start_return() -> void:
 	if _work_fx != null:
 		_work_fx.emitting = false
 	var from: Vector2i = game.world_to_cell(position)
-	var dock = game.find_dock(cargo_kind, from)
+	var dock = game.find_dock(cargo_kind, from, team)
 	if dock == null:
 		state = "idle"
 		return
@@ -225,7 +432,7 @@ func _start_return() -> void:
 
 func _unload() -> void:
 	if cargo > 0.0:
-		game.deposit(cargo_kind, cargo, position)
+		game.deposit(cargo_kind, cargo, position, team)
 	cargo = 0.0
 	queue_redraw()
 	state = "seek"
@@ -258,10 +465,13 @@ func _draw() -> void:
 			draw_rect(Rect2(-11, -9, 22, 18), Color.BLACK, false, 1.5)
 			draw_circle(Vector2.ZERO, 5.5, hi)
 			draw_line(Vector2.ZERO, Vector2(16, 0), Color.BLACK, 4.0, true)
+	draw_set_transform(Vector2.ZERO, -rotation, Vector2.ONE) # barre de vie toujours horizontale
 	if hp < max_hp:
 		var w := 26.0
 		draw_rect(Rect2(-w / 2.0, -22, w, 4), Color(0, 0, 0, 0.6))
-		draw_rect(Rect2(-w / 2.0, -22, w * hp / max_hp, 4), GameData.GREEN)
+		draw_rect(Rect2(-w / 2.0, -22, w * hp / max_hp, 4), GameData.GREEN if team == 0 else GameData.RED)
+	if control_timer > 0.0:
+		draw_arc(Vector2.ZERO, radius + 4.0, 0.0, TAU, 24, Color(1.9, 0.4, 2.0), 2.0, true)
 	if selected:
 		var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
 		draw_arc(Vector2.ZERO, radius + 6.0 + pulse * 2.0, 0.0, TAU, 40, GameData.GREEN, 2.0, true)
