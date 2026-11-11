@@ -84,6 +84,26 @@ const RANK_HP := 0.15
 # Niveaux de bâtiment : 1 à MAX_LEVEL. Coût du niveau suivant = coût de base * UPGRADE_COST * niveau.
 const MAX_LEVEL := 3
 const UPGRADE_COST := 0.6
+## Consommation d'énergie ajoutée à chaque niveau (bâtiments consommateurs améliorables).
+static func upgrade_power(id: String) -> int:
+	if id == "chantier":
+		return 10
+	var p := int(def(id).get("power", 0))
+	if p >= 0:
+		return 0
+	return maxi(5, int(ceil(-p * 0.3 / 5.0)) * 5)
+
+
+## Énergie d'un bâtiment à un niveau donné (positif : produit, négatif : consomme).
+static func power_at(id: String, level: int) -> int:
+	var base: int = int(def(id).get("power", 0))
+	if id == "centrale":
+		return base + 50 * (level - 1)
+	if base > 0:
+		return base
+	return base - upgrade_power(id) * (level - 1)
+
+
 const UPGRADES := {
 	"chantier": "+2 places dans la file de construction, +25 % PV",
 	"centrale": "+50 énergie, +25 % PV",

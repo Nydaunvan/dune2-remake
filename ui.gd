@@ -723,6 +723,8 @@ class InfoPanel extends GlassPanel:
 				rows.append(["Rôle", "Barrière"])
 		if b.power < 0:
 			rows.append(["Consomme", "%d énergie" % -b.power])
+		elif b.power == 0 and b.id != "mur" and b.id != "mur_acier":
+			rows.append(["Consomme", "0 énergie"])
 		rows.append(["Vision", "%d cases" % b.vision])
 		var y := 152.0
 		for r in rows:
@@ -732,8 +734,12 @@ class InfoPanel extends GlassPanel:
 			UiStyle.section(self, Vector2(COL2, 128), 340, "NIVEAU SUIVANT" if b.level < GameData.MAX_LEVEL else "ÉVOLUTION", UiStyle.GOLD)
 			if b.level < GameData.MAX_LEVEL:
 				var yy := 154.0
-				for part in String(GameData.UPGRADES.get(b.id, "")).split(", "):
-					UiStyle.text(self, Vector2(COL2, yy), "◆ " + part, 13, UiStyle.TEXT)
+				var parts: Array = Array(String(GameData.UPGRADES.get(b.id, "")).split(", "))
+				var dp := GameData.power_at(b.id, b.level + 1) - GameData.power_at(b.id, b.level)
+				if dp < 0:
+					parts.append("consomme %d énergie de plus" % -dp)
+				for part in parts:
+					UiStyle.text(self, Vector2(COL2, yy), "◆ " + part, 13, GameData.AMBER if String(part).begins_with("consomme") else UiStyle.TEXT)
 					yy += 20.0
 				var why: String = game.upgrade_block(b, game.ore)
 				if why != "":
@@ -815,6 +821,12 @@ class BuildIcon extends Control:
 		_sb.anti_aliasing = true
 		var d := GameData.def(id)
 		var tip := "%s — %s" % [d["name"], game.cost_label(id)]
+		if not GameData.UNITS.has(id) and not d.get("wall", false):
+			var pw: int = int(d.get("power", 0))
+			tip += "\nÉnergie : " + ("produit +%d" % pw if pw > 0 else ("consomme %d" % -pw if pw < 0 else "aucune consommation"))
+			var up := GameData.upgrade_power(id)
+			if up > 0 and not d.get("no_upgrade", false):
+				tip += " (+%d par niveau)" % up
 		if d.has("desc"):
 			tip += "\n" + d["desc"]
 		var names := PackedStringArray()
@@ -876,6 +888,16 @@ class BuildIcon extends Control:
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		elif d.has("faction") and not GameData.UNITS.has(id):
 			UiStyle.text(self, Vector2(12, 24), "FACTION", 10, game.fdata["color"] * 1.5, true)
+		if not GameData.UNITS.has(id) and game.is_unlocked(id) and not d.get("wall", false):
+			var pw: int = int(d.get("power", 0))
+			var pc := GameData.GREEN if pw > 0 else (GameData.AMBER if pw < 0 else UiStyle.TEXT_DIM)
+			if not avail:
+				pc = Color(0.4, 0.35, 0.3)
+			var pt := ("+%d" % pw) if pw > 0 else str(pw)
+			var py := 50.0 if game.queued_count(id) > 0 else 28.0
+			var pwid := UiStyle.text_width(pt, 12, true)
+			UiStyle.text(self, Vector2(size.x - 12.0 - pwid, py), pt, 12, pc, true)
+			UiStyle.glyph(self, "power", Vector2(size.x - 20.0 - pwid, py - 4.0), 9.0, pc)
 		var queued: int = game.queued_count(id)
 		if queued > 0:
 			var tag := Rect2(size.x - 44.0, 12.0, 32.0, 20.0)

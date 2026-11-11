@@ -1462,6 +1462,9 @@ func upgrade_block(b: Building, money: int) -> String:
 		return "Améliorez d'abord le Chantier (niveau 2)"
 	if money < upgrade_cost(b):
 		return "Minerai insuffisant"
+	var extra := -(GameData.power_at(b.id, b.level + 1) - GameData.power_at(b.id, b.level))
+	if extra > 0 and power_free(b.team) < extra:
+		return "Énergie insuffisante (+%d requis) : améliorez une centrale" % (extra - power_free(b.team))
 	return ""
 
 

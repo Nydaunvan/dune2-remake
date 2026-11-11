@@ -95,8 +95,7 @@ func upgrade() -> void:
 	var old := max_hp
 	max_hp = base_hp * (1.0 + 0.25 * (level - 1))
 	hp += max_hp - old
-	if id == "centrale":
-		power = base_power + 50 * (level - 1)
+	power = GameData.power_at(id, level)
 	if weapon != "":
 		dps = base_dps * (1.0 + 0.25 * (level - 1))
 	Fx.burst(game, world_center(), GameData.GOLD, 24, 1.3)
@@ -299,8 +298,7 @@ func export_state() -> Dictionary:
 func restore_state(s: Dictionary) -> void:
 	level = int(s["level"])
 	max_hp = base_hp * (1.0 + 0.25 * (level - 1))
-	if id == "centrale":
-		power = base_power + 50 * (level - 1)
+	power = GameData.power_at(id, level)
 	if weapon != "":
 		dps = base_dps * (1.0 + 0.25 * (level - 1))
 	hp = minf(float(s["hp"]), max_hp)
