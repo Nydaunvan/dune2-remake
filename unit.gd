@@ -32,9 +32,9 @@ func _physics_process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_rect(Rect2(-11, -9, 22, 18), Color("5b6b3a"))
+	draw_rect(Rect2(-11, -9, 22, 18), Color("6f7f9e"))
 	draw_rect(Rect2(-11, -9, 22, 18), Color.BLACK, false, 1.5)
-	draw_circle(Vector2.ZERO, 5.0, Color("3d4a26"))
+	draw_circle(Vector2.ZERO, 5.0, Color("4a5875"))
 	draw_line(Vector2.ZERO, Vector2(16, 0), Color.BLACK, 4.0)
 	if selected:
 		draw_arc(Vector2.ZERO, 17.0, 0.0, TAU, 24, Color(0.3, 1.0, 0.3), 1.5)
