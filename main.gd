@@ -1233,7 +1233,17 @@ func is_unlocked(id: String) -> bool:
 		return true
 	var d: Dictionary = GameData.BUILDINGS[id]
 	var f: String = d.get("faction", "")
-	return int(d.get("unlock", 0)) <= tier and (f == "" or f == faction_id)
+	if f != "" and f != faction_id:
+		return false
+	if mission.is_empty():
+		return best_level("chantier") >= chantier_needed(id)  # escarmouche : tout se débloque en montant le Chantier
+	return int(d.get("unlock", 0)) <= tier
+
+
+## Escarmouche : niveau de Chantier nécessaire pour un bâtiment (selon son palier de déblocage).
+func chantier_needed(id: String) -> int:
+	var u := int(GameData.def(id).get("unlock", 0))
+	return 1 if u <= 1 else (2 if u <= 3 else 3)
 
 
 func is_available(id: String) -> bool:
@@ -1645,7 +1655,10 @@ func on_item_clicked(id: String, button: int) -> void:
 		placing_id = id
 		return
 	if not is_unlocked(id):
-		ui.toast("%s : débloqué après la mission %d de la campagne" % [d["name"], int(d.get("unlock", 0))], GameData.AMBER)
+		if mission.is_empty():
+			ui.toast("%s : améliorez le Chantier au niveau %d" % [d["name"], chantier_needed(id)], GameData.AMBER)
+		else:
+			ui.toast("%s : débloqué après la mission %d de la campagne" % [d["name"], int(d.get("unlock", 0))], GameData.AMBER)
 		return
 	if unit_level_block(id) != "":
 		ui.toast("%s : améliorez l'Usine au niveau %d" % [d["name"], int(d["level"])], GameData.AMBER)

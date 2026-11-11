@@ -801,7 +801,9 @@ class BuildIcon extends Control:
 			UiStyle.text(self, Vector2(0, 84), "BÂTIMENT REQUIS", 11, GameData.AMBER, true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		if not GameData.UNITS.has(id) and not game.is_unlocked(id):
-			UiStyle.text(self, Vector2(0, 84), "MISSION %d" % int(d.get("unlock", 0)), 12, GameData.AMBER, true,
+			var lock_s := "CHANTIER NIV. %d" % game.chantier_needed(id) if game.mission.is_empty() \
+					else "MISSION %d" % int(d.get("unlock", 0))
+			UiStyle.text(self, Vector2(0, 84), lock_s, 12, GameData.AMBER, true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		elif d.has("faction") and not GameData.UNITS.has(id):
 			UiStyle.text(self, Vector2(12, 24), "FACTION", 10, game.fdata["color"] * 1.5, true)
