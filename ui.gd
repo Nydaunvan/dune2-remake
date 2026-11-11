@@ -685,6 +685,8 @@ class BuildIcon extends Control:
 		var names := PackedStringArray()
 		for r in d["requires"]:
 			names.append(GameData.BUILDINGS[r]["name"])
+		if d.has("level"):
+			names.insert(0, "Usine niveau %d" % int(d["level"]))
 		if not names.is_empty():
 			tip += "\nNécessite : " + ", ".join(names)
 		tooltip_text = tip
@@ -726,6 +728,12 @@ class BuildIcon extends Control:
 		_draw_icon(c, avail)
 		if avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
 			UiStyle.text(self, Vector2(12, 24), "ÉNERGIE", 11, GameData.RED, true)
+		if GameData.UNITS.has(id) and game.unit_level_block(id) != "":
+			UiStyle.text(self, Vector2(0, 84), String(game.unit_level_block(id)).to_upper(), 11, GameData.AMBER, true,
+					HORIZONTAL_ALIGNMENT_CENTER, size.x)
+		elif GameData.UNITS.has(id) and not avail:
+			UiStyle.text(self, Vector2(0, 84), "BÂTIMENT REQUIS", 11, GameData.AMBER, true,
+					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		if not GameData.UNITS.has(id) and not game.is_unlocked(id):
 			UiStyle.text(self, Vector2(0, 84), "MISSION %d" % int(d.get("unlock", 0)), 12, GameData.AMBER, true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)

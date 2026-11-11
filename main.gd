@@ -1199,10 +1199,20 @@ func is_unlocked(id: String) -> bool:
 func is_available(id: String) -> bool:
 	if not is_unlocked(id):
 		return false
+	if unit_level_block(id) != "":
+		return false
 	for r in GameData.def(id)["requires"]:
 		if not has_building(r):
 			return false
 	return true
+
+
+## Niveau d'Usine manquant pour produire cette unité ("" si suffisant).
+func unit_level_block(id: String, team := 0) -> String:
+	var need: int = int(GameData.def(id).get("level", 1))
+	if GameData.UNITS.has(id) and best_level("usine", team) < need:
+		return "Usine niveau %d" % need
+	return ""
 
 
 func has_building(id: String, team := 0) -> bool:
@@ -1412,6 +1422,9 @@ func on_item_clicked(id: String, button: int) -> void:
 		return
 	if not is_unlocked(id):
 		ui.toast("%s : débloqué après la mission %d de la campagne" % [d["name"], int(d.get("unlock", 0))], GameData.AMBER)
+		return
+	if unit_level_block(id) != "":
+		ui.toast("%s : améliorez l'Usine au niveau %d" % [d["name"], int(d["level"])], GameData.AMBER)
 		return
 	if not is_available(id):
 		ui.toast("Prérequis manquant", GameData.RED)

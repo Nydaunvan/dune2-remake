@@ -121,6 +121,8 @@ func _count(id: String) -> int:
 
 
 func _available(id: String) -> bool:
+	if game.unit_level_block(id, team) != "":
+		return false
 	for r in GameData.def(id)["requires"]:
 		if not game.has_building(r, team):
 			return false
@@ -178,7 +180,9 @@ func _think_units() -> void:
 		want = "mineur"
 	elif game.has_building("usine", team) and _army().size() < max_army:
 		# Armée variée : on prend un type au hasard, légèrement pondéré
-		var ids: Array = fdata["units"]
+		var ids: Array = fdata["units"].filter(func(i: String) -> bool: return _available(i))
+		if ids.is_empty():
+			return
 		want = ids[randi() % ids.size()]
 		if randf() < 0.3:
 			want = ids[0]

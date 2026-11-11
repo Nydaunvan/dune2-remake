@@ -86,7 +86,7 @@ const UPGRADES := {
 	"centrale": "+50 énergie, +25 % PV",
 	"raffinerie": "+12 % de Solaris par récolte, +25 % PV",
 	"fonderie": "+12 % de minerai par récolte, +25 % PV",
-	"usine": "+2 places dans la file d'unités, production +25 % plus rapide, +25 % PV",
+	"usine": "Débloque de nouvelles unités, +2 places en file, production +25 % plus rapide, +25 % PV",
 	"tourelle": "+25 % de dégâts, +25 % PV",
 }
 const CHANTIER_COST := 800 # base de calcul pour l'amélioration du Chantier
@@ -213,57 +213,57 @@ const UNITS := {
 	"sentinelle": {
 		"name": "Sentinelle", "role": "combat", "desc": "Éclaireur rapide",
 		"armor": "light", "weapon": "autocannon",
-		"cost": 220, "time": 5.0, "requires": ["usine"], "from": "usine",
+		"cost": 220, "time": 5.0, "level": 1, "requires": ["usine"], "from": "usine",
 		"hp": 190, "dps": 15, "speed": 160.0, "range": 5, "vision": 11,
 	},
 	"egide": {
 		"name": "Égide", "role": "combat", "desc": "Char moyen polyvalent",
 		"armor": "medium", "weapon": "cannon",
-		"cost": 480, "time": 8.0, "requires": ["usine"], "from": "usine",
+		"cost": 480, "time": 8.0, "level": 2, "requires": ["usine"], "from": "usine",
 		"hp": 520, "dps": 27, "speed": 95.0, "range": 6,
 	},
 	"resonateur": {
 		"name": "Résonateur", "role": "combat", "desc": "Artillerie sonique (zone, tir allié)",
 		"armor": "light", "weapon": "sonic",
-		"cost": 510, "time": 9.0, "requires": ["usine"], "from": "usine",
+		"cost": 510, "time": 9.0, "level": 3, "requires": ["usine", "radar"], "from": "usine",
 		"hp": 300, "dps": 40, "speed": 70.0, "range": 9, "vision": 9,
 	},
 	# --- Légion Kharn ---
 	"belier": {
 		"name": "Bélier", "role": "combat", "desc": "Buggy d'assaut bon marché",
 		"armor": "light", "weapon": "autocannon",
-		"cost": 290, "time": 6.0, "requires": ["usine"], "from": "usine",
+		"cost": 290, "time": 6.0, "level": 1, "requires": ["usine"], "from": "usine",
 		"hp": 230, "dps": 17, "speed": 120.0, "range": 3,
 	},
 	"brute": {
 		"name": "Brute", "role": "combat", "desc": "Char lourd",
 		"armor": "heavy", "weapon": "cannon",
-		"cost": 760, "time": 11.0, "requires": ["usine"], "from": "usine",
+		"cost": 760, "time": 11.0, "level": 3, "requires": ["usine", "fonderie"], "from": "usine",
 		"hp": 950, "dps": 36, "speed": 65.0, "range": 6,
 	},
 	"salve": {
 		"name": "Salve", "role": "combat", "desc": "Lance-roquettes longue portée",
 		"armor": "light", "weapon": "rocket",
-		"cost": 540, "time": 9.0, "requires": ["usine"], "from": "usine",
+		"cost": 540, "time": 9.0, "level": 2, "requires": ["usine", "radar"], "from": "usine",
 		"hp": 260, "dps": 46, "speed": 80.0, "range": 11, "vision": 9,
 	},
 	# --- Cartel Vael ---
 	"faucon": {
 		"name": "Faucon", "role": "combat", "desc": "Raider ultra-rapide",
 		"armor": "light", "weapon": "autocannon",
-		"cost": 170, "time": 4.0, "requires": ["usine"], "from": "usine",
+		"cost": 170, "time": 4.0, "level": 1, "requires": ["usine"], "from": "usine",
 		"hp": 170, "dps": 17, "speed": 200.0, "range": 4, "vision": 11,
 	},
 	"vipere": {
 		"name": "Vipère", "role": "combat", "desc": "Char antiblindage (acide)",
 		"armor": "medium", "weapon": "acid",
-		"cost": 460, "time": 8.0, "requires": ["usine"], "from": "usine",
+		"cost": 460, "time": 8.0, "level": 2, "requires": ["usine"], "from": "usine",
 		"hp": 420, "dps": 41, "speed": 105.0, "range": 6,
 	},
 	"mirage": {
 		"name": "Mirage", "role": "combat", "desc": "Prend le contrôle d'un char ennemi",
 		"armor": "light", "weapon": "control",
-		"cost": 430, "time": 9.0, "requires": ["usine"], "from": "usine",
+		"cost": 430, "time": 9.0, "level": 3, "requires": ["usine", "radar"], "from": "usine",
 		"hp": 300, "dps": 32, "speed": 85.0, "range": 6,
 	},
 }
