@@ -1,16 +1,18 @@
 extends Node2D
-## Scène principale : terrain procédural, caméra, sélection, production et
+## Scène principale : terrain (shader), caméra, sélection, production et
 ## placement de bâtiments. L'interface est dans ui.gd.
 
 const TILE := 32
 const MAP_W := 64
 const MAP_H := 64
-const PX := 5 # pixels de texture par case (finesse du terrain)
+const FIELD_SCALE := 4  # échantillons de relief par case (texture envoyée au shader)
+const MINIMAP_RES := 128
 const WORLD_SIZE := Vector2(MAP_W * TILE, MAP_H * TILE)
-const SIDEBAR_EXTRA := 270.0 # la caméra peut défiler sous le panneau latéral
-const CAM_SPEED := 700.0
+const SIDEBAR_EXTRA := 390.0 # la caméra peut défiler sous le panneau latéral
+const CAM_SPEED := 800.0
 const EDGE_SCROLL := true
 const EDGE_MARGIN := 12
+const FX_GLOW := true # HDR 2D + bloom (Forward+). Mettre false en cas de souci d'affichage.
 
 # Zone de départ (plateau rocheux) et bassin d'épice, en cases
 const START := Vector2(32, 32)
@@ -19,15 +21,11 @@ const ROCK_H := 0.12
 const MOUNTAIN_H := 0.5
 const SPICE_T := 0.35
 
-# Palette du terrain : sable rosé, roche rouge sombre, ombres bleu nuit
-const SAND_A := Color("c9806f")
-const SAND_B := Color("e5a78f")
-const SPICE_C := Color("e2762a")
-const ROCK_A := Color("5a2620")
-const ROCK_B := Color("8a463a")
-const MOUNT_C := Color("2a100e")
-const SHADOW_C := Color("2a2152")
-const RIM_C := Color("f29a86")
+# Couleurs de la mini-carte
+const MM_SAND := Color("d89580")
+const MM_SPICE := Color("e2762a")
+const MM_ROCK := Color("6e3329")
+const MM_MOUNTAIN := Color("2a100e")
 
 enum T { SAND, ROCK, MOUNTAIN, SPICE }
 
@@ -35,7 +33,7 @@ var world_size := WORLD_SIZE
 var terrain: Array = []
 var grid := AStarGrid2D.new()
 var camera := Camera2D.new()
-var map_texture: ImageTexture
+var map_texture: ImageTexture # mini-carte du radar
 var ui: GameUI
 
 var units: Array[Unit] = []
@@ -53,19 +51,19 @@ var drag_start := Vector2.ZERO
 var dragging := false
 
 var noise_h := FastNoiseLite.new()
-var noise_d := FastNoiseLite.new()
 var noise_s := FastNoiseLite.new()
-var noise_c := FastNoiseLite.new()
-var noise_g := FastNoiseLite.new()
 
 
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("1c0f20"))
+	_setup_display()
 	_setup_noise()
 	_generate_terrain()
 	_build_grid()
-	_build_terrain_texture()
+	_build_terrain()
+	_build_minimap()
 	camera.position = START * TILE
+	camera.zoom = Vector2(1.3, 1.3)
 	add_child(camera)
 	_clamp_camera()
 	_place_building("chantier", Vector2i(31, 31))
@@ -75,21 +73,39 @@ func _ready() -> void:
 	ui.setup(self)
 
 
+## Antialiasing MSAA 2D et, si FX_GLOW, rendu HDR avec bloom (Forward+).
+func _setup_display() -> void:
+	var vp := get_viewport()
+	vp.msaa_2d = Viewport.MSAA_4X
+	if FX_GLOW:
+		vp.use_hdr_2d = true
+		var env := Environment.new()
+		env.background_mode = Environment.BG_CANVAS
+		env.glow_enabled = true
+		env.glow_intensity = 0.7
+		env.glow_strength = 1.0
+		env.glow_bloom = 0.0
+		env.glow_hdr_threshold = 1.0
+		env.glow_blend_mode = Environment.GLOW_BLEND_MODE_ADDITIVE
+		var we := WorldEnvironment.new()
+		we.environment = env
+		add_child(we)
+
+
 # --- Terrain ------------------------------------------------------------------
 
 func _setup_noise() -> void:
 	var base := randi()
-	var cfg := [
-		[noise_h, 0.07, 3], [noise_d, 0.18, 2], [noise_s, 0.09, 2],
-		[noise_c, 0.35, 1], [noise_g, 1.2, 1],
-	]
-	for i in cfg.size():
-		var n: FastNoiseLite = cfg[i][0]
-		n.seed = base + i * 101
-		n.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
-		n.frequency = cfg[i][1]
-		n.fractal_type = FastNoiseLite.FRACTAL_FBM
-		n.fractal_octaves = cfg[i][2]
+	noise_h.seed = base
+	noise_h.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise_h.frequency = 0.07
+	noise_h.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise_h.fractal_octaves = 3
+	noise_s.seed = base + 101
+	noise_s.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
+	noise_s.frequency = 0.09
+	noise_s.fractal_type = FastNoiseLite.FRACTAL_FBM
+	noise_s.fractal_octaves = 2
 
 
 ## Hauteur du terrain en un point (coordonnées en cases, flottantes).
@@ -138,51 +154,48 @@ func _build_grid() -> void:
 				grid.set_point_solid(Vector2i(x, y))
 
 
-## Couleur d'un point du terrain (coordonnées en cases).
-func _shade(p: Vector2) -> Color:
-	var h := _height(p)
-	var grain := noise_g.get_noise_2d(p.x, p.y)
-
-	if h > MOUNTAIN_H: # montagne : sombre et rugueuse
-		var col := MOUNT_C.lerp(ROCK_A, clampf(0.5 + grain * 0.6, 0.0, 1.0) * 0.6)
-		var foot := 1.0 - smoothstep(0.0, 0.06, h - MOUNTAIN_H)
-		return col.lerp(ROCK_B, foot * 0.6)
-
-	if h > ROCK_H: # plateau rocheux : fissures et liseré clair sur le bord
-		var v := noise_d.get_noise_2d(p.x, p.y) * 0.5 + 0.5
-		var col := ROCK_A.lerp(ROCK_B, v)
-		var crack := 1.0 - smoothstep(0.0, 0.07, absf(noise_c.get_noise_2d(p.x, p.y)))
-		col = col.darkened(crack * 0.5)
-		col = col.lightened(grain * 0.08)
-		col = col.lerp(MOUNT_C, smoothstep(MOUNTAIN_H - 0.08, MOUNTAIN_H, h) * 0.7)
-		var rim := 1.0 - smoothstep(0.0, 0.05, h - ROCK_H)
-		return col.lerp(RIM_C, rim * 0.5)
-
-	# sable : dunes douces, épice, ombre portée de la roche
-	var d := noise_d.get_noise_2d(p.x, p.y) * 0.5 + 0.5
-	var dune := sin((p.x * 0.5 + p.y * 0.8) * 2.0 + noise_d.get_noise_2d(p.y, p.x) * 6.0) * 0.5 + 0.5
-	var out := SAND_A.lerp(SAND_B, d * 0.6 + dune * 0.4)
-	out = out.lerp(SPICE_C, smoothstep(SPICE_T - 0.1, SPICE_T + 0.12, _spice(p)) * 0.85)
-	out = out.lightened(grain * 0.04)
-	if _height(p + Vector2(1.0, -1.0)) > ROCK_H:
-		out = out.lerp(SHADOW_C, 0.6)
-	return out
+## Envoie le relief au shader du terrain : texture R = hauteur, G = épice.
+func _build_terrain() -> void:
+	var fw := MAP_W * FIELD_SCALE
+	var fh := MAP_H * FIELD_SCALE
+	var img := Image.create(fw, fh, false, Image.FORMAT_RGBAH)
+	for y in fh:
+		for x in fw:
+			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / FIELD_SCALE
+			img.set_pixel(x, y, Color(_height(p), _spice(p), 0.0, 1.0))
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/terrain.gdshader")
+	mat.set_shader_parameter("field", ImageTexture.create_from_image(img))
+	mat.set_shader_parameter("world_size", WORLD_SIZE)
+	mat.set_shader_parameter("tile", float(TILE))
+	mat.set_shader_parameter("rock_h", ROCK_H)
+	mat.set_shader_parameter("mountain_h", MOUNTAIN_H)
+	mat.set_shader_parameter("spice_t", SPICE_T)
+	var rect := ColorRect.new()
+	rect.size = WORLD_SIZE
+	rect.color = Color.WHITE
+	rect.material = mat
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.z_index = -10
+	add_child(rect)
 
 
-func _build_terrain_texture() -> void:
-	var w := MAP_W * PX
-	var h := MAP_H * PX
-	var img := Image.create(w, h, false, Image.FORMAT_RGB8)
-	for y in h:
-		for x in w:
-			img.set_pixel(x, y, _shade((Vector2(x, y) + Vector2(0.5, 0.5)) / PX))
+func _build_minimap() -> void:
+	var img := Image.create(MINIMAP_RES, MINIMAP_RES, false, Image.FORMAT_RGB8)
+	var k := float(MAP_W) / MINIMAP_RES
+	for y in MINIMAP_RES:
+		for x in MINIMAP_RES:
+			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) * k
+			var h := _height(p)
+			var col := MM_SAND
+			if h > MOUNTAIN_H:
+				col = MM_MOUNTAIN
+			elif h > ROCK_H:
+				col = MM_ROCK
+			elif _spice(p) > SPICE_T:
+				col = MM_SPICE
+			img.set_pixel(x, y, col)
 	map_texture = ImageTexture.create_from_image(img)
-	var s := Sprite2D.new()
-	s.texture = map_texture
-	s.centered = false
-	s.scale = Vector2.ONE * (float(TILE) / PX)
-	s.z_index = -10
-	add_child(s)
 
 
 # --- Boucle -------------------------------------------------------------------
@@ -217,8 +230,13 @@ func _move_camera(delta: float) -> void:
 	_clamp_camera()
 
 
+## Garde la caméra dans le monde, quelle que soit la taille de la fenêtre.
 func _clamp_camera() -> void:
-	var half := get_viewport_rect().size / camera.zoom / 2.0
+	var vp := get_viewport_rect().size
+	var min_z := maxf(vp.x / (WORLD_SIZE.x + SIDEBAR_EXTRA), vp.y / WORLD_SIZE.y)
+	if camera.zoom.x < min_z:
+		camera.zoom = Vector2(min_z, min_z)
+	var half := vp / camera.zoom / 2.0
 	camera.position.x = clampf(camera.position.x, half.x, WORLD_SIZE.x + SIDEBAR_EXTRA - half.x)
 	camera.position.y = clampf(camera.position.y, half.y, WORLD_SIZE.y - half.y)
 
@@ -233,7 +251,7 @@ func _key(k: Key) -> float:
 
 
 func _zoom(factor: float) -> void:
-	var z := clampf(camera.zoom.x * factor, 0.6, 2.0)
+	var z := clampf(camera.zoom.x * factor, 0.4, 2.5)
 	camera.zoom = Vector2(z, z)
 	_clamp_camera()
 
@@ -241,9 +259,13 @@ func _zoom(factor: float) -> void:
 # --- Entrées ------------------------------------------------------------------
 
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
-		placing_id = ""
-		command_mode = ""
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_ESCAPE:
+			placing_id = ""
+			command_mode = ""
+		elif event.keycode == KEY_F11:
+			var w := get_window()
+			w.mode = Window.MODE_MAXIMIZED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
 	elif event is InputEventMouseButton:
 		match event.button_index:
 			MOUSE_BUTTON_LEFT:
@@ -273,6 +295,8 @@ func _left_pressed() -> void:
 			_place_building(placing_id, cell)
 			production["building"] = {}
 			placing_id = ""
+		else:
+			ui.toast("Emplacement invalide : roche libre, près de la base", GameData.RED)
 	elif command_mode == "move":
 		order_move(get_global_mouse_position())
 		command_mode = ""
@@ -375,6 +399,7 @@ func on_item_clicked(id: String, button: int) -> void:
 			production[cat] = {}
 			if placing_id == id:
 				placing_id = ""
+			ui.toast("%s annulé — remboursé" % d["name"], GameData.AMBER)
 		return
 	if button != MOUSE_BUTTON_LEFT:
 		return
@@ -382,8 +407,14 @@ func on_item_clicked(id: String, button: int) -> void:
 		if p["id"] == id and p["ready"] and cat == "building":
 			command_mode = ""
 			placing_id = id
+		else:
+			ui.toast("Production déjà en cours", GameData.AMBER)
 		return
-	if not is_available(id) or credits < int(d["cost"]):
+	if not is_available(id):
+		ui.toast("Prérequis manquant", GameData.RED)
+		return
+	if credits < int(d["cost"]):
+		ui.toast("Solaris insuffisants", GameData.RED)
 		return
 	credits -= int(d["cost"])
 	production[cat] = {"id": id, "progress": 0.0, "time": float(d["time"]), "ready": false}
@@ -399,11 +430,14 @@ func _update_production(delta: float) -> void:
 		p["progress"] += delta * factor / p["time"]
 		if p["progress"] >= 1.0:
 			p["progress"] = 1.0
+			var item_name: String = GameData.def(p["id"])["name"]
 			if cat == "unit":
 				_spawn_produced_unit()
 				production[cat] = {}
+				ui.toast("%s prêt !" % item_name, GameData.GREEN)
 			else:
 				p["ready"] = true
+				ui.toast("%s prêt — cliquez sur l'icône pour la poser" % item_name, GameData.GREEN)
 
 
 func _ghost_cell() -> Vector2i:
@@ -500,13 +534,13 @@ func _cell_to_world(c: Vector2i) -> Vector2:
 func _draw() -> void:
 	if dragging:
 		var r := Rect2(drag_start, get_global_mouse_position() - drag_start).abs()
-		draw_rect(r, Color(0.3, 1.0, 0.3, 0.15))
-		draw_rect(r, Color(0.3, 1.0, 0.3), false, 1.5)
+		draw_rect(r, Color(0.3, 1.0, 0.6, 0.12))
+		draw_rect(r, GameData.GREEN, false, 1.5)
 	if placing_id != "":
 		var size: Vector2i = GameData.BUILDINGS[placing_id]["size"]
 		var cell := _ghost_cell()
 		var ok := _can_place(placing_id, cell)
-		var col := Color(0.3, 1.0, 0.3, 0.35) if ok else Color(1.0, 0.25, 0.25, 0.35)
+		var col := Color(0.3, 1.0, 0.5, 0.35) if ok else Color(1.0, 0.25, 0.25, 0.35)
 		for dx in size.x:
 			for dy in size.y:
 				var rect := Rect2(Vector2(cell + Vector2i(dx, dy)) * TILE, Vector2(TILE, TILE))

@@ -4,6 +4,12 @@ class_name GameData
 const CREAM := Color("f3dcb4")
 const AMBER := Color("e0a040")
 const RED := Color("ff6b5a")
+const GOLD := Color("ffd45c")
+# Couleurs néon : composantes > 1 = elles « bloomment » avec le glow HDR
+const CYAN := Color(0.0, 1.5, 1.9)
+const MAGENTA := Color(1.9, 0.25, 1.2)
+const GREEN := Color(0.3, 1.8, 0.7)
+const AMBER_HDR := Color(1.9, 1.3, 0.3)
 
 # Bâtiment de départ (non constructible par le joueur)
 const START_BUILDING := {

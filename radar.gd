@@ -1,56 +1,72 @@
 class_name Radar
 extends Control
-## Radar circulaire : carte, unités, bâtiments et cadre de la caméra.
+## Radar tactique circulaire avec balayage animé.
 ## Clic gauche / glisser : déplace la caméra. Clic droit : ordre de déplacement.
 
 var game # le nœud principal (main.gd)
 var world_size := Vector2(2048, 2048)
 var map_rect := Rect2()
-var _timer := 0.0
 
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 
-func _process(delta: float) -> void:
-	_timer += delta
-	if _timer > 0.1:
-		_timer = 0.0
-		queue_redraw()
+func _process(_delta: float) -> void:
+	queue_redraw()
 
 
 func _draw() -> void:
 	if game == null:
 		return
 	var c := size / 2.0
-	var r := minf(size.x, size.y) / 2.0 - 10.0
-	draw_circle(c, r + 4.0, Color("120a16"))
-	var side := r * 1.38 # le carré de la carte tient dans le cercle
-	map_rect = Rect2(c - Vector2(side, side) / 2.0, Vector2(side, side))
-	draw_texture_rect(game.map_texture, map_rect, false)
+	var r := minf(size.x, size.y) / 2.0 - 14.0
+	map_rect = Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)
+	var t := Time.get_ticks_msec() / 1000.0
 
+	# Fond + carte découpée en disque
+	draw_circle(c, r + 3.0, Color("0b0714"))
+	var pts := PackedVector2Array()
+	var uvs := PackedVector2Array()
+	for i in 64:
+		var pt := c + Vector2.from_angle(TAU * i / 64.0) * r
+		pts.append(pt)
+		uvs.append((pt - map_rect.position) / map_rect.size)
+	draw_colored_polygon(pts, Color(1, 1, 1, 0.92), uvs, game.map_texture)
+
+	# Bâtiments et unités
 	for b in game.buildings:
 		var rp := _to_radar(b.position)
 		var rs := Vector2(b.cell_size * b.tile) / world_size * map_rect.size
-		draw_rect(Rect2(rp, rs), Color("9fd0ff"))
+		draw_rect(Rect2(rp, rs), Color(0.6, 0.85, 1.0))
 	for u in game.units:
-		draw_rect(Rect2(_to_radar(u.position) - Vector2(1.5, 1.5), Vector2(3, 3)), Color("5ad7ff"))
+		var up := _to_radar(u.position)
+		if up.distance_to(c) < r:
+			draw_circle(up, 2.6, GameData.CYAN)
+
+	# Balayage
+	var a0 := t * 2.2
+	for k in 14:
+		var a := a0 - k * 0.05
+		var alpha := (1.0 - k / 14.0) * 0.35
+		draw_line(c, c + Vector2.from_angle(a) * r,
+				Color(GameData.CYAN.r, GameData.CYAN.g, GameData.CYAN.b, alpha), 3.0, true)
 
 	# Cadre de la caméra
 	var vp: Vector2 = game.get_viewport_rect().size / game.camera.zoom
 	var top_left := _to_radar(game.camera.position - vp / 2.0)
 	var cam := Rect2(top_left, vp / world_size * map_rect.size).intersection(map_rect)
-	draw_rect(cam, Color.WHITE, false, 1.5)
+	draw_rect(cam, Color(1, 1, 1, 0.9), false, 1.5)
 
-	# Anneau décoratif
-	draw_arc(c, r + 4.0, 0.0, TAU, 96, GameData.AMBER, 3.0, true)
-	draw_arc(c, r - 1.0, 0.0, TAU, 96, Color("7a3a1a"), 2.0, true)
+	# Anneaux néon et graduations
+	draw_arc(c, r + 3.0, 0.0, TAU, 128, GameData.CYAN, 3.0, true)
+	draw_arc(c, r + 10.0, 0.0, TAU, 128, Color(GameData.MAGENTA.r, GameData.MAGENTA.g, GameData.MAGENTA.b, 0.7), 1.5, true)
 	for i in 36:
 		var a := TAU * i / 36.0
-		var long := 7.0 if i % 3 == 0 else 3.0
-		draw_line(c + Vector2.from_angle(a) * (r + 7.0),
-				c + Vector2.from_angle(a) * (r + 7.0 + long), GameData.AMBER.darkened(0.2), 1.5)
+		var l := 7.0 if i % 3 == 0 else 3.0
+		draw_line(c + Vector2.from_angle(a) * (r + 12.0),
+				c + Vector2.from_angle(a) * (r + 12.0 + l),
+				Color(1, 1, 1, 0.45), 1.5, true)
 
 
 func _to_radar(world: Vector2) -> Vector2:

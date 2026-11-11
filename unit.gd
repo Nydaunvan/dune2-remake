@@ -18,6 +18,11 @@ func follow(new_path: PackedVector2Array) -> void:
 		path.remove_at(0) # inutile de revenir au centre de la case de départ
 
 
+func _process(_delta: float) -> void:
+	if selected:
+		queue_redraw() # anneau de sélection pulsé
+
+
 func _physics_process(delta: float) -> void:
 	if path.is_empty():
 		return
@@ -35,6 +40,7 @@ func _draw() -> void:
 	draw_rect(Rect2(-11, -9, 22, 18), Color("6f7f9e"))
 	draw_rect(Rect2(-11, -9, 22, 18), Color.BLACK, false, 1.5)
 	draw_circle(Vector2.ZERO, 5.0, Color("4a5875"))
-	draw_line(Vector2.ZERO, Vector2(16, 0), Color.BLACK, 4.0)
+	draw_line(Vector2.ZERO, Vector2(16, 0), Color.BLACK, 4.0, true)
 	if selected:
-		draw_arc(Vector2.ZERO, 17.0, 0.0, TAU, 24, Color(0.3, 1.0, 0.3), 1.5)
+		var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
+		draw_arc(Vector2.ZERO, 17.0 + pulse * 2.0, 0.0, TAU, 40, GameData.GREEN, 2.0, true)
