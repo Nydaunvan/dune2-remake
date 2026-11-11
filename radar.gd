@@ -59,12 +59,14 @@ func _draw() -> void:
 			draw_arc(mp, maxf(m["radius"] / world_size.x * map_rect.size.x, 4.0), 0.0, TAU, 20,
 					Color(mc.r, mc.g, mc.b, 0.7 + 0.3 * sin(tt * 4.0)), 2.0, true)
 
-	# Ver géant (visible sur le radar une fois l'alerte donnée)
-	if game.worm != null:
-		var wp := _to_radar(game.worm.position)
-		var blink := 0.5 + 0.5 * sin(t * 8.0)
-		draw_circle(wp, 4.0 + blink * 3.0, Color(2.0, 0.3, 0.2, 0.9))
-		draw_arc(wp, 9.0 + blink * 4.0, 0.0, TAU, 24, Color(2.0, 0.3, 0.2, 0.6), 1.5, true)
+	# Ver géant : zone de danger (et non position exacte) tant que l'alerte est active
+	var wz: Dictionary = game.worm_zone()
+	if not wz.is_empty():
+		var wc := _to_radar(wz["center"])
+		var wr: float = float(wz["radius"]) / world_size.x * map_rect.size.x
+		var blink := 0.5 + 0.5 * sin(t * 5.0)
+		draw_circle(wc, wr, Color(1.0, 0.15, 0.1, 0.18 + 0.12 * blink))
+		draw_arc(wc, wr, 0.0, TAU, 32, Color(1.0, 0.35, 0.25, 0.7 + 0.3 * blink), 2.0, true)
 
 	# Balayage
 	var a0 := t * 2.2

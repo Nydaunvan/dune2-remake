@@ -670,11 +670,61 @@ func _spawn_worm(target) -> void:
 	worm = Worm.new()
 	worm.setup(self, start, target)
 	add_child(worm)
+	_worm_zone = WormZone.new()
+	_worm_zone.game = self
+	add_child(_worm_zone)
 	worm.finished.connect(_on_worm_finished)
 	alert_worm()
 
 
+## Zone de danger du ver : centre approximatif (calé sur une grille de 6 cases, pas la position exacte)
+## et rayon assez grand pour toujours contenir le ver.
+const WORM_ZONE_SNAP := 6.0
+const WORM_ZONE_RADIUS := 9.0
+var _worm_zone: Node2D = null
+
+
+func worm_zone() -> Dictionary:
+	if worm == null:
+		return {}
+	var snap := WORM_ZONE_SNAP * TILE
+	var c := (worm.position / snap).round() * snap
+	return {"center": c, "radius": WORM_ZONE_RADIUS * TILE}
+
+
+class WormZone extends Node2D:
+	var game
+	var _t := 0.0
+
+	func _init() -> void:
+		z_index = 45 # au-dessus du brouillard : toujours visible
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		var z: Dictionary = game.worm_zone()
+		if z.is_empty():
+			return
+		var c: Vector2 = z["center"]
+		var r: float = z["radius"]
+		var pulse := 0.5 + 0.5 * sin(_t * 4.0)
+		draw_circle(c, r, Color(1.0, 0.15, 0.1, 0.07 + 0.06 * pulse))
+		draw_circle(c, r * 0.6, Color(1.0, 0.15, 0.1, 0.05 + 0.04 * pulse))
+		# anneau en tirets qui tourne
+		var n := 28
+		for i in n:
+			var a0 := TAU * i / n + _t * 0.35
+			draw_arc(c, r, a0, a0 + TAU / n * 0.55, 6, Color(1.0, 0.3, 0.2, 0.55 + 0.35 * pulse), 4.0, true)
+		draw_arc(c, r * (0.55 + 0.45 * fposmod(_t * 0.6, 1.0)), 0.0, TAU, 48,
+				Color(1.0, 0.3, 0.2, 0.35 * (1.0 - fposmod(_t * 0.6, 1.0))), 3.0, true)
+
+
 func _on_worm_finished() -> void:
+	if _worm_zone != null:
+		_worm_zone.queue_free()
+		_worm_zone = null
 	worm = null
 	worm_cooldown = WORM_COOLDOWN
 

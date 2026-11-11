@@ -23,6 +23,16 @@ func _process(_d: float) -> bool:
 	if OS.has_environment("SHOT_AFTERLOAD") and node.get("loading") != null:
 		return false # on attend la fin du chargement
 	f += 1
+	if f == 10 and OS.has_environment("SHOT_WORM"):
+		var best := Vector2i(-1, -1)
+		for dx in range(-14, 15):
+			for dy in range(-14, 15):
+				var c := Vector2i(node.start_cell) + Vector2i(dx, dy)
+				if node.terrain[c.x][c.y] == 0 and (best.x < 0 or Vector2(dx, dy).length() < Vector2(best - Vector2i(node.start_cell)).length()):
+					best = c
+		node.units[0].position = Vector2(best) * 32.0 + Vector2(16, 16)
+		node.center_camera(node.units[0].position)
+		node._spawn_worm(node.units[0])
 	if f == 8 and OS.has_environment("SHOT_PAUSE"):
 		node.save_game(1, false)
 		node.open_pause_menu()
