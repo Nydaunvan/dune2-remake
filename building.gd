@@ -77,6 +77,9 @@ func init_combat(p_game, p_team: int) -> void:
 
 
 func _process(_delta: float) -> void:
+	if GameData.def(id).get("wall", false):
+		set_process(false)
+		return
 	# Redessine une fois les modèles 3D cuits
 	if game != null and game.bank != null and game.bank.has("%s|%s" % [id, game.faction_id_of(team)]):
 		_sprite_ok = true
@@ -195,8 +198,28 @@ func center_cell() -> Vector2:
 	return Vector2(cell) + Vector2(cell_size) / 2.0
 
 
+## Mur : dessiné à plat dans sa case, pour que les segments s'alignent parfaitement.
+func _draw_wall(s: Vector2) -> void:
+	var steel: bool = id == "mur_acier"
+	var base := Color(0.5, 0.52, 0.6) if steel else Color(0.47, 0.4, 0.34)
+	var fid: String = game.faction_id_of(team) if game != null else ""
+	var acc: Color = GameData.FACTIONS[fid]["color"] if GameData.FACTIONS.has(fid) else Color.WHITE
+	draw_rect(Rect2(Vector2.ZERO, s), base.darkened(0.35))                       # flanc
+	draw_rect(Rect2(Vector2.ZERO, Vector2(s.x, s.y - 7.0)), base)                 # dessus
+	draw_rect(Rect2(Vector2(2, 2), Vector2(s.x - 4.0, s.y - 13.0)), base.lightened(0.14))
+	draw_rect(Rect2(Vector2(0, s.y - 7.0), Vector2(s.x, 2.0)), acc * 1.3)         # liseré de faction
+	draw_rect(Rect2(Vector2.ZERO, s), Color(0, 0, 0, 0.35), false, 1.0)
+	if steel:
+		for p in [Vector2(6, 6), Vector2(s.x - 6.0, 6), Vector2(6, s.y - 14.0), Vector2(s.x - 6.0, s.y - 14.0)]:
+			draw_circle(p, 1.8, base.darkened(0.4))
+
+
 func _draw() -> void:
 	var s := Vector2(cell_size * tile)
+	if GameData.def(id).get("wall", false):
+		_draw_wall(s)
+		_draw_hp(s)
+		return
 	if _draw_sprite(s):
 		_draw_hp(s)
 		return

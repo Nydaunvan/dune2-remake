@@ -145,7 +145,7 @@ const BUILDINGS := {
 	# --- Bâtiments débloqués par la campagne ("unlock" = mission à terminer avant) ---
 	"mur": {
 		"name": "Mur", "cost": 40, "time": 2.8, "size": Vector2i(1, 1), "power": 0, "requires": [],
-		"hp": 450, "armor": "building", "vision": 3, "unlock": 1, "no_upgrade": true,
+		"hp": 450, "armor": "building", "vision": 3, "unlock": 1, "no_upgrade": true, "wall": true,
 		"desc": "Barre le passage",
 	},
 	"silo": {
@@ -198,7 +198,7 @@ const BUILDINGS := {
 	},
 	"mur_acier": {
 		"name": "Mur d'acier", "cost": 90, "time": 3.5, "size": Vector2i(1, 1), "power": 0, "requires": [],
-		"hp": 1400, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true,
+		"hp": 1400, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true, "wall": true,
 		"faction": "kharn", "desc": "Mur renforcé (Kharn)",
 	},
 	"tour_acide": {

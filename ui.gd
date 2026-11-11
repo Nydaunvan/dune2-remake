@@ -403,6 +403,8 @@ class InfoPanel extends GlassPanel:
 	var game
 	var btn: GameUI.NeonButton
 	var rbtn: GameUI.NeonButton
+	var dbtn: GameUI.NeonButton
+	var _confirm_t := 0.0
 	var _focus = null
 
 	func _init(p_game) -> void:
@@ -429,13 +431,27 @@ class InfoPanel extends GlassPanel:
 		rbtn.accent = GameData.GREEN
 		rbtn.glyph = "credit"
 		rbtn.position = Vector2(34, 244)
-		rbtn.size = Vector2(360, 36)
+		rbtn.size = Vector2(262, 36)
 		rbtn.pressed.connect(func() -> void:
 			if _focus is Building:
 				game.toggle_repair(_focus)
 			elif _focus is Unit:
 				game.repair_unit(_focus))
 		add_child(rbtn)
+		dbtn = GameUI.NeonButton.new("DÉMOLIR")
+		dbtn.accent = GameData.RED
+		dbtn.glyph = "stop"
+		dbtn.position = Vector2(304, 244)
+		dbtn.size = Vector2(112, 36)
+		dbtn.pressed.connect(func() -> void:
+			if _focus is Building:
+				if _confirm_t > 0.0:
+					_confirm_t = 0.0
+					game.demolish_building(_focus)
+				else:
+					_confirm_t = 3.0
+					game.ui.toast("Cliquez à nouveau sur DÉMOLIR pour confirmer", GameData.AMBER))
+		add_child(dbtn)
 		visible = false
 
 	func _ok(e) -> bool:
@@ -489,6 +505,10 @@ class InfoPanel extends GlassPanel:
 		var can_rep: bool = (_focus is Building or _focus is Unit) and _focus.team == 0 \
 				and not (_focus is Unit and (_focus.role == "convoy"))
 		rbtn.visible = can_rep
+		dbtn.visible = _focus is Building and _focus.team == 0
+		_confirm_t = maxf(0.0, _confirm_t - _delta)
+		dbtn.text = "CONFIRMER ?" if _confirm_t > 0.0 else "DÉMOLIR"
+		dbtn.accent = GameData.RED if _confirm_t > 0.0 else Color(0.75, 0.35, 0.35)
 		if can_rep:
 			if _focus is Building:
 				var rb: Building = _focus
@@ -866,6 +886,16 @@ class BuildIcon extends Control:
 		var role: String = GameData.def(id).get("role", "")
 		if game.bank != null and game.bank.has("%s|%s" % [id, game.faction_id]):
 			_draw_baked_icon(c, avail)
+			return
+		if GameData.def(id).get("wall", false):
+			var wc := Color(0.5, 0.52, 0.6) if id == "mur_acier" else Color(0.47, 0.4, 0.34)
+			if not avail:
+				wc = wc.darkened(0.4)
+			for i in 3:
+				var r := Rect2(c + Vector2(-33 + i * 22, -11), Vector2(22, 22))
+				draw_rect(r, wc.darkened(0.3))
+				draw_rect(Rect2(r.position, r.size - Vector2(0, 4)), wc)
+				draw_rect(r, Color(0, 0, 0, 0.4), false, 1.0)
 			return
 		if role == "harvester":
 			draw_rect(Rect2(c + Vector2(-22, -13), Vector2(44, 26)), fill)

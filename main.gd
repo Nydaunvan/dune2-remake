@@ -1468,6 +1468,25 @@ func upgrade_unit(u: Unit) -> bool:
 	return true
 
 
+## Démolit un de ses bâtiments : remboursement de 40 % du prix de base (minerai).
+func demolish_building(b: Building) -> void:
+	if b.team != 0 or not b.alive:
+		return
+	var refund := int(round(float(GameData.base_cost(b.id)) * 0.4))
+	ore += refund
+	b.alive = false
+	b.repairing = false
+	Fx.explosion(self, b.world_center(), 1.4)
+	sfx.play_ui("error", -8.0)
+	ui.toast("%s démoli (+%d minerai)" % [GameData.def(b.id)["name"], refund], GameData.AMBER)
+	if selected_building == b:
+		selected_building = null
+	if inspected == b:
+		inspected = null
+	on_building_destroyed(b)
+	b.queue_free()
+
+
 # --- Réparations ----------------------------------------------------------------
 
 ## Coût (minerai) d'une réparation complète d'un bâtiment : la moitié de son prix.

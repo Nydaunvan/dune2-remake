@@ -42,6 +42,8 @@ func setup(p_game, faction_ids: Array) -> void:
 			if not bids.has(id):
 				bids.append(id)
 		for id in bids:
+			if GameData.def(id).get("wall", false):
+				continue
 			var cs: Vector2i = GameData.def(id)["size"]
 			var fr := Vector2(cs * 32) + Vector2(BUILDING_MARGIN, BUILDING_MARGIN)
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "angles": 1,
