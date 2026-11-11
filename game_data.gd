@@ -119,6 +119,71 @@ const BUILDINGS := {
 		"size": Vector2i(2, 2), "power": -15, "requires": ["usine"], "hp": 700, "armor": "building",
 		"weapon": "cannon", "dps": 22, "range": 7, "vision": 9,
 	},
+	# --- Bâtiments débloqués par la campagne ("unlock" = mission à terminer avant) ---
+	"mur": {
+		"name": "Mur", "cost": 40, "time": 2.8, "size": Vector2i(1, 1), "power": 0, "requires": [],
+		"hp": 450, "armor": "building", "vision": 3, "unlock": 1, "no_upgrade": true,
+		"desc": "Barre le passage",
+	},
+	"silo": {
+		"name": "Silo d'épice", "cost": 300, "time": 9.0, "size": Vector2i(2, 2), "power": -10,
+		"requires": ["raffinerie"], "hp": 700, "armor": "building", "unlock": 1, "no_upgrade": true,
+		"spice_bonus": 0.10, "desc": "+10 % de Solaris par récolte (3 silos max.)",
+	},
+	"radar": {
+		"name": "Station radar", "cost": 450, "time": 11.0, "size": Vector2i(2, 2), "power": -30,
+		"requires": ["centrale"], "hp": 600, "armor": "building", "vision": 17, "unlock": 2,
+		"no_upgrade": true, "desc": "Vision très étendue",
+	},
+	"reparation": {
+		"name": "Centre de réparation", "cost": 500, "time": 12.0, "size": Vector2i(3, 2), "power": -25,
+		"requires": ["usine"], "hp": 800, "armor": "building", "unlock": 2, "no_upgrade": true,
+		"heal": 18.0, "heal_range": 5.0, "desc": "Soigne les unités alliées proches",
+	},
+	"reacteur": {
+		"name": "Réacteur", "cost": 700, "time": 12.0, "size": Vector2i(2, 2), "power": 260,
+		"requires": ["centrale", "usine"], "hp": 700, "armor": "building", "unlock": 3,
+		"no_upgrade": true, "desc": "Grosse production d'énergie",
+	},
+	"batterie": {
+		"name": "Batterie de roquettes", "cost": 600, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "radar"], "hp": 750, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"weapon": "rocket", "dps": 40, "range": 11, "vision": 10, "desc": "Défense longue portée",
+	},
+	# --- Spécifiques à une faction ---
+	"tour_sonique": {
+		"name": "Tour sonique", "cost": 520, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
+		"requires": ["usine"], "hp": 650, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "solis", "weapon": "sonic", "dps": 34, "range": 8, "vision": 9,
+		"desc": "Onde de zone (Solis)",
+	},
+	"relais_solaire": {
+		"name": "Relais solaire", "cost": 450, "time": 10.0, "size": Vector2i(2, 2), "power": 160,
+		"requires": ["centrale"], "hp": 500, "armor": "building", "unlock": 4, "no_upgrade": true,
+		"faction": "solis", "desc": "Énergie bon marché (Solis)",
+	},
+	"bunker": {
+		"name": "Bunker", "cost": 650, "time": 12.0, "size": Vector2i(2, 2), "power": -15,
+		"requires": ["usine"], "hp": 2000, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "kharn", "weapon": "cannon", "dps": 34, "range": 6, "vision": 9,
+		"desc": "Fortin ultra-résistant (Kharn)",
+	},
+	"mur_acier": {
+		"name": "Mur d'acier", "cost": 90, "time": 3.5, "size": Vector2i(1, 1), "power": 0, "requires": [],
+		"hp": 1400, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true,
+		"faction": "kharn", "desc": "Mur renforcé (Kharn)",
+	},
+	"tour_acide": {
+		"name": "Tour acide", "cost": 500, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
+		"requires": ["usine"], "hp": 600, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "vael", "weapon": "acid", "dps": 38, "range": 7, "vision": 9,
+		"desc": "Perce les blindages (Vael)",
+	},
+	"marche": {
+		"name": "Marché noir", "cost": 550, "time": 12.0, "size": Vector2i(3, 2), "power": -20,
+		"requires": ["raffinerie"], "hp": 700, "armor": "building", "unlock": 4, "no_upgrade": true,
+		"faction": "vael", "income": 4.0, "desc": "+4 Solaris par seconde (Vael)",
+	},
 }
 
 # Unités : coût en SOLARIS. role : harvester | miner | combat
@@ -223,6 +288,16 @@ static func def(id: String) -> Dictionary:
 static func mult(weapon: String, armor: String) -> float:
 	var row: Dictionary = MULT.get(weapon, {})
 	return float(row.get(armor, 1.0))
+
+
+## Bâtiments constructibles par une faction (communs + propres), débloqués ou non.
+static func buildings_for(faction: String) -> Array:
+	var out: Array = []
+	for id in BUILDINGS.keys():
+		var f: String = BUILDINGS[id].get("faction", "")
+		if f == "" or f == faction:
+			out.append(id)
+	return out
 
 
 ## Unités constructibles par une faction : communes + propres.

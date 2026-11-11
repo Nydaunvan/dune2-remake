@@ -21,6 +21,7 @@ var radar: Radar
 var info_label: Label
 var info_panel: InfoPanel
 var icon_box: GridContainer
+var icon_scroll: ScrollContainer
 var icons: Array = []
 var tab_buttons: Array = []
 
@@ -153,8 +154,13 @@ func _build_sidebar() -> void:
 	icon_box.columns = 2
 	icon_box.add_theme_constant_override("h_separation", 8)
 	icon_box.add_theme_constant_override("v_separation", 8)
-	icon_box.position = Vector2(22, 512)
-	sidebar.add_child(icon_box)
+	icon_scroll = ScrollContainer.new()
+	icon_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	icon_scroll.position = Vector2(18, 512)
+	icon_scroll.size = Vector2(SIDEBAR_W - 26.0, 392)
+	icon_scroll.clip_contents = true
+	sidebar.add_child(icon_scroll)
+	icon_scroll.add_child(icon_box)
 
 	# Infos en bas du panneau
 	info_label = Label.new()
@@ -188,7 +194,7 @@ func _rebuild_icons() -> void:
 		icon_box.remove_child(c)
 		c.queue_free()
 	icons.clear()
-	var ids: Array = GameData.BUILDINGS.keys() if category == "building" \
+	var ids: Array = GameData.buildings_for(game.faction_id) if category == "building" \
 			else GameData.units_for(game.faction_id)
 	for id in ids:
 		var icon := BuildIcon.new(id, game)
@@ -436,7 +442,7 @@ class InfoPanel extends GlassPanel:
 			return
 		_focus = _find_focus()
 		visible = _focus != null
-		btn.visible = _focus is Building and _focus.team == 0
+		btn.visible = _focus is Building and _focus.team == 0 and not GameData.def(_focus.id).get("no_upgrade", false)
 		if btn.visible:
 			var b: Building = _focus
 			var why: String = game.upgrade_block(b, game.ore)
@@ -566,9 +572,20 @@ class InfoPanel extends GlassPanel:
 				rows.append(["Solaris", "+%d %% par récolte" % int(12 * (b.level - 1))])
 			"fonderie":
 				rows.append(["Minerai", "+%d %% par récolte" % int(12 * (b.level - 1))])
-			"tourelle":
+			"tourelle", "batterie", "tour_sonique", "bunker", "tour_acide":
 				rows.append(["Dégâts", "%.0f /s" % b.dps])
 				rows.append(["Portée", "%d cases" % int(b.w_range / 32.0)])
+			"silo":
+				rows.append(["Solaris", "+10 % par silo (3 max.)"])
+			"reparation":
+				rows.append(["Soins", "%d PV/s" % int(d["heal"])])
+				rows.append(["Rayon", "%d cases" % int(d["heal_range"])])
+			"reacteur", "relais_solaire":
+				rows.append(["Énergie", "+%d" % b.power])
+			"marche":
+				rows.append(["Revenu", "+%d Solaris/s" % int(d["income"])])
+			"mur", "mur_acier":
+				rows.append(["Rôle", "Barrière"])
 		if b.power < 0:
 			rows.append(["Consomme", "%d énergie" % -b.power])
 		rows.append(["Vision", "%d cases" % b.vision])
@@ -576,7 +593,7 @@ class InfoPanel extends GlassPanel:
 		for r in rows:
 			_row(34, y, r[0], r[1])
 			y += 22.0
-		if mine:
+		if mine and not d.get("no_upgrade", false):
 			UiStyle.section(self, Vector2(COL2, 128), 340, "NIVEAU SUIVANT" if b.level < GameData.MAX_LEVEL else "ÉVOLUTION", UiStyle.GOLD)
 			if b.level < GameData.MAX_LEVEL:
 				var yy := 154.0
@@ -679,7 +696,8 @@ class BuildIcon extends Control:
 		queue_redraw()
 
 	func _gui_input(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.pressed:
+		if event is InputEventMouseButton and event.pressed \
+				and (event.button_index == MOUSE_BUTTON_LEFT or event.button_index == MOUSE_BUTTON_RIGHT):
 			clicked.emit(id, event.button_index)
 			accept_event()
 
@@ -708,6 +726,11 @@ class BuildIcon extends Control:
 		_draw_icon(c, avail)
 		if avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
 			UiStyle.text(self, Vector2(12, 24), "ÉNERGIE", 11, GameData.RED, true)
+		if not GameData.UNITS.has(id) and not game.is_unlocked(id):
+			UiStyle.text(self, Vector2(0, 84), "MISSION %d" % int(d.get("unlock", 0)), 12, GameData.AMBER, true,
+					HORIZONTAL_ALIGNMENT_CENTER, size.x)
+		elif d.has("faction") and not GameData.UNITS.has(id):
+			UiStyle.text(self, Vector2(12, 24), "FACTION", 10, game.fdata["color"] * 1.5, true)
 		var queued: int = game.queued_count(id)
 		if queued > 0:
 			var tag := Rect2(size.x - 44.0, 12.0, 32.0, 20.0)
@@ -742,11 +765,28 @@ class BuildIcon extends Control:
 			UiStyle.glyph(self, "credit" if is_unit else "ore", Vector2(x0 + 6, 118), 11.0, cc)
 			UiStyle.text(self, Vector2(x0 + 18, 123), label, 14, cc)
 
+	## Bâtiments débloqués : on affiche le modèle 3D cuit (ou un bloc simple sans affichage).
+	func _draw_baked_icon(c: Vector2, avail: bool) -> void:
+		var key := "%s|%s" % [id, game.faction_id]
+		var tex = game.bank.frame(key) if game.bank != null and game.bank.has(key) else null
+		if tex != null:
+			var sz: Vector2 = game.bank.draw_size(key)
+			var k := minf(1.0, minf(76.0 / sz.x, 62.0 / sz.y))
+			draw_texture_rect(tex, Rect2(c - sz * k / 2.0, sz * k), false,
+					Color.WHITE if avail else Color(0.45, 0.45, 0.5, 0.8))
+		else:
+			var line: Color = game.fdata["color"] * 1.6 if avail else Color(0.4, 0.35, 0.5)
+			draw_rect(Rect2(c + Vector2(-22, -14), Vector2(44, 28)), Color("2a3350"))
+			draw_rect(Rect2(c + Vector2(-22, -14), Vector2(44, 28)), line, false, 2.0)
+
 	func _draw_icon(c: Vector2, avail: bool) -> void:
 		var fill := Color("2a3350") if avail else Color("201c2c")
 		var line: Color = game.fdata["color"] * 1.6 if avail else Color(0.4, 0.35, 0.5)
 		line.a = 1.0
 		var role: String = GameData.def(id).get("role", "")
+		if GameData.BUILDINGS.has(id) and GameData.BUILDINGS[id].has("unlock"):
+			_draw_baked_icon(c, avail)
+			return
 		if role == "harvester":
 			draw_rect(Rect2(c + Vector2(-22, -13), Vector2(44, 26)), fill)
 			draw_rect(Rect2(c + Vector2(-22, -13), Vector2(44, 26)), line, false, 2.0)

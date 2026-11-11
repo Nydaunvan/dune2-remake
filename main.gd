@@ -92,6 +92,8 @@ var selected: Array[Unit] = []
 var buildings: Array[Building] = []
 var occupied := {} # Vector2i -> true (cases prises par un bâtiment)
 
+var tier := 0 # missions de campagne terminées : débloque les bâtiments
+var _inc_acc := {0: 0.0, 1: 0.0, 2: 0.0}
 var credits := 1000 # Solaris (épice raffinée) : payent les unités
 var ore := 1500     # Minerai : paye les bâtiments
 var game_time := 0.0
@@ -122,6 +124,7 @@ func _ready() -> void:
 		mission = Campaign.MISSIONS[GameSession.mission]
 		credits = int(mission["credits"])
 		ore = int(mission["ore"])
+	tier = GameSession.mission if GameSession.mode == "campaign" else Campaign.cleared(faction_id)
 	# Écran de chargement (la partie est en pause tant que tout n'est pas prêt)
 	if DisplayServer.get_name() != "headless":
 		loading = LoadingScreen.new(fdata["color"])
@@ -934,6 +937,7 @@ func _process(delta: float) -> void:
 			_obj_t = 0.5
 			if not mission.is_empty():
 				_update_objectives(0.5)
+			_building_effects(0.5)
 			_check_end()
 	_update_production(delta)
 	_update_worm(delta)
@@ -1184,7 +1188,17 @@ func on_command(cmd: String) -> void:
 
 # --- Production & construction ------------------------------------------------
 
+func is_unlocked(id: String) -> bool:
+	if not GameData.BUILDINGS.has(id):
+		return true
+	var d: Dictionary = GameData.BUILDINGS[id]
+	var f: String = d.get("faction", "")
+	return int(d.get("unlock", 0)) <= tier and (f == "" or f == faction_id)
+
+
 func is_available(id: String) -> bool:
+	if not is_unlocked(id):
+		return false
 	for r in GameData.def(id)["requires"]:
 		if not has_building(r):
 			return false
@@ -1288,7 +1302,35 @@ func unit_speed_bonus(team := 0) -> float:
 
 
 func income_bonus(kind: String, team := 0) -> float:
-	return 1.0 + 0.12 * (best_level("raffinerie" if kind == "spice" else "fonderie", team) - 1)
+	var bonus := 1.0 + 0.12 * (best_level("raffinerie" if kind == "spice" else "fonderie", team) - 1)
+	if kind == "spice":
+		bonus += 0.10 * minf(float(count_buildings("silo", team)), 3.0)
+	return bonus
+
+
+## Effets des bâtiments spéciaux, toutes les 0,5 s : revenus passifs et soins.
+func _building_effects(dt: float) -> void:
+	for b in buildings:
+		if not b.alive:
+			continue
+		var d := GameData.def(b.id)
+		if d.has("income"):
+			_inc_acc[b.team] = float(_inc_acc.get(b.team, 0.0)) + float(d["income"]) * dt
+		if d.has("heal"):
+			var r: float = float(d["heal_range"]) * TILE
+			for u in units:
+				if u.alive and side_of(u.team) == side_of(b.team) and u.hp < u.max_hp \
+						and u.position.distance_to(b.world_center()) < r + b.radius_px():
+					u.hp = minf(u.max_hp, u.hp + float(d["heal"]) * dt)
+					u.queue_redraw()
+	for t in _inc_acc.keys():
+		var whole := int(_inc_acc[t])
+		if whole > 0:
+			_inc_acc[t] = float(_inc_acc[t]) - whole
+			if t == 0:
+				credits += whole
+			elif ais.has(t):
+				ais[t].credits += whole
 
 
 func upgrade_cost(b: Building) -> int:
@@ -1297,6 +1339,8 @@ func upgrade_cost(b: Building) -> int:
 
 ## Raison pour laquelle on ne peut pas améliorer le bâtiment ("" si c'est possible).
 func upgrade_block(b: Building, money: int) -> String:
+	if GameData.def(b.id).get("no_upgrade", false):
+		return "Non améliorable"
 	if b.level >= GameData.MAX_LEVEL:
 		return "Niveau maximum atteint"
 	if b.id != "chantier" and b.level + 1 >= 3 and best_level("chantier", b.team) < 2:
@@ -1365,6 +1409,9 @@ func on_item_clicked(id: String, button: int) -> void:
 	if cat == "building" and not q.is_empty() and q[0]["id"] == id and q[0]["ready"]:
 		command_mode = ""
 		placing_id = id
+		return
+	if not is_unlocked(id):
+		ui.toast("%s : débloqué après la mission %d de la campagne" % [d["name"], int(d.get("unlock", 0))], GameData.AMBER)
 		return
 	if not is_available(id):
 		ui.toast("Prérequis manquant", GameData.RED)

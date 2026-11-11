@@ -166,7 +166,9 @@ func _draw_sprite(s: Vector2) -> bool:
 	draw_rect(Rect2(Vector2(-10, 8), s - Vector2(4, 4)), Color(0.1, 0.03, 0.12, 0.25))
 	draw_texture_rect(tex, Rect2(c - sz / 2.0, sz), false)
 	if weapon != "":
-		var hk := "tourelle_tete|%s" % fid
+		var hk := "%s_tete|%s" % [id, fid]
+		if not bank.has(hk):
+			hk = "tourelle_tete|%s" % fid
 		var ht = bank.frame(hk, aim)
 		if ht != null:
 			var hs := bank.draw_size(hk)

@@ -37,6 +37,16 @@ static func build(id: String, accent: Color) -> Node3D:
 		"usine": _usine(r, accent)
 		"tourelle": _tourelle_base(r, accent)
 		"tourelle_tete": _tourelle_tete(r, accent)
+		"mur": _mur(r, accent, false)
+		"mur_acier": _mur(r, accent, true)
+		"silo": _silo(r, accent)
+		"radar": _radar(r, accent)
+		"reparation": _reparation(r, accent)
+		"reacteur": _reacteur(r, accent)
+		"relais_solaire": _relais(r, accent)
+		"marche": _marche(r, accent)
+		"batterie", "tour_sonique", "bunker", "tour_acide": _tour_base(r, accent, id)
+		"batterie_tete", "tour_sonique_tete", "bunker_tete", "tour_acide_tete": _tour_tete(r, accent, id)
 		_: _box(r, Vector3(20, 10, 20), Vector3(0, 5, 0), accent)
 	return r
 
@@ -391,3 +401,108 @@ static func _tourelle_tete(r: Node3D, acc: Color) -> void:
 	for z in [-4.0, 4.0]:
 		_barrel(r, 8, 22, z, 22, 1.8)
 	_ball(r, 3.0, Vector3(-4, 26, 0), GLOW_ORANGE, 2.0)
+
+
+# --- Bâtiments débloqués par la campagne ---------------------------------------
+
+static func _mur(r: Node3D, acc: Color, steel: bool) -> void:
+	var col := Color(0.5, 0.52, 0.6) if steel else Color(0.46, 0.4, 0.34)
+	_box(r, Vector3(30, 14 if steel else 11, 30), Vector3(0, 7, 0), col)
+	_box(r, Vector3(32, 2, 32), Vector3(0, 15 if steel else 12, 0), METAL)
+	_box(r, Vector3(32, 1.0, 4), Vector3(0, 6, 15), acc, Vector3.ZERO, 0.8)
+
+
+static func _silo(r: Node3D, acc: Color) -> void:
+	_slab(r, 64, 64, acc)
+	for x in [-14.0, 14.0]:
+		_cyl(r, 11, 11, 26, Vector3(x, 16, 0), LIGHT, 8)
+		_cyl(r, 1.0, 11.5, 7, Vector3(x, 33, 0), METAL, 8)
+		_cyl(r, 11.5, 11.5, 1.6, Vector3(x, 20, 0), acc, 8, Vector3.ZERO, 0.9)
+	_box(r, Vector3(14, 4, 30), Vector3(0, 6, 0), DARK)
+
+
+static func _radar(r: Node3D, acc: Color) -> void:
+	_slab(r, 64, 64, acc)
+	_box(r, Vector3(26, 12, 26), Vector3(0, 9, 0), METAL)
+	_cyl(r, 3, 4, 16, Vector3(0, 22, 0), DARK, 6)
+	_cyl(r, 20, 4, 3, Vector3(0, 34, 0), LIGHT, 10, Vector3(0.5, 0.0, 0.0))
+	_ball(r, 2.6, Vector3(0, 38, 7), GLOW_GREEN, 2.5)
+
+
+static func _reparation(r: Node3D, acc: Color) -> void:
+	_slab(r, 96, 64, acc)
+	for x in [-34.0, 34.0]:
+		_box(r, Vector3(8, 26, 8), Vector3(x, 15, 0), METAL)
+	_box(r, Vector3(76, 6, 10), Vector3(0, 30, 0), LIGHT)
+	_box(r, Vector3(70, 1.2, 4), Vector3(0, 33.2, 0), GLOW_GREEN, Vector3.ZERO, 1.6)
+	_box(r, Vector3(60, 2, 36), Vector3(0, 4, 4), Color(0.2, 0.22, 0.26))
+	_box(r, Vector3(14, 8, 6), Vector3(0, 22, -3), acc.darkened(0.2))
+
+
+static func _reacteur(r: Node3D, acc: Color) -> void:
+	_slab(r, 64, 64, acc)
+	_cyl(r, 20, 22, 20, Vector3(0, 13, 0), METAL, 10)
+	_cyl(r, 14, 14, 26, Vector3(0, 17, 0), GLOW_BLUE, 10, Vector3.ZERO, 1.8)
+	_cyl(r, 21, 21, 2.0, Vector3(0, 24, 0), acc, 10, Vector3.ZERO, 1.0)
+	_cyl(r, 6, 8, 8, Vector3(0, 33, 0), DARK, 8)
+	for a in 4:
+		var d := Vector3.RIGHT.rotated(Vector3.UP, a * PI / 2.0) * 25.0
+		_cyl(r, 2, 2.5, 18, d + Vector3(0, 11, 0), DARK, 6)
+
+
+static func _relais(r: Node3D, acc: Color) -> void:
+	_slab(r, 64, 64, acc)
+	_cyl(r, 3, 4, 20, Vector3(0, 12, 0), METAL, 6)
+	_box(r, Vector3(42, 2, 30), Vector3(0, 28, 0), Color(0.12, 0.2, 0.45), Vector3(0.45, 0, 0), 0.9)
+	_box(r, Vector3(44, 1.4, 2), Vector3(0, 29, 0), acc, Vector3(0.45, 0, 0), 1.0)
+	_ball(r, 3.0, Vector3(0, 36, 0), GLOW_ORANGE, 2.2)
+
+
+static func _marche(r: Node3D, acc: Color) -> void:
+	_slab(r, 96, 64, acc)
+	_box(r, Vector3(70, 14, 40), Vector3(0, 10, -4), Color(0.28, 0.24, 0.3))
+	_box(r, Vector3(76, 3, 46), Vector3(0, 18.5, -4), acc.darkened(0.2))
+	for x in [-24.0, 0.0, 24.0]:
+		_box(r, Vector3(14, 8, 3), Vector3(x, 9, 17), DARK)
+		_box(r, Vector3(14, 1.2, 3.5), Vector3(x, 14, 17), GLOW_MAGENTA, Vector3.ZERO, 1.4)
+	_ball(r, 3.0, Vector3(0, 24, -4), GLOW_MAGENTA, 2.0)
+
+
+static func _tour_base(r: Node3D, acc: Color, id: String) -> void:
+	_slab(r, 64, 64, acc)
+	if id == "bunker":
+		_box(r, Vector3(50, 16, 50), Vector3(0, 11, 0), Color(0.36, 0.37, 0.42))
+		_box(r, Vector3(54, 3, 54), Vector3(0, 20, 0), METAL)
+		return
+	_cyl(r, 20, 23, 8, Vector3(0, 7, 0), METAL, 8)
+	_cyl(r, 24, 24, 1.4, Vector3(0, 9, 0), acc, 8, Vector3.ZERO, 1.0)
+	for a in 4:
+		var d := Vector3.RIGHT.rotated(Vector3.UP, a * PI / 2.0 + PI / 4.0) * 26.0
+		_box(r, Vector3(7, 6, 7), d + Vector3(0, 6, 0), DARK)
+
+
+static func _tour_head_y(id: String) -> float:
+	return 22.0 if id == "bunker_tete" else 12.0
+
+
+static func _tour_tete(r: Node3D, acc: Color, id: String) -> void:
+	var y := _tour_head_y(id)
+	match id:
+		"batterie_tete":
+			_box(r, Vector3(26, 8, 26), Vector3(0, y + 4, 0), LIGHT)
+			for z in [-7.0, 0.0, 7.0]:
+				for yy in [0.0, 8.0]:
+					_barrel(r, 10, y + 6 + yy, z, 26, 2.2, DARK)
+			_ball(r, 3.0, Vector3(-8, y + 12, 0), GLOW_ORANGE, 2.0)
+		"tour_sonique_tete":
+			_cyl(r, 8, 11, 22, Vector3(0, y + 11, 0), LIGHT, 8)
+			_cyl(r, 16, 5, 10, Vector3(8, y + 22, 0), acc, 10, Vector3(0, 0, -PI / 2.0 + 0.3), 0.8)
+			_ball(r, 4.0, Vector3(14, y + 22, 0), GLOW_BLUE, 2.8)
+		"bunker_tete":
+			_box(r, Vector3(26, 10, 26), Vector3(0, y + 5, 0), acc.darkened(0.2))
+			_barrel(r, 12, y + 6, 0, 30, 3.2, DARK)
+			_ball(r, 3.0, Vector3(-6, y + 12, 0), GLOW_ORANGE, 2.0)
+		_:
+			_cyl(r, 11, 13, 10, Vector3(0, y + 5, 0), LIGHT, 8)
+			_barrel(r, 8, y + 8, 0, 26, 2.8, DARK)
+			_cyl(r, 5, 5, 6, Vector3(10, y + 10, 0), GLOW_GREEN, 6, Vector3.ZERO, 1.8)
