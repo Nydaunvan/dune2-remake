@@ -18,6 +18,7 @@ var start_val := {}
 
 
 func _initialize() -> void:
+	GameSession.instant_bases = true
 	if OS.has_environment("BUDGET"):
 		budget = int(OS.get_environment("BUDGET"))
 	if OS.has_environment("TRIALS"):

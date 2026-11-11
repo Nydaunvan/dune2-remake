@@ -16,6 +16,7 @@ var trim := Color("e0a040") # couleur de faction
 
 # Combat
 var game
+var outpost := -1 # indice d'avant-poste de mission (-1 : aucun)
 var team := 0
 var alive := true
 var hp := 500.0
@@ -242,4 +243,4 @@ func _draw_hp(s: Vector2) -> void:
 		var w := s.x - 8.0
 		draw_rect(Rect2(4, -9, w, 5), Color(0, 0, 0, 0.65))
 		draw_rect(Rect2(4, -9, w * clampf(hp / max_hp, 0.0, 1.0), 5),
-				GameData.GREEN if team == 0 else GameData.RED)
+				GameData.GREEN if game.side_of(team) == 0 else GameData.RED)

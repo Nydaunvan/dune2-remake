@@ -7,6 +7,8 @@ const RATE := 22050
 const MUSIC_RATE := 11025
 const MUSIC_LEN := 16.0
 const VOICES := 20
+const WORLD_DB := -11.0 # niveau général des sons du monde
+const UI_DB := -12.0    # niveau des sons d'interface
 
 static var _cache := {}
 static var muted := false
@@ -33,9 +35,10 @@ func _ready() -> void:
 	_ui = AudioStreamPlayer.new()
 	add_child(_ui)
 	_music = AudioStreamPlayer.new()
-	_music.volume_db = -15.0
+	_music.volume_db = -27.0
 	add_child(_music)
 	AudioServer.set_bus_mute(0, muted)
+	AudioServer.set_bus_volume_db(0, -3.0)
 
 
 func start_music() -> void:
@@ -63,7 +66,7 @@ func play(name: String, pos: Vector2, vol_db := 0.0) -> void:
 		if not p.playing:
 			p.stream = stream_of(name)
 			p.position = pos
-			p.volume_db = vol_db
+			p.volume_db = vol_db + WORLD_DB
 			p.pitch_scale = _rng.randf_range(0.92, 1.08)
 			p.play()
 			return
@@ -74,7 +77,7 @@ func play_ui(name: String, vol_db := 0.0) -> void:
 	if not enabled:
 		return
 	_ui.stream = stream_of(name)
-	_ui.volume_db = vol_db
+	_ui.volume_db = vol_db + UI_DB
 	_ui.play()
 
 
@@ -85,6 +88,8 @@ func stream_of(name: String) -> AudioStreamWAV:
 
 
 # --- Synthèse -----------------------------------------------------------------
+# Sons construits par couches (bruit filtré, partiels harmoniques, réverbération
+# simple) pour éviter le rendu « bip » à ondes carrées.
 
 func _wav(data: PackedFloat32Array, rate := RATE, loop := false) -> AudioStreamWAV:
 	var bytes := PackedByteArray()
@@ -103,19 +108,34 @@ func _wav(data: PackedFloat32Array, rate := RATE, loop := false) -> AudioStreamW
 	return w
 
 
-## Bruit filtré (passe-bas à un pôle : k proche de 1 = grave).
-func _noise(n: int, k: float, rng: RandomNumberGenerator) -> PackedFloat32Array:
-	var out := PackedFloat32Array()
-	out.resize(n)
+func _blank(dur: float) -> PackedFloat32Array:
+	var b := PackedFloat32Array()
+	b.resize(int(dur * RATE))
+	return b
+
+
+## Bruit filtré (passe-bas à un pôle : k proche de 1 = grave), modulable en amplitude.
+func _add_noise(buf: PackedFloat32Array, t0: float, dur: float, k: float, amp: float, decay: float,
+		attack := 0.004, am := 0.0, am_depth := 0.0) -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7 + int(t0 * 1000.0) + int(k * 100.0)
+	var n := int(dur * RATE)
+	var start := int(t0 * RATE)
 	var y := 0.0
+	var gain := 1.0 / maxf(sqrt(1.0 - k * k), 0.1) * 0.55
 	for i in n:
+		if start + i >= buf.size():
+			break
+		var t := float(i) / RATE
 		y = y * k + (rng.randf() * 2.0 - 1.0) * (1.0 - k)
-		out[i] = y / maxf(1.0 - k, 0.05) * 0.5
-	return out
+		var env := exp(-t * decay) * minf(t / attack, 1.0)
+		var mod := 1.0 - am_depth * (0.5 + 0.5 * sin(TAU * am * t)) if am > 0.0 else 1.0
+		buf[start + i] += y * gain * amp * env * mod
 
 
+## Son tonal à partiels harmoniques (harm = amplitude de chaque harmonique).
 func _add_tone(buf: PackedFloat32Array, t0: float, dur: float, f0: float, f1: float, amp: float,
-		decay: float, vib := 0.0, square := 0.0) -> void:
+		decay: float, harm := [1.0], vib := 0.0, attack := 0.006) -> void:
 	var n := int(dur * RATE)
 	var start := int(t0 * RATE)
 	var ph := 0.0
@@ -123,128 +143,170 @@ func _add_tone(buf: PackedFloat32Array, t0: float, dur: float, f0: float, f1: fl
 		if start + i >= buf.size():
 			break
 		var t := float(i) / RATE
-		var f := lerpf(f0, f1, float(i) / n) * (1.0 + vib * sin(t * 40.0))
+		var f := lerpf(f0, f1, float(i) / n) * (1.0 + vib * sin(t * 28.0))
 		ph += TAU * f / RATE
-		var s := sin(ph)
-		if square > 0.0:
-			s = lerpf(s, signf(s), square)
-		var env := exp(-t * decay) * minf(t * 400.0, 1.0)
-		buf[start + i] += s * amp * env
+		var s := 0.0
+		for k in harm.size():
+			s += sin(ph * float(k + 1)) * float(harm[k])
+		buf[start + i] += s * amp * exp(-t * decay) * minf(t / attack, 1.0)
 
 
-func _blank(dur: float) -> PackedFloat32Array:
-	var b := PackedFloat32Array()
-	b.resize(int(dur * RATE))
-	return b
+func _lowpass(buf: PackedFloat32Array, k: float) -> void:
+	var y := 0.0
+	for i in buf.size():
+		y = y * k + buf[i] * (1.0 - k)
+		buf[i] = y
 
 
-func _add_noise(buf: PackedFloat32Array, t0: float, dur: float, k: float, amp: float, decay: float) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.seed = 7 + int(t0 * 1000.0)
-	var n := int(dur * RATE)
-	var nz := _noise(n, k, rng)
-	var start := int(t0 * RATE)
-	for i in n:
-		if start + i >= buf.size():
-			break
-		var t := float(i) / RATE
-		buf[start + i] += nz[i] * amp * exp(-t * decay) * minf(t * 300.0, 1.0)
+## Écho simple : quelques répétitions atténuées (donne de l'espace).
+func _reverb(buf: PackedFloat32Array, taps: Array, amp: float) -> void:
+	var src := buf.duplicate()
+	for j in taps.size():
+		var d := int(float(taps[j]) * RATE)
+		var g := amp * pow(0.7, j)
+		for i in range(d, buf.size()):
+			buf[i] += src[i - d] * g
 
 
 func _make(name: String) -> AudioStreamWAV:
 	var b: PackedFloat32Array
 	match name:
 		"autocannon":
-			b = _blank(0.12)
-			_add_noise(b, 0.0, 0.1, 0.35, 0.5, 35.0)
-			_add_tone(b, 0.0, 0.08, 1400.0, 500.0, 0.25, 40.0, 0.0, 0.6)
+			b = _blank(0.3)
+			_add_noise(b, 0.0, 0.08, 0.55, 0.9, 40.0)
+			_add_tone(b, 0.0, 0.07, 170.0, 95.0, 0.35, 45.0, [1.0, 0.5])
+			_lowpass(b, 0.35)
+			_reverb(b, [0.03, 0.07], 0.25)
 		"cannon":
-			b = _blank(0.45)
-			_add_noise(b, 0.0, 0.3, 0.8, 0.9, 12.0)
-			_add_tone(b, 0.0, 0.35, 170.0, 55.0, 0.8, 9.0)
+			b = _blank(0.9)
+			_add_noise(b, 0.0, 0.4, 0.86, 1.0, 9.0)
+			_add_noise(b, 0.0, 0.05, 0.4, 0.5, 60.0)
+			_add_tone(b, 0.0, 0.4, 125.0, 45.0, 0.9, 8.0, [1.0, 0.4])
+			_lowpass(b, 0.55)
+			_reverb(b, [0.08, 0.17, 0.3], 0.3)
 		"rocket":
-			b = _blank(0.6)
-			_add_noise(b, 0.0, 0.55, 0.7, 0.6, 5.0)
-			_add_tone(b, 0.0, 0.5, 220.0, 520.0, 0.18, 4.0, 0.02, 0.4)
+			b = _blank(1.0)
+			_add_noise(b, 0.0, 0.7, 0.65, 0.7, 4.0, 0.14)
+			_add_tone(b, 0.0, 0.6, 90.0, 190.0, 0.3, 4.0, [1.0, 0.4], 0.01, 0.1)
+			_lowpass(b, 0.5)
+			_reverb(b, [0.1, 0.22], 0.25)
 		"sonic":
-			b = _blank(0.5)
-			_add_tone(b, 0.0, 0.45, 240.0, 1100.0, 0.35, 4.0, 0.06)
-			_add_tone(b, 0.0, 0.45, 120.0, 550.0, 0.25, 4.0, 0.04)
+			b = _blank(0.9)
+			_add_tone(b, 0.0, 0.7, 85.0, 250.0, 0.45, 3.0, [1.0, 0.6, 0.3], 0.05, 0.08)
+			_add_noise(b, 0.0, 0.6, 0.7, 0.2, 4.0, 0.1, 22.0, 0.6)
+			_lowpass(b, 0.55)
+			_reverb(b, [0.07, 0.15], 0.3)
 		"acid":
-			b = _blank(0.4)
-			_add_noise(b, 0.0, 0.35, 0.5, 0.45, 8.0)
-			_add_tone(b, 0.0, 0.3, 380.0, 180.0, 0.3, 8.0, 0.25)
+			b = _blank(0.7)
+			_add_noise(b, 0.0, 0.5, 0.45, 0.8, 6.0, 0.03, 26.0, 0.8)
+			_add_tone(b, 0.0, 0.3, 240.0, 130.0, 0.2, 9.0, [1.0, 0.3], 0.15)
+			_lowpass(b, 0.4)
+			_reverb(b, [0.05, 0.11], 0.2)
 		"control":
-			b = _blank(0.8)
-			_add_tone(b, 0.0, 0.75, 520.0, 380.0, 0.35, 2.5, 0.12)
-			_add_tone(b, 0.0, 0.75, 780.0, 570.0, 0.2, 2.5, 0.1)
+			b = _blank(1.4)
+			_add_tone(b, 0.0, 1.0, 220.0, 165.0, 0.28, 2.2, [1.0, 0.5, 0.25], 0.06, 0.15)
+			_add_tone(b, 0.0, 1.0, 223.0, 168.0, 0.28, 2.2, [1.0, 0.4, 0.2], 0.05, 0.15)
+			_lowpass(b, 0.6)
+			_reverb(b, [0.12, 0.26, 0.4], 0.35)
 		"hit":
-			b = _blank(0.2)
-			_add_noise(b, 0.0, 0.15, 0.6, 0.6, 22.0)
-			_add_tone(b, 0.0, 0.12, 220.0, 100.0, 0.3, 25.0)
+			b = _blank(0.3)
+			_add_noise(b, 0.0, 0.12, 0.65, 0.8, 28.0)
+			_add_tone(b, 0.0, 0.1, 150.0, 70.0, 0.4, 30.0)
+			_lowpass(b, 0.45)
+			_reverb(b, [0.04], 0.2)
 		"boom":
-			b = _blank(0.9)
-			_add_noise(b, 0.0, 0.8, 0.88, 1.0, 5.0)
-			_add_tone(b, 0.0, 0.7, 95.0, 38.0, 0.8, 4.5)
+			b = _blank(1.6)
+			_add_noise(b, 0.0, 1.1, 0.92, 1.0, 3.5)
+			_add_noise(b, 0.0, 0.15, 0.5, 0.5, 25.0)
+			_add_tone(b, 0.0, 0.9, 70.0, 32.0, 0.8, 3.5, [1.0, 0.3])
+			_lowpass(b, 0.62)
+			_reverb(b, [0.1, 0.22, 0.38], 0.32)
 		"boom_big":
-			b = _blank(1.7)
-			_add_noise(b, 0.0, 1.6, 0.93, 1.2, 2.6)
-			_add_noise(b, 0.0, 0.5, 0.5, 0.5, 10.0)
-			_add_tone(b, 0.0, 1.4, 80.0, 28.0, 1.0, 2.2)
+			b = _blank(2.8)
+			_add_noise(b, 0.0, 2.0, 0.95, 1.2, 2.0)
+			_add_noise(b, 0.0, 0.25, 0.55, 0.6, 14.0)
+			_add_tone(b, 0.0, 1.6, 62.0, 26.0, 0.9, 2.0, [1.0, 0.35])
+			_lowpass(b, 0.68)
+			_reverb(b, [0.13, 0.29, 0.5], 0.35)
 		"worm":
-			b = _blank(2.4)
-			_add_noise(b, 0.0, 2.3, 0.94, 1.1, 1.3)
-			_add_tone(b, 0.0, 2.2, 52.0, 34.0, 0.7, 1.0, 0.12)
-			_add_tone(b, 0.2, 1.6, 90.0, 60.0, 0.3, 1.6, 0.2, 0.5)
+			b = _blank(3.6)
+			_add_noise(b, 0.0, 3.2, 0.96, 1.0, 1.1, 0.4)
+			_add_noise(b, 0.3, 2.4, 0.8, 0.5, 1.4, 0.5, 14.0, 0.7)
+			_add_tone(b, 0.0, 3.0, 46.0, 30.0, 0.7, 1.0, [1.0, 0.6, 0.3], 0.08, 0.3)
+			_lowpass(b, 0.7)
+			_reverb(b, [0.2, 0.45], 0.3)
 		"click":
-			b = _blank(0.06)
-			_add_tone(b, 0.0, 0.05, 1200.0, 900.0, 0.4, 60.0)
+			b = _blank(0.1)
+			_add_noise(b, 0.0, 0.03, 0.3, 0.5, 90.0)
+			_add_tone(b, 0.0, 0.04, 800.0, 600.0, 0.12, 80.0, [1.0, 0.3])
 		"ack":
-			b = _blank(0.09)
-			_add_tone(b, 0.0, 0.08, 660.0, 760.0, 0.3, 30.0, 0.0, 0.3)
+			b = _blank(0.14)
+			_add_tone(b, 0.0, 0.1, 480.0, 520.0, 0.14, 35.0, [1.0, 0.35])
+			_lowpass(b, 0.5)
 		"place":
-			b = _blank(0.35)
-			_add_noise(b, 0.0, 0.25, 0.85, 0.7, 12.0)
-			_add_tone(b, 0.0, 0.25, 140.0, 70.0, 0.6, 12.0)
-		"coin":
-			b = _blank(0.3)
-			_add_tone(b, 0.0, 0.12, 1320.0, 1320.0, 0.3, 14.0)
-			_add_tone(b, 0.07, 0.2, 1760.0, 1760.0, 0.3, 12.0)
-		"ready":
-			b = _blank(0.7)
-			_add_tone(b, 0.0, 0.25, 523.0, 523.0, 0.3, 7.0, 0.0, 0.2)
-			_add_tone(b, 0.12, 0.25, 659.0, 659.0, 0.3, 7.0, 0.0, 0.2)
-			_add_tone(b, 0.24, 0.4, 784.0, 784.0, 0.3, 5.0, 0.0, 0.2)
-		"unit_ready":
-			b = _blank(0.4)
-			_add_tone(b, 0.0, 0.2, 587.0, 587.0, 0.3, 9.0, 0.0, 0.2)
-			_add_tone(b, 0.1, 0.3, 880.0, 880.0, 0.3, 7.0, 0.0, 0.2)
-		"upgrade":
-			b = _blank(0.9)
-			for i in 4:
-				_add_tone(b, i * 0.1, 0.4, 440.0 * pow(1.2599, i), 440.0 * pow(1.2599, i), 0.28, 6.0, 0.0, 0.15)
-		"rank":
 			b = _blank(0.6)
-			_add_tone(b, 0.0, 0.2, 660.0, 660.0, 0.3, 8.0)
-			_add_tone(b, 0.1, 0.4, 990.0, 990.0, 0.3, 6.0)
+			_add_noise(b, 0.0, 0.3, 0.88, 0.9, 12.0)
+			_add_tone(b, 0.0, 0.3, 95.0, 50.0, 0.7, 11.0, [1.0, 0.3])
+			_lowpass(b, 0.55)
+			_reverb(b, [0.06, 0.13], 0.25)
+		"coin":
+			b = _blank(0.5)
+			_add_tone(b, 0.0, 0.3, 1568.0, 1568.0, 0.1, 14.0, [1.0, 0.0, 0.35])
+			_add_tone(b, 0.06, 0.4, 2093.0, 2093.0, 0.08, 12.0, [1.0, 0.0, 0.3])
+			_reverb(b, [0.07], 0.2)
+		"ready":
+			b = _blank(1.6)
+			var rn := [523.3, 659.3, 784.0]
+			for i in rn.size():
+				_add_tone(b, i * 0.14, 1.0, rn[i], rn[i], 0.16, 4.5, [1.0, 0.4, 0.15], 0.0, 0.004)
+			_lowpass(b, 0.6)
+			_reverb(b, [0.14, 0.3], 0.3)
+		"unit_ready":
+			b = _blank(1.0)
+			_add_tone(b, 0.0, 0.6, 587.3, 587.3, 0.15, 6.0, [1.0, 0.4, 0.15])
+			_add_tone(b, 0.12, 0.7, 880.0, 880.0, 0.13, 6.0, [1.0, 0.35, 0.1])
+			_lowpass(b, 0.6)
+			_reverb(b, [0.12], 0.3)
+		"upgrade":
+			b = _blank(1.8)
+			for i in 4:
+				var f := 440.0 * pow(1.2599, i)
+				_add_tone(b, i * 0.11, 0.9, f, f, 0.14, 4.0, [1.0, 0.4, 0.15])
+			_lowpass(b, 0.6)
+			_reverb(b, [0.15, 0.32], 0.3)
+		"rank":
+			b = _blank(1.2)
+			_add_tone(b, 0.0, 0.6, 659.3, 659.3, 0.14, 5.0, [1.0, 0.4, 0.15])
+			_add_tone(b, 0.1, 0.8, 987.8, 987.8, 0.13, 5.0, [1.0, 0.35, 0.1])
+			_lowpass(b, 0.6)
+			_reverb(b, [0.13], 0.3)
 		"alert":
-			b = _blank(0.7)
+			b = _blank(1.4)
 			for i in 3:
-				_add_tone(b, i * 0.2, 0.15, 880.0 if i % 2 == 0 else 620.0, 880.0 if i % 2 == 0 else 620.0,
-						0.35, 6.0, 0.0, 0.7)
+				var f := 330.0 if i % 2 == 0 else 247.0
+				_add_tone(b, i * 0.28, 0.26, f, f * 0.98, 0.3, 4.0, [1.0, 0.7, 0.5, 0.35, 0.2], 0.0, 0.02)
+			_lowpass(b, 0.62)
+			_reverb(b, [0.1, 0.22], 0.25)
 		"error":
-			b = _blank(0.3)
-			_add_tone(b, 0.0, 0.25, 180.0, 130.0, 0.4, 8.0, 0.0, 0.8)
+			b = _blank(0.4)
+			_add_tone(b, 0.0, 0.2, 130.0, 100.0, 0.35, 10.0, [1.0, 0.5, 0.3])
+			_lowpass(b, 0.55)
 		"victory":
-			b = _blank(2.2)
-			var notes := [392.0, 494.0, 587.0, 784.0, 988.0]
+			b = _blank(4.0)
+			var notes := [196.0, 246.9, 293.7, 392.0]
 			for i in notes.size():
-				_add_tone(b, i * 0.16, 1.2, notes[i], notes[i], 0.22, 2.2, 0.0, 0.2)
+				_add_tone(b, i * 0.22, 2.2, notes[i], notes[i], 0.2, 1.4, [1.0, 0.6, 0.4, 0.25, 0.15], 0.004, 0.04)
+			_add_tone(b, 0.9, 2.8, 392.0, 392.0, 0.18, 1.0, [1.0, 0.5, 0.3, 0.2], 0.004, 0.08)
+			_add_tone(b, 0.9, 2.8, 587.3, 587.3, 0.12, 1.0, [1.0, 0.4, 0.2], 0.004, 0.08)
+			_lowpass(b, 0.6)
+			_reverb(b, [0.15, 0.32, 0.5], 0.3)
 		"defeat":
-			b = _blank(2.6)
-			var dn := [440.0, 392.0, 349.0, 294.0]
+			b = _blank(4.2)
+			var dn := [220.0, 196.0, 175.0, 147.0]
 			for i in dn.size():
-				_add_tone(b, i * 0.3, 1.5, dn[i], dn[i] * 0.98, 0.25, 1.8, 0.01, 0.3)
+				_add_tone(b, i * 0.5, 2.2, dn[i], dn[i] * 0.99, 0.22, 1.3, [1.0, 0.55, 0.3, 0.15], 0.004, 0.08)
+			_lowpass(b, 0.62)
+			_reverb(b, [0.18, 0.4], 0.3)
 		"music":
 			return _make_music()
 		_:
@@ -252,36 +314,35 @@ func _make(name: String) -> AudioStreamWAV:
 	return _wav(b)
 
 
-## Ambiance : bourdon grave, nappe lente et quelques notes pentatoniques.
-## Toutes les fréquences sont des multiples de 1/16 Hz : la boucle est parfaite.
+## Ambiance : nappe grave et lente, quelques notes douces. Toutes les fréquences
+## sont des multiples de 1/16 Hz : la boucle est parfaite.
 func _make_music() -> AudioStreamWAV:
 	var n := int(MUSIC_LEN * MUSIC_RATE)
 	var buf := PackedFloat32Array()
 	buf.resize(n)
 	var snap := func(f: float) -> float: return roundf(f * 16.0) / 16.0
-	var drones: Array = [[snap.call(55.0), 0.30], [snap.call(82.5), 0.16], [snap.call(110.0), 0.10],
-			[snap.call(130.8), 0.07], [snap.call(164.8), 0.05]]
+	var drones: Array = [[snap.call(55.0), 0.30], [snap.call(82.5), 0.14], [snap.call(110.0), 0.08],
+			[snap.call(130.8), 0.05]]
 	for i in n:
 		var t := float(i) / MUSIC_RATE
 		var s := 0.0
 		for j in drones.size():
 			var d: Array = drones[j]
-			var lfo := 0.65 + 0.35 * sin(TAU * t * (1.0 / MUSIC_LEN) * float(j + 1))
+			var lfo := 0.6 + 0.4 * sin(TAU * t * (1.0 / MUSIC_LEN) * float(j + 1))
 			s += sin(TAU * d[0] * t) * d[1] * lfo
 		buf[i] = s
-	# Notes éparses (gamme mineure pentatonique), enveloppe en cloche
-	var scale := [220.0, 261.6, 293.7, 329.6, 392.0, 440.0, 523.3]
+	var scale := [220.0, 261.6, 293.7, 329.6, 392.0, 440.0]
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 42
 	var tn := 1.0
-	while tn < MUSIC_LEN - 3.0:
+	while tn < MUSIC_LEN - 3.5:
 		var f: float = snap.call(scale[rng.randi() % scale.size()])
 		var start := int(tn * MUSIC_RATE)
-		var len := int(2.6 * MUSIC_RATE)
+		var len := int(3.0 * MUSIC_RATE)
 		for i in len:
 			if start + i >= n:
 				break
 			var t := float(i) / MUSIC_RATE
-			buf[start + i] += (sin(TAU * f * t) + 0.3 * sin(TAU * f * 2.0 * t)) * 0.07 * exp(-t * 1.6) * minf(t * 60.0, 1.0)
-		tn += rng.randf_range(1.6, 3.2)
+			buf[start + i] += (sin(TAU * f * t) + 0.15 * sin(TAU * f * 2.0 * t)) * 0.045 * exp(-t * 1.3) * minf(t * 8.0, 1.0)
+		tn += rng.randf_range(2.0, 3.8)
 	return _wav(buf, MUSIC_RATE, true)

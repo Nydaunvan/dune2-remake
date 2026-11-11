@@ -9,7 +9,7 @@ const COMMANDS := [
 	["stop", "ARRÊT", true],
 	["move", "DÉPLACER", true],
 	["attack", "ATTAQUER", true],
-	["sell", "VENDRE", false],
+	["deploy", "DÉPLOYER", true],
 ]
 
 var game # le nœud principal (main.gd)
@@ -213,7 +213,7 @@ func _process(_delta: float) -> void:
 
 
 ## Écran de fin de partie.
-func show_end(victory: bool) -> void:
+func show_end(victory: bool, reason := "") -> void:
 	var dim := ColorRect.new()
 	dim.color = Color(0.02, 0.0, 0.05, 0.0)
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -236,7 +236,7 @@ func show_end(victory: bool) -> void:
 	l.add_theme_constant_override("outline_size", 14)
 	vb.add_child(l)
 	var sub := Label.new()
-	sub.text = "La base ennemie est détruite." if victory else "Votre base est tombée."
+	sub.text = reason if reason != "" else ("Mission accomplie." if victory else "Mission échouée.")
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	sub.add_theme_font_size_override("font_size", 26)
 	sub.add_theme_color_override("font_color", GameData.CREAM)
@@ -278,15 +278,26 @@ class ObjectivePanel extends GlassPanel:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func _process(_delta: float) -> void:
+		var n: int = game.objectives_status().size()
+		size = Vector2(450, 44 + 40 * n)
 		queue_redraw()
 
 	func _draw() -> void:
 		var m: Dictionary = game.mission
-		var pr: Array = game.objective_progress()
-		UiStyle.text(self, Vector2(20, 27), "MISSION %d — %s" % [GameSession.mission + 1, String(m["title"]).to_upper()],
+		UiStyle.text(self, Vector2(20, 26), "MISSION %d — %s" % [GameSession.mission + 1, String(m["title"]).to_upper()],
 				13, UiStyle.GOLD, true)
-		UiStyle.text(self, Vector2(20, 49), String(pr[0]), 14, UiStyle.TEXT)
-		UiStyle.seg_bar(self, Rect2(20, 57, size.x - 40.0, 8), float(pr[1]), UiStyle.GOLD, 8.0, 3.0)
+		var y := 54.0
+		for o in game.objectives_status():
+			var done: bool = o["done"]
+			var c := Vector2(26, y - 5.0)
+			var col := GameData.GREEN if done else UiStyle.GOLD
+			draw_colored_polygon(PackedVector2Array([c + Vector2(0, -6), c + Vector2(6, 0), c + Vector2(0, 6), c + Vector2(-6, 0)]),
+					col if done else Color(col.r, col.g, col.b, 0.25))
+			draw_polyline(PackedVector2Array([c + Vector2(0, -6), c + Vector2(6, 0), c + Vector2(0, 6), c + Vector2(-6, 0), c + Vector2(0, -6)]),
+					col, 1.4)
+			UiStyle.text(self, Vector2(42, y), String(o["text"]), 14, UiStyle.TEXT if not done else GameData.GREEN)
+			UiStyle.seg_bar(self, Rect2(42, y + 8.0, size.x - 62.0, 6), float(o["frac"]), col, 8.0, 3.0)
+			y += 40.0
 
 
 # --- Barre de ressources ------------------------------------------------------
@@ -489,6 +500,19 @@ class InfoPanel extends GlassPanel:
 		var mine: bool = u.team == 0
 		var rank_tag := String(GameData.RANKS[u.rank]["name"]).to_upper() if u.role == "combat" else ""
 		_hp_block(String(d["name"]), String(d.get("desc", "")), u.hp, u.max_hp, mine, rank_tag)
+		if u.role == "mcv" or u.role == "convoy":
+			UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
+			_row(34, 152, "Blindage", ARMOR.get(u.armor, u.armor))
+			_row(34, 174, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
+			UiStyle.section(self, Vector2(COL2, 128), 340, "RÔLE", UiStyle.GOLD)
+			if u.role == "mcv":
+				UiStyle.text(self, Vector2(COL2, 154), "Placez-le sur un sol rocheux dégagé", 14, UiStyle.TEXT)
+				UiStyle.text(self, Vector2(COL2, 176), "puis cliquez sur DÉPLOYER pour", 14, UiStyle.TEXT)
+				UiStyle.text(self, Vector2(COL2, 198), "créer votre Chantier (3x3 cases).", 14, UiStyle.TEXT)
+			else:
+				UiStyle.text(self, Vector2(COL2, 154), "Cargaison à livrer au point cyan", 14, UiStyle.TEXT)
+				UiStyle.text(self, Vector2(COL2, 176), "indiqué sur la carte et le radar.", 14, UiStyle.TEXT)
+			return
 		UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 		var y := 152.0
 		_row(34, y, "Blindage", ARMOR.get(u.armor, u.armor))

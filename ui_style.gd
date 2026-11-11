@@ -122,6 +122,10 @@ static func glyph(ci: CanvasItem, kind: String, c: Vector2, s: float, col: Color
 			ci.draw_line(c + Vector2(s * 0.8, 0), c + Vector2(s * 0.25, 0), col, 1.8)
 			ci.draw_line(c - Vector2(0, s * 0.8), c - Vector2(0, s * 0.25), col, 1.8)
 			ci.draw_line(c + Vector2(0, s * 0.8), c + Vector2(0, s * 0.25), col, 1.8)
+		"deploy":
+			ci.draw_rect(Rect2(c - Vector2(s * 0.7, s * 0.2), Vector2(s * 1.4, s * 0.9)), col, false, 1.8)
+			ci.draw_line(c + Vector2(0, -s * 0.9), c + Vector2(0, s * 0.1), col, 1.8)
+			ci.draw_colored_polygon(PackedVector2Array([c + Vector2(-s * 0.35, -s * 0.2), c + Vector2(s * 0.35, -s * 0.2), c + Vector2(0, s * 0.3)]), col)
 		"sell":
 			ci.draw_arc(c, s * 0.5, 0.0, TAU, 20, col, 1.8, true)
 			ci.draw_line(c + Vector2(0, -s * 0.3), c + Vector2(0, s * 0.3), col, 1.8)

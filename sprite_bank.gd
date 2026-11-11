@@ -30,7 +30,7 @@ func setup(p_game, faction_ids: Array) -> void:
 	_make_viewport()
 	for f in faction_ids:
 		var accent: Color = GameData.FACTIONS[f]["color"]
-		var ids: Array = ["recolteur", "mineur"] + GameData.FACTIONS[f]["units"]
+		var ids: Array = ["recolteur", "mineur", "mcv", "convoi"] + GameData.FACTIONS[f]["units"]
 		for id in ids:
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "angles": ANGLES,
 					"frame": UNIT_FRAME, "extra": UNIT_EXTRA})

@@ -4,7 +4,9 @@ extends Node2D
 ## automatique (chercher une ressource → récolter → rapporter → recommencer).
 
 var id := ""
-var role := "combat" # combat | harvester | miner
+var role := "combat" # combat | harvester | miner | mcv | convoy
+var guard := false   # garde immobile (avant-poste, embuscade) : n'entre pas dans les vagues de l'IA
+var convoy := false  # unité de convoi de mission
 var faction_color := Color("4aa8ff")
 var game # le nœud principal (main.gd)
 
@@ -73,7 +75,7 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	cargo_cap = d.get("capacity", 0.0)
 	harvest_rate = d.get("rate", 100.0)
 	cargo_kind = d.get("resource", "")
-	radius = 14.0 if is_worker() else 11.0
+	radius = 14.0 if (is_worker() or role == "mcv" or role == "convoy") else 11.0
 	armor = d.get("armor", "medium")
 	weapon = d.get("weapon", "")
 	dps = float(d.get("dps", 0))
@@ -524,6 +526,11 @@ func _draw() -> void:
 			draw_rect(Rect2(-11, 7.0 - 14.0 * fill, 15, 14.0 * fill), GameData.ORE_BLUE)
 			draw_colored_polygon(PackedVector2Array([
 				Vector2(13, -9), Vector2(26, 0), Vector2(13, 9)]), Color("9aa3b5"))
+		"mcv", "convoy":
+			draw_rect(Rect2(-20, -13, 40, 26), body.darkened(0.2))
+			draw_rect(Rect2(-20, -13, 40, 26), Color.BLACK, false, 1.5)
+			draw_rect(Rect2(-14, -9, 22, 18), Color(0.55, 0.58, 0.65))
+			draw_rect(Rect2(10, -9, 8, 18), hi)
 		_:
 			draw_rect(Rect2(-11, -9, 22, 18), body)
 			draw_rect(Rect2(-11, -9, 22, 18), Color.BLACK, false, 1.5)
@@ -537,7 +544,7 @@ func _draw_overlay() -> void:
 	if hp < max_hp:
 		var w := 26.0
 		draw_rect(Rect2(-w / 2.0, -22, w, 4), Color(0, 0, 0, 0.6))
-		draw_rect(Rect2(-w / 2.0, -22, w * hp / max_hp, 4), GameData.GREEN if team == 0 else GameData.RED)
+		draw_rect(Rect2(-w / 2.0, -22, w * hp / max_hp, 4), GameData.GREEN if game.side_of(team) == 0 else GameData.RED)
 	for i in rank:
 		var o := Vector2(-13 + i * 7, -29)
 		draw_polyline(PackedVector2Array([o + Vector2(-3, 2), o + Vector2(0, -1), o + Vector2(3, 2)]), GameData.GOLD, 2.0)

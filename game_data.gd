@@ -99,23 +99,23 @@ const START_BUILDING := {
 # Bâtiments : coût en MINERAI
 const BUILDINGS := {
 	"centrale": {
-		"name": "Centrale", "cost": 250, "time": 6.0,
+		"name": "Centrale", "cost": 250, "time": 8.4,
 		"size": Vector2i(2, 2), "power": 100, "requires": [], "hp": 600, "armor": "building",
 	},
 	"raffinerie": {
-		"name": "Raffinerie", "cost": 450, "time": 9.0,
+		"name": "Raffinerie", "cost": 450, "time": 12.6,
 		"size": Vector2i(3, 2), "power": -30, "requires": ["centrale"], "hp": 900, "armor": "building",
 	},
 	"fonderie": {
-		"name": "Fonderie", "cost": 400, "time": 9.0,
+		"name": "Fonderie", "cost": 400, "time": 12.6,
 		"size": Vector2i(3, 2), "power": -25, "requires": ["centrale"], "hp": 800, "armor": "building",
 	},
 	"usine": {
-		"name": "Usine", "cost": 500, "time": 9.0,
+		"name": "Usine", "cost": 500, "time": 12.6,
 		"size": Vector2i(3, 2), "power": -20, "requires": ["centrale"], "hp": 1000, "armor": "building",
 	},
 	"tourelle": {
-		"name": "Tourelle", "cost": 350, "time": 8.0,
+		"name": "Tourelle", "cost": 350, "time": 11.2,
 		"size": Vector2i(2, 2), "power": -15, "requires": ["usine"], "hp": 700, "armor": "building",
 		"weapon": "cannon", "dps": 22, "range": 7, "vision": 9,
 	},
@@ -124,16 +124,25 @@ const BUILDINGS := {
 # Unités : coût en SOLARIS. role : harvester | miner | combat
 # from = bâtiment où l'unité apparaît.
 const UNITS := {
+	# --- Engins spéciaux (non constructibles) ---
+	"mcv": {
+		"name": "Engin de chantier", "role": "mcv", "desc": "Se déploie en Chantier", "armor": "heavy",
+		"cost": 0, "time": 1.0, "requires": [], "hp": 800, "speed": 52.0, "vision": 9,
+	},
+	"convoi": {
+		"name": "Convoi d'épice", "role": "convoy", "desc": "Cargaison à escorter", "armor": "medium",
+		"cost": 0, "time": 1.0, "requires": [], "hp": 480, "speed": 58.0, "vision": 8,
+	},
 	# --- Communes ---
 	"recolteur": {
 		"name": "Récolteur d'épice", "role": "harvester", "resource": "spice", "armor": "medium",
 		"cost": 400, "time": 8.0, "requires": ["raffinerie"], "from": "raffinerie",
-		"hp": 300, "speed": 70.0, "capacity": 500.0, "rate": 120.0,
+		"hp": 300, "speed": 70.0, "capacity": 200.0, "rate": 22.0,
 	},
 	"mineur": {
 		"name": "Mineur", "role": "miner", "resource": "ore", "armor": "medium",
 		"cost": 350, "time": 8.0, "requires": ["fonderie"], "from": "fonderie",
-		"hp": 260, "speed": 80.0, "capacity": 400.0, "rate": 100.0,
+		"hp": 260, "speed": 80.0, "capacity": 160.0, "rate": 20.0,
 	},
 	# --- Maison Solis ---
 	"sentinelle": {

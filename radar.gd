@@ -38,17 +38,26 @@ func _draw() -> void:
 
 	# Bâtiments et unités
 	for b in game.buildings:
-		if b.team != 0 and not b.visible:
+		if game.hostile(b.team, 0) and not b.visible:
 			continue
 		var rp := _to_radar(b.position)
 		var rs := Vector2(b.cell_size * b.tile) / world_size * map_rect.size
-		draw_rect(Rect2(rp, rs), Color(0.6, 0.85, 1.0) if b.team == 0 else Color(1.0, 0.35, 0.3))
+		draw_rect(Rect2(rp, rs), (Color(0.6, 0.85, 1.0) if b.team == 0 else Color(0.5, 1.0, 0.6)) if game.side_of(b.team) == 0 else Color(1.0, 0.35, 0.3))
 	for u in game.units:
-		if u.team != 0 and not u.seen:
+		if game.hostile(u.team, 0) and not u.seen:
 			continue
 		var up := _to_radar(u.position)
 		if up.distance_to(c) < r:
-			draw_circle(up, 2.6, GameData.CYAN if u.team == 0 else Color(2.0, 0.4, 0.3))
+			draw_circle(up, 2.6, (GameData.CYAN if u.team == 0 else Color(0.6, 2.0, 0.8)) if game.side_of(u.team) == 0 else Color(2.0, 0.4, 0.3))
+
+	# Repères de mission
+	if game.markers != null:
+		var tt := Time.get_ticks_msec() / 1000.0
+		for m in game.markers.points():
+			var mp := _to_radar(m["pos"])
+			var mc: Color = m["color"]
+			draw_arc(mp, maxf(m["radius"] / world_size.x * map_rect.size.x, 4.0), 0.0, TAU, 20,
+					Color(mc.r, mc.g, mc.b, 0.7 + 0.3 * sin(tt * 4.0)), 2.0, true)
 
 	# Ver géant (visible sur le radar une fois l'alerte donnée)
 	if game.worm != null:

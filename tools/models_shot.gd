@@ -25,7 +25,7 @@ func _initialize() -> void:
 func _draw_sheet() -> void:
 	var x := 60.0
 	var y := 90.0
-	for id in ["recolteur", "mineur"] + GameData.FACTIONS[fac]["units"]:
+	for id in ["mcv", "convoi", "recolteur", "mineur"] + GameData.FACTIONS[fac]["units"]:
 		var key := "%s|%s" % [id, fac]
 		if not bank.has(key):
 			continue

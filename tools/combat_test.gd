@@ -11,6 +11,7 @@ var minutes := 8
 
 
 func _initialize() -> void:
+	GameSession.instant_bases = true
 	GameSession.faction = OS.get_environment("FACTION") if OS.has_environment("FACTION") else "solis"
 	GameSession.mode = "skirmish"
 	if OS.has_environment("SCENARIO"):
@@ -24,8 +25,8 @@ func _initialize() -> void:
 func _process(_delta: float) -> bool:
 	frame += 1
 	if frame == 2:
-		var a: Vector2i = main._find_free_cell(Vector2i(main.START) + Vector2i(0, 4))
-		var b: Vector2i = main._find_free_cell(Vector2i(main.ENEMY_START) + Vector2i(0, 4))
+		var a: Vector2i = main._find_free_cell(Vector2i(main.start_cell) + Vector2i(0, 4))
+		var b: Vector2i = main._find_free_cell(Vector2i(main.enemy_cell) + Vector2i(0, 4))
 		var p: PackedVector2Array = main.grid.get_point_path(a, b)
 		print("chemin base->base : %d points (%s vs %s)" % [p.size(), main.faction_id, main.enemy_faction])
 		var s: PackedVector2Array = main.grid.get_point_path(b, Vector2i(53, 29))

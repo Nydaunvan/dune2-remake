@@ -4,12 +4,15 @@ extends Node
 ## Il construit sa base, récolte, produit une armée et lance des vagues d'assaut
 ## de plus en plus grosses, en défendant sa base si elle est menacée.
 
-const TEAM := 1
 const THINK := 1.0
 const BUILD_ORDER := ["centrale", "raffinerie", "fonderie", "usine", "centrale",
 		"tourelle", "usine", "tourelle", "centrale", "tourelle", "tourelle"]
 
 var game # le nœud principal (main.gd)
+var team := 1
+var home := Vector2(48, 16)  # centre de la base de cette IA (cases)
+var foe := Vector2(48, 80)   # base adverse supposée (cases)
+var deploy_at := 3.0         # moment du déploiement de l'engin de chantier
 var faction_id := ""
 var fdata := {}
 var credits := 1500
@@ -29,8 +32,10 @@ var wave_ended := 0.0
 var _think_t := 3.0
 
 
-func setup(p_game, p_faction: String) -> void:
+func setup(p_game, p_faction: String, p_team := 1) -> void:
 	game = p_game
+	team = p_team
+	deploy_at = 3.0 + randf() * 4.0
 	faction_id = p_faction
 	fdata = GameData.FACTIONS[p_faction]
 
@@ -56,6 +61,9 @@ func add_income(kind: String, amount: int) -> void:
 func _process(delta: float) -> void:
 	if not active:
 		return
+	if not game.has_building("chantier", team):
+		_try_deploy()
+		return
 	_progress(delta)
 	_think_t -= delta
 	if _think_t <= 0.0:
@@ -65,11 +73,21 @@ func _process(delta: float) -> void:
 		_think_army()
 
 
+## Déploie l'engin de chantier peu après le début (près de sa position de départ).
+func _try_deploy() -> void:
+	if game.game_time < deploy_at:
+		return
+	for u in game.units:
+		if u.team == team and u.id == "mcv" and u.alive:
+			game.deploy_mcv(u, true)
+			return
+
+
 # --- Production ---------------------------------------------------------------
 
 func _progress(delta: float) -> void:
-	var factor := (1.0 if game.power_produced(TEAM) >= game.power_used(TEAM) else 0.5) / slowdown
-	var ufactor: float = factor * game.unit_speed_bonus(TEAM)
+	var factor := (1.0 if game.power_produced(team) >= game.power_used(team) else 0.5) / slowdown
+	var ufactor: float = factor * game.unit_speed_bonus(team)
 	if not build_q.is_empty():
 		if not build_q["ready"]:
 			build_q["progress"] += delta * factor / build_q["time"]
@@ -80,7 +98,7 @@ func _progress(delta: float) -> void:
 	if not unit_q.is_empty():
 		unit_q["progress"] += delta * ufactor / unit_q["time"]
 		if unit_q["progress"] >= 1.0:
-			game.spawn_for(unit_q["id"], TEAM)
+			game.spawn_for(unit_q["id"], team)
 			unit_q = {}
 
 
@@ -94,17 +112,17 @@ func _cost(id: String) -> int:
 func _count(id: String) -> int:
 	var n := 0
 	for b in game.buildings:
-		if b.team == TEAM and b.id == id:
+		if b.team == team and b.id == id:
 			n += 1
 	for u in game.units:
-		if u.team == TEAM and u.id == id:
+		if u.team == team and u.id == id:
 			n += 1
 	return n
 
 
 func _available(id: String) -> bool:
 	for r in GameData.def(id)["requires"]:
-		if not game.has_building(r, TEAM):
+		if not game.has_building(r, team):
 			return false
 	return true
 
@@ -114,7 +132,7 @@ func _think_build() -> void:
 		return
 	var want := ""
 	# Énergie d'abord : jamais en panne
-	if game.power_produced(TEAM) - game.power_used(TEAM) < 30:
+	if game.power_produced(team) - game.power_used(team) < 30:
 		want = "centrale"
 	else:
 		var seen := {}
@@ -137,7 +155,7 @@ func _think_build() -> void:
 func _try_upgrade() -> void:
 	for id in ["usine", "chantier", "centrale", "tourelle", "raffinerie", "fonderie"]:
 		for b in game.buildings:
-			if b.team != TEAM or b.id != id:
+			if b.team != team or b.id != id:
 				continue
 			if game.upgrade_block(b, ore) == "" and ore >= game.upgrade_cost(b) + 400:
 				ore -= game.upgrade_cost(b)
@@ -151,11 +169,11 @@ func _think_units() -> void:
 	var want := ""
 	var harvesters := _count("recolteur")
 	var miners := _count("mineur")
-	if game.has_building("raffinerie", TEAM) and harvesters < 2:
+	if game.has_building("raffinerie", team) and harvesters < 2:
 		want = "recolteur"
-	elif game.has_building("fonderie", TEAM) and miners < 1:
+	elif game.has_building("fonderie", team) and miners < 1:
 		want = "mineur"
-	elif game.has_building("usine", TEAM) and _army().size() < max_army:
+	elif game.has_building("usine", team) and _army().size() < max_army:
 		# Armée variée : on prend un type au hasard, légèrement pondéré
 		var ids: Array = fdata["units"]
 		want = ids[randi() % ids.size()]
@@ -169,15 +187,15 @@ func _think_units() -> void:
 
 ## Place le bâtiment terminé ; renvoie false s'il n'y a pas de place.
 func _place(id: String) -> bool:
-	var base: Vector2 = game.ENEMY_START
-	var toward: Vector2 = game.START
+	var base: Vector2 = home
+	var toward: Vector2 = foe
 	var size: Vector2i = GameData.BUILDINGS[id]["size"]
 	var best := Vector2i(-1, -1)
 	var best_s := INF
 	for dx in range(-11, 12):
 		for dy in range(-11, 12):
 			var cell := Vector2i(base) + Vector2i(dx, dy)
-			if not game._can_place(id, cell, TEAM) or not _has_gap(cell, size):
+			if not game._can_place(id, cell, team) or not _has_gap(cell, size):
 				continue
 			var center := Vector2(cell) + Vector2(size) / 2.0
 			# Défenses vers l'ennemi, le reste près de la base
@@ -188,7 +206,7 @@ func _place(id: String) -> bool:
 				best = cell
 	if best.x < 0:
 		return false
-	game._place_building(id, best, TEAM)
+	game._place_building(id, best, team)
 	return true
 
 
@@ -206,7 +224,7 @@ func _has_gap(cell: Vector2i, size: Vector2i) -> bool:
 func _army() -> Array:
 	var out := []
 	for u in game.units:
-		if u.team == TEAM and u.role == "combat" and u.control_timer <= 0.0:
+		if u.team == team and u.role == "combat" and not u.guard and u.control_timer <= 0.0:
 			out.append(u)
 	return out
 
@@ -218,12 +236,12 @@ func _think_army() -> void:
 			wave_ended = game.game_time
 		assaulting = false
 		return
-	var base_world: Vector2 = game.ENEMY_START * game.TILE
+	var base_world: Vector2 = home * game.TILE
 
 	# Défense : des unités du joueur près de nos bâtiments
 	var intruder = null
 	for u in game.units:
-		if u.team != TEAM and u.position.distance_to(base_world) < 12.0 * game.TILE:
+		if game.hostile(u.team, team) and u.position.distance_to(base_world) < 12.0 * game.TILE:
 			intruder = u
 			break
 	if intruder != null and not assaulting:
@@ -257,12 +275,12 @@ func _attack_goal() -> Vector2i:
 	var best = null
 	var best_d := INF
 	for b in game.buildings:
-		if b.team != 0:
+		if not game.hostile(b.team, team):
 			continue
-		var d: float = b.world_center().distance_to(game.ENEMY_START * game.TILE)
+		var d: float = b.world_center().distance_to(home * game.TILE)
 		if d < best_d:
 			best_d = d
 			best = b
 	if best == null:
 		return Vector2i(-1, -1)
-	return game.dock_cell(best, game.world_to_cell(game.ENEMY_START * game.TILE))
+	return game.dock_cell(best, game.world_to_cell(home * game.TILE))

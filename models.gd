@@ -19,6 +19,8 @@ static func build(id: String, accent: Color) -> Node3D:
 	match id:
 		"recolteur": _harvester(r, body, hi, accent)
 		"mineur": _miner(r, body, hi, accent)
+		"mcv": _mcv(r, body, hi, accent)
+		"convoi": _convoi(r, body, hi, accent)
 		"sentinelle": _sentinelle(r, body, hi, accent)
 		"egide": _egide(r, body, hi, accent)
 		"resonateur": _resonateur(r, body, hi, accent)
@@ -155,6 +157,32 @@ static func _harvester(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
 	_cyl(r, 5, 5, 20, Vector3(19, 5, 0), DARK, 8, Vector3(PI / 2.0, 0, 0)) # tambour
 	for i in 5:
 		_box(r, Vector3(3, 3, 2), Vector3(19, 5, -8 + i * 4.0), acc.lightened(0.3))
+
+
+static func _mcv(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
+	_tracks(r, 44.0, 13.0, 8.0, 8.0)
+	_box(r, Vector3(46, 8, 24), Vector3(-1, 12, 0), body)
+	_box(r, Vector3(26, 14, 22), Vector3(-6, 23, 0), METAL)            # module de chantier
+	_box(r, Vector3(24, 2, 20), Vector3(-6, 30.5, 0), acc.lightened(0.1))
+	_box(r, Vector3(4, 12, 3), Vector3(-6, 36, -7), hi)                  # mât / grue
+	_box(r, Vector3(16, 2.5, 3), Vector3(2, 42, -7), hi, Vector3(0, 0, -0.25))
+	_box(r, Vector3(1.5, 6, 1.5), Vector3(10, 38, -7), DARK)
+	_box(r, Vector3(12, 9, 18), Vector3(15, 20, 0), hi)                  # cabine
+	_box(r, Vector3(1.2, 4, 14), Vector3(21.2, 21, 0), GLOW_BLUE, Vector3.ZERO, 1.2)
+	_box(r, Vector3(26, 1.4, 3), Vector3(-6, 24, 11.6), GLOW_ORANGE, Vector3.ZERO, 1.0)   # bandes de sécurité
+	_box(r, Vector3(26, 1.4, 3), Vector3(-6, 24, -11.6), GLOW_ORANGE, Vector3.ZERO, 1.0)
+	_ball(r, 2.2, Vector3(-14, 33, 6), GLOW_ORANGE, 1.6)                 # gyrophare
+
+
+static func _convoi(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
+	_tracks(r, 38.0, 11.0, 7.0, 7.0)
+	_box(r, Vector3(38, 6, 18), Vector3(-1, 10, 0), body)
+	_box(r, Vector3(22, 12, 17), Vector3(-6, 19, 0), METAL)             # conteneur
+	_box(r, Vector3(22, 1.2, 17.4), Vector3(-6, 25.4, 0), GLOW_ORANGE, Vector3.ZERO, 1.2)
+	_box(r, Vector3(1.6, 12, 17.4), Vector3(-10, 19, 0), acc.lightened(0.2))
+	_box(r, Vector3(1.6, 12, 17.4), Vector3(-1, 19, 0), acc.lightened(0.2))
+	_box(r, Vector3(9, 8, 15), Vector3(13, 15, 0), hi)
+	_box(r, Vector3(1.2, 3, 11), Vector3(17.6, 16, 0), GLOW_BLUE, Vector3.ZERO, 1.2)
 
 
 static func _miner(r: Node3D, body: Color, hi: Color, acc: Color) -> void:

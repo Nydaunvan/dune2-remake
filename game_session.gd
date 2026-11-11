@@ -4,3 +4,4 @@ class_name GameSession
 static var faction := "solis"
 static var mode := "skirmish" # "skirmish" ou "campaign"
 static var mission := 0
+static var instant_bases := false # tests : bases complètes dès le départ

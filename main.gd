@@ -3,11 +3,7 @@ extends Node2D
 ## production, placement de bâtiments et vers géants. Interface : ui.gd.
 
 const TILE := 32
-const MAP_W := 64
-const MAP_H := 64
-const FIELD_SCALE := 4  # échantillons de relief par case (texture envoyée au shader)
 const MINIMAP_RES := 128
-const WORLD_SIZE := Vector2(MAP_W * TILE, MAP_H * TILE)
 const SIDEBAR_EXTRA := 390.0 # la caméra peut défiler sous le panneau latéral
 const CAM_SPEED := 800.0
 const EDGE_SCROLL := true
@@ -16,12 +12,6 @@ const FOG := true       # brouillard de guerre
 const FX_GLOW := true # HDR 2D + bloom (Forward+). Mettre false en cas de souci d'affichage.
 
 # Terrain
-const START := Vector2(32, 32)                              # centre du plateau de départ
-const ENEMY_START := Vector2(50, 12)                        # plateau de l'adversaire (escarmouche)
-const SPICE_FIELDS := [Vector2(20, 37), Vector2(46, 46), Vector2(53, 29)]    # bassins de sable à épice
-const ORE_FIELDS := [Vector2(42, 25), Vector2(18, 22), Vector2(41, 15)]      # filons sur plateaux rocheux
-# Couloirs garantis (sans montagne) entre les points clés
-const CORRIDORS := [[Vector2(32, 32), Vector2(50, 12)], [Vector2(50, 12), Vector2(53, 29)]]
 const ROCK_H := 0.12
 const MOUNTAIN_H := 0.5
 const SPICE_T := 0.35
@@ -43,7 +33,19 @@ const MM_MOUNTAIN := Color("2a100e")
 
 enum T { SAND, ROCK, MOUNTAIN, SPICE, ORE }
 
-var world_size := WORLD_SIZE
+var map_w := 96
+var map_h := 96
+var field_scale := 3        # échantillons de relief par case (texture envoyée au shader)
+var world_size := Vector2(96, 96) * TILE
+var start_cell := Vector2(48, 80)      # case de départ du joueur
+var enemy_cell := Vector2(48, 16)      # case de départ de l'adversaire
+var ally_cell := Vector2(-1, -1)       # case de départ de l'allié (-1 : pas d'allié)
+var spice_fields: Array = []           # bassins de sable à épice (cases)
+var ore_fields: Array = []             # filons sur plateaux rocheux
+var corridors: Array = []              # couloirs garantis (sans montagne)
+var plateaus: Array = []               # [centre, rayon] des plateaux rocheux
+var team_factions := {}                # équipe -> faction
+var ais := {}                          # équipe -> IA
 var faction_id := "solis"
 var fdata := {}
 var terrain: Array = []
@@ -63,6 +65,17 @@ var over := false
 var mission := {}          # mission de campagne en cours (vide en escarmouche)
 var earned := 0            # Solaris récoltés par le joueur
 var _obj_t := 0.0
+var obj_state: Array = []
+var arrived := 0
+var convoy_total := 0
+var hold_t := 0.0
+var hold_ok := false
+var zone_done := false
+var escort_done := false
+var convoy_started := false
+const ZONE_RADIUS := 5.0
+var mission_points := {}   # points clés de la mission (cases)
+var markers: MissionMarkers
 var selected_building: Building = null
 var inspected = null # unité ou bâtiment (ami ou ennemi) examiné par un clic
 var fog_vis := PackedByteArray()  # 1 = visible maintenant
@@ -79,7 +92,7 @@ var selected: Array[Unit] = []
 var buildings: Array[Building] = []
 var occupied := {} # Vector2i -> true (cases prises par un bâtiment)
 
-var credits := 1500 # Solaris (épice raffinée) : payent les unités
+var credits := 1000 # Solaris (épice raffinée) : payent les unités
 var ore := 1500     # Minerai : paye les bâtiments
 var game_time := 0.0
 var production := {"building": [], "unit": []} # files d'attente (le premier élément est en cours)
@@ -105,44 +118,166 @@ func _ready() -> void:
 	Fx.setup_display(self, FX_GLOW)
 	faction_id = GameSession.faction
 	fdata = GameData.FACTIONS[faction_id]
+	if GameSession.mode == "campaign":
+		mission = Campaign.MISSIONS[GameSession.mission]
+		credits = int(mission["credits"])
+		ore = int(mission["ore"])
+	_setup_factions()
+	_generate_layout()
 	_setup_noise()
 	_generate_terrain()
 	_init_resources()
 	_build_grid()
 	_build_terrain()
 	_build_minimap()
-	camera.position = START * TILE
+	camera.position = start_cell * TILE
 	camera.zoom = Vector2(1.3, 1.3)
 	add_child(camera)
 	_clamp_camera()
 	if FOG:
 		_setup_fog()
-	_place_base(START, 0)
-	_spawn_base_units(START, 0)
-	if GameSession.mode == "campaign":
-		mission = Campaign.MISSIONS[GameSession.mission]
-		credits = int(mission["credits"])
-		ore = int(mission["ore"])
-	_setup_enemy()
+	_setup_sides()
 	if DisplayServer.get_name() != "headless":
 		bank = SpriteBank.new()
 		add_child(bank)
-		var facs: Array = [faction_id]
-		if enemy_faction != "":
-			facs.append(enemy_faction)
+		var facs: Array = []
+		for t in team_factions.values():
+			if t not in facs:
+				facs.append(t)
 		bank.setup(self, facs)
 	sfx = Sfx.new()
 	add_child(sfx)
 	sfx.start_music()
+	markers = MissionMarkers.new(self)
+	add_child(markers)
 	ui = GameUI.new()
 	add_child(ui)
 	ui.setup(self)
 	if not mission.is_empty():
-		ui.toast("Mission %d — %s : %s" % [GameSession.mission + 1, mission["title"], mission["obj"]], fdata["accent"])
+		_setup_mission()
+		ui.toast("Mission %d — %s" % [GameSession.mission + 1, mission["title"]], fdata["accent"])
 	elif ai != null:
 		ui.toast("%s — face à la %s" % [fdata["name"], ai.fdata["name"]], fdata["accent"])
-	else:
-		ui.toast("%s — bonne chance, commandant" % fdata["name"], fdata["accent"])
+	ui.toast("Sélectionnez l'engin de chantier, placez-le puis DÉPLOYER", GameData.GOLD)
+
+
+# --- Camps, carte procédurale ------------------------------------------------
+
+## Factions de chaque équipe : 0 = joueur, 1 = adversaire, 2 = allié (missions).
+func _setup_factions() -> void:
+	var others: Array = GameData.FACTIONS.keys().filter(func(k: String) -> bool: return k != faction_id)
+	others.shuffle()
+	var enemy: String = others[0]
+	if not mission.is_empty():
+		enemy = Campaign.enemy_of(faction_id, GameSession.mission)
+	team_factions = {0: faction_id, 1: enemy}
+	enemy_faction = enemy
+	if not mission.is_empty() and mission.get("ally", false):
+		for k in others:
+			if k != enemy:
+				team_factions[2] = k
+
+
+## Place bases, champs et couloirs de façon aléatoire (carte carrée).
+func _generate_layout() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	var size := 96
+	if not mission.is_empty():
+		size = int(mission.get("size", 96))
+	map_w = size
+	map_h = size
+	field_scale = 3 if size >= 96 else 4
+	world_size = Vector2(map_w, map_h) * TILE
+	var c := Vector2(map_w, map_h) / 2.0
+	var radius := size * 0.34
+	var a0 := rng.randf() * TAU
+	start_cell = (c + Vector2.from_angle(a0) * radius).round()
+	enemy_cell = (c - Vector2.from_angle(a0) * (radius + rng.randf_range(-2.0, 2.0))).round()
+	plateaus = [[start_cell, 9.0], [enemy_cell, 9.0]]
+	var keys: Array = [start_cell, enemy_cell]
+	ally_cell = Vector2(-1, -1)
+	if mission.get("ally", false):
+		var da := rng.randf_range(1.0, 1.4) * (1.0 if rng.randf() < 0.5 else -1.0)
+		ally_cell = (c + Vector2.from_angle(a0 + da) * radius * 0.95).round()
+		plateaus.append([ally_cell, 9.0])
+		keys.append(ally_cell)
+	# Avant-postes, destination de convoi, zone à tenir : points d'intérêt
+	mission_points = {}
+	var pts := int(mission.get("outposts", 0))
+	for i in pts:
+		var p := _free_point(rng, keys, size, 0.22, 0.42, 20.0)
+		mission_points["outpost%d" % i] = p
+		plateaus.append([p, 6.0])
+		keys.append(p)
+	if mission.has("convoy"):
+		var dest := (c - Vector2.from_angle(a0) * (radius * 0.9) + Vector2(rng.randf_range(-3, 3), rng.randf_range(-3, 3))).round()
+		mission_points["dest"] = dest
+		plateaus.append([dest, 6.0])
+		keys.append(dest)
+	if mission.has("zone"):
+		mission_points["zone"] = c.round()
+		plateaus.append([c.round(), 6.0])
+		keys.append(c.round())
+	# Champs : un d'épice et un de minerai par base (assez loin), puis des champs neutres
+	spice_fields = []
+	ore_fields = []
+	for base in [start_cell, enemy_cell, ally_cell]:
+		if base.x < 0:
+			continue
+		var p1 := _field_near(rng, base, 15.0, 19.0, spice_fields + ore_fields, size)
+		spice_fields.append(p1)
+		var p2 := _field_near(rng, base, 11.0, 14.0, spice_fields + ore_fields, size)
+		ore_fields.append(p2)
+	var extra := 1 + size / 48
+	for i in extra:
+		spice_fields.append(_free_point(rng, spice_fields + ore_fields + keys, size, 0.0, 0.45, 12.0))
+		ore_fields.append(_free_point(rng, spice_fields + ore_fields + keys, size, 0.0, 0.45, 12.0))
+	# Couloirs : chaque point clé relié à la base la plus proche et aux champs
+	corridors = []
+	for i in keys.size():
+		for j in range(i + 1, keys.size()):
+			corridors.append([keys[i], keys[j]])
+	for f in spice_fields + ore_fields:
+		var best: Vector2 = keys[0]
+		for k in keys:
+			if f.distance_to(k) < f.distance_to(best):
+				best = k
+		corridors.append([best, f])
+
+
+## Point aléatoire éloigné des autres (distance en fraction de la demi-carte autour du centre).
+func _free_point(rng: RandomNumberGenerator, avoid: Array, size: int, rmin: float, rmax: float, gap: float) -> Vector2:
+	var c := Vector2(size, size) / 2.0
+	var best := c
+	for t in 60:
+		var p := c + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(rmin, rmax) * size
+		p = p.clamp(Vector2(10, 10), Vector2(size - 10, size - 10)).round()
+		var ok := true
+		for q in avoid:
+			if p.distance_to(q) < gap:
+				ok = false
+				break
+		if ok:
+			return p
+		best = p
+	return best
+
+
+func _field_near(rng: RandomNumberGenerator, base: Vector2, dmin: float, dmax: float, avoid: Array, size: int) -> Vector2:
+	var best := base + Vector2(dmin, 0.0)
+	for t in 40:
+		var p := base + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(dmin, dmax)
+		p = p.clamp(Vector2(9, 9), Vector2(size - 9, size - 9)).round()
+		var ok := true
+		for q in avoid:
+			if p.distance_to(q) < 10.0:
+				ok = false
+				break
+		if ok and p.distance_to(Vector2(size, size) / 2.0) < size * 0.45:
+			return p
+		best = p
+	return best
 
 
 # --- Terrain ------------------------------------------------------------------
@@ -164,15 +299,16 @@ func _setup_noise() -> void:
 ## Hauteur du terrain en un point (coordonnées en cases, flottantes).
 func _height(p: Vector2) -> float:
 	var h := noise_h.get_noise_2d(p.x, p.y) * 0.8
-	h = lerpf(h, 0.28, smoothstep(9.0, 4.5, p.distance_to(START)))      # plateau de départ
-	h = lerpf(h, 0.28, smoothstep(9.0, 4.5, p.distance_to(ENEMY_START)))  # plateau adverse
-	for sf in SPICE_FIELDS:
+	for pl in plateaus:
+		var r: float = pl[1]
+		h = lerpf(h, 0.28, smoothstep(r, r * 0.5, p.distance_to(pl[0])))   # plateaux (bases, points d'intérêt)
+	for sf in spice_fields:
 		h = lerpf(h, -0.4, smoothstep(8.0, 4.0, p.distance_to(sf)))     # bassins de sable
-	for orf in ORE_FIELDS:
+	for orf in ore_fields:
 		h = lerpf(h, 0.28, smoothstep(7.0, 3.5, p.distance_to(orf)))     # plateaux à minerai
-	for cor in CORRIDORS:
+	for cor in corridors:
 		h = lerpf(h, minf(h, 0.2), smoothstep(4.0, 2.0, _seg_dist(p, cor[0], cor[1])))
-	var edge := minf(minf(p.x, MAP_W - p.x), minf(p.y, MAP_H - p.y))
+	var edge := minf(minf(p.x, map_w - p.x), minf(p.y, map_h - p.y))
 	h = lerpf(h, 0.7, smoothstep(3.0, 0.5, edge))                       # chaîne de bord de carte
 	return h
 
@@ -185,15 +321,18 @@ func _seg_dist(p: Vector2, a: Vector2, b: Vector2) -> float:
 
 func _spice(p: Vector2) -> float:
 	var best := 0.0
-	for sf in SPICE_FIELDS:
+	for sf in spice_fields:
 		best = maxf(best, smoothstep(7.0, 1.0, p.distance_to(sf)))
 	return noise_s.get_noise_2d(p.x, p.y) * 0.8 + 0.7 * best
 
 
 func _ore(p: Vector2) -> float:
 	var best := 0.0
-	for orf in ORE_FIELDS:
+	for orf in ore_fields:
 		best = maxf(best, smoothstep(5.5, 1.0, p.distance_to(orf)))
+	for pl in plateaus:
+		if p.distance_to(pl[0]) < float(pl[1]) * 0.85:
+			return -1.0 # pas de minerai sur les plateaux de construction
 	return noise_s.get_noise_2d(p.x + 100.0, p.y + 100.0) * 0.5 + 0.75 * best
 
 
@@ -210,15 +349,15 @@ func _cell_type(c: Vector2i) -> int:
 
 
 func _generate_terrain() -> void:
-	for x in MAP_W:
+	for x in map_w:
 		terrain.append([])
-		for y in MAP_H:
+		for y in map_h:
 			terrain[x].append(_cell_type(Vector2i(x, y)))
 
 
 func _init_resources() -> void:
-	for x in MAP_W:
-		for y in MAP_H:
+	for x in map_w:
+		for y in map_h:
 			var t: int = terrain[x][y]
 			if t == T.SPICE:
 				resource[Vector2i(x, y)] = {"kind": "spice", "amount": SPICE_PER_CELL, "max": SPICE_PER_CELL}
@@ -227,38 +366,38 @@ func _init_resources() -> void:
 
 
 func _build_grid() -> void:
-	grid.region = Rect2i(0, 0, MAP_W, MAP_H)
+	grid.region = Rect2i(0, 0, map_w, map_h)
 	grid.cell_size = Vector2(TILE, TILE)
 	grid.offset = Vector2(TILE, TILE) / 2.0 # les chemins passent par le centre des cases
 	grid.diagonal_mode = AStarGrid2D.DIAGONAL_MODE_ONLY_IF_NO_OBSTACLES
 	grid.update()
-	for x in MAP_W:
-		for y in MAP_H:
+	for x in map_w:
+		for y in map_h:
 			if terrain[x][y] == T.MOUNTAIN:
 				grid.set_point_solid(Vector2i(x, y))
 
 
 ## Envoie le relief au shader : texture R = hauteur, G = épice, B = minerai.
 func _build_terrain() -> void:
-	var fw := MAP_W * FIELD_SCALE
-	var fh := MAP_H * FIELD_SCALE
+	var fw := map_w * field_scale
+	var fh := map_h * field_scale
 	field_img = Image.create(fw, fh, false, Image.FORMAT_RGBAH)
 	for y in fh:
 		for x in fw:
-			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / FIELD_SCALE
+			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / field_scale
 			field_img.set_pixel(x, y, Color(_height(p), _spice(p), _ore(p), 1.0))
 	field_tex = ImageTexture.create_from_image(field_img)
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/terrain.gdshader")
 	mat.set_shader_parameter("field", field_tex)
-	mat.set_shader_parameter("world_size", WORLD_SIZE)
+	mat.set_shader_parameter("world_size", world_size)
 	mat.set_shader_parameter("tile", float(TILE))
 	mat.set_shader_parameter("rock_h", ROCK_H)
 	mat.set_shader_parameter("mountain_h", MOUNTAIN_H)
 	mat.set_shader_parameter("spice_t", SPICE_T)
 	mat.set_shader_parameter("ore_t", ORE_T)
 	var rect := ColorRect.new()
-	rect.size = WORLD_SIZE
+	rect.size = world_size
 	rect.color = Color.WHITE
 	rect.material = mat
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -268,7 +407,7 @@ func _build_terrain() -> void:
 
 func _build_minimap() -> void:
 	var img := Image.create(MINIMAP_RES, MINIMAP_RES, false, Image.FORMAT_RGB8)
-	var k := float(MAP_W) / MINIMAP_RES
+	var k := float(map_w) / MINIMAP_RES
 	for y in MINIMAP_RES:
 		for x in MINIMAP_RES:
 			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) * k
@@ -289,11 +428,11 @@ func _refresh_field() -> void:
 	for c in dirty.keys():
 		var info: Dictionary = dirty[c]
 		var frac: float = info["frac"]
-		for dx in FIELD_SCALE:
-			for dy in FIELD_SCALE:
-				var tx: int = c.x * FIELD_SCALE + dx
-				var ty: int = c.y * FIELD_SCALE + dy
-				var p := (Vector2(tx, ty) + Vector2(0.5, 0.5)) / FIELD_SCALE
+		for dx in field_scale:
+			for dy in field_scale:
+				var tx: int = c.x * field_scale + dx
+				var ty: int = c.y * field_scale + dy
+				var p := (Vector2(tx, ty) + Vector2(0.5, 0.5)) / field_scale
 				var col := field_img.get_pixel(tx, ty)
 				if info["kind"] == "spice":
 					col.g = _spice(p) * pow(frac, 0.7) if frac > 0.0 else -1.0
@@ -380,7 +519,7 @@ func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void
 		popup(world_pos, ("+%d $" if kind == "spice" else "+%d min.") % gain,
 				GameData.GOLD if kind == "spice" else GameData.ORE_BLUE)
 	else:
-		ai.add_income(kind, gain)
+		ais[team].add_income(kind, gain)
 
 
 ## Texte flottant dans le monde.
@@ -430,11 +569,11 @@ func _spawn_worm(target) -> void:
 	var start: Vector2 = target.position + Vector2.RIGHT * 640.0
 	for i in 16:
 		var p: Vector2 = target.position + Vector2.from_angle(randf() * TAU) * 640.0
-		p = p.clamp(Vector2(40, 40), WORLD_SIZE - Vector2(40, 40))
+		p = p.clamp(Vector2(40, 40), world_size - Vector2(40, 40))
 		if is_sand_at(p):
 			start = p
 			break
-	start = start.clamp(Vector2(40, 40), WORLD_SIZE - Vector2(40, 40))
+	start = start.clamp(Vector2(40, 40), world_size - Vector2(40, 40))
 	worm = Worm.new()
 	worm.setup(self, start, target)
 	add_child(worm)
@@ -476,7 +615,7 @@ func find_safe_cell(from: Vector2i) -> Vector2i:
 				if maxi(absi(dx), absi(dy)) != r:
 					continue
 				var c := from + Vector2i(dx, dy)
-				if c.x < 0 or c.y < 0 or c.x >= MAP_W or c.y >= MAP_H:
+				if c.x < 0 or c.y < 0 or c.x >= map_w or c.y >= map_h:
 					continue
 				var t: int = terrain[c.x][c.y]
 				if (t == T.ROCK or t == T.ORE) and _is_walkable(c):
@@ -503,22 +642,22 @@ func on_unit_lost(u: Unit) -> void:
 # --- Brouillard de guerre -----------------------------------------------------
 
 func _setup_fog() -> void:
-	fog_vis.resize(MAP_W * MAP_H)
-	fog_seen.resize(MAP_W * MAP_H)
+	fog_vis.resize(map_w * map_h)
+	fog_seen.resize(map_w * map_h)
 	var data := PackedByteArray()
-	data.resize(MAP_W * MAP_H)
+	data.resize(map_w * map_h)
 	data.fill(255)
-	fog_img = Image.create_from_data(MAP_W, MAP_H, false, Image.FORMAT_R8, data)
+	fog_img = Image.create_from_data(map_w, map_h, false, Image.FORMAT_R8, data)
 	fog_tex = ImageTexture.create_from_image(fog_img)
 	var rdata := PackedByteArray()
-	rdata.resize(MAP_W * MAP_H * 4)
-	fog_radar_img = Image.create_from_data(MAP_W, MAP_H, false, Image.FORMAT_RGBA8, rdata)
+	rdata.resize(map_w * map_h * 4)
+	fog_radar_img = Image.create_from_data(map_w, map_h, false, Image.FORMAT_RGBA8, rdata)
 	fog_radar_tex = ImageTexture.create_from_image(fog_radar_img)
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/fog.gdshader")
 	mat.set_shader_parameter("fog", fog_tex)
 	var rect := ColorRect.new()
-	rect.size = WORLD_SIZE
+	rect.size = world_size
 	rect.color = Color.WHITE
 	rect.material = mat
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -534,56 +673,56 @@ func _reveal(world_pos: Vector2, radius: int) -> void:
 				continue
 			var x := c.x + dx
 			var y := c.y + dy
-			if x < 0 or y < 0 or x >= MAP_W or y >= MAP_H:
+			if x < 0 or y < 0 or x >= map_w or y >= map_h:
 				continue
-			var i := y * MAP_W + x
+			var i := y * map_w + x
 			fog_vis[i] = 1
 			fog_seen[i] = 1
 
 
 func is_visible_cell(c: Vector2i) -> bool:
-	return fog_vis[c.y * MAP_W + c.x] == 1
+	return fog_vis[c.y * map_w + c.x] == 1
 
 
 func _update_fog() -> void:
 	fog_vis.fill(0)
 	for u in units:
-		if u.team == 0 and u.alive:
+		if side_of(u.team) == 0 and u.alive:
 			_reveal(u.position, u.vision)
 	for b in buildings:
-		if b.team == 0 and b.alive:
+		if side_of(b.team) == 0 and b.alive:
 			_reveal(b.world_center(), b.vision)
 	var data := PackedByteArray()
-	data.resize(MAP_W * MAP_H)
+	data.resize(map_w * map_h)
 	for i in data.size():
 		data[i] = 0 if fog_vis[i] == 1 else (140 if fog_seen[i] == 1 else 255)
-	fog_img.set_data(MAP_W, MAP_H, false, Image.FORMAT_R8, data)
+	fog_img.set_data(map_w, map_h, false, Image.FORMAT_R8, data)
 	fog_tex.update(fog_img)
 	var rdata := PackedByteArray()
-	rdata.resize(MAP_W * MAP_H * 4)
+	rdata.resize(map_w * map_h * 4)
 	for i in data.size():
 		rdata[i * 4] = 8
 		rdata[i * 4 + 1] = 3
 		rdata[i * 4 + 2] = 20
 		rdata[i * 4 + 3] = int(data[i] * 0.92)
-	fog_radar_img.set_data(MAP_W, MAP_H, false, Image.FORMAT_RGBA8, rdata)
+	fog_radar_img.set_data(map_w, map_h, false, Image.FORMAT_RGBA8, rdata)
 	fog_radar_tex.update(fog_radar_img)
 	# Les ennemis n'apparaissent que dans les zones visibles ; leurs bâtiments restent une fois repérés
 	for u in units:
-		if u.team == 0:
+		if side_of(u.team) == 0:
 			u.seen = true
 		else:
 			u.seen = is_visible_cell(_world_to_cell(u.position))
 		u.visible = u.seen
 	for b in buildings:
-		if b.team == 0:
+		if side_of(b.team) == 0:
 			b.seen = true
 			b.visible = true
 			continue
 		var vis := false
 		var known := false
 		for c in b.cells():
-			var i: int = c.y * MAP_W + c.x
+			var i: int = c.y * map_w + c.x
 			vis = vis or fog_vis[i] == 1
 			known = known or fog_seen[i] == 1
 		b.seen = vis
@@ -595,11 +734,29 @@ func _update_fog() -> void:
 # --- Équipes & combat ---------------------------------------------------------
 
 func fdata_of(team: int) -> Dictionary:
-	return fdata if team == 0 else ai.fdata
+	return GameData.FACTIONS[team_factions.get(team, faction_id)]
 
 
 func faction_id_of(team: int) -> String:
-	return faction_id if team == 0 else enemy_faction
+	return team_factions.get(team, faction_id)
+
+
+## Camp : 0 = joueur et allié (équipes 0 et 2), 1 = adversaire.
+func side_of(team: int) -> int:
+	return 1 if team == 1 else 0
+
+
+func hostile(a: int, b: int) -> bool:
+	return side_of(a) != side_of(b)
+
+
+func home_of(team: int) -> Vector2i:
+	match team:
+		0:
+			return Vector2i(start_cell)
+		1:
+			return Vector2i(enemy_cell)
+	return Vector2i(ally_cell)
 
 
 func faction_color(team: int) -> Color:
@@ -611,7 +768,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false):
 	var best = null
 	var best_s := INF
 	for u in units:
-		if u.team == team or not u.alive or (team == 0 and not u.seen):
+		if not hostile(u.team, team) or not u.alive or (side_of(team) == 0 and not u.seen):
 			continue
 		var d := u.position.distance_to(pos) - u.radius
 		if d > max_d:
@@ -622,7 +779,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false):
 			best = u
 	if not units_only:
 		for b in buildings:
-			if b.team == team or not b.alive or (team == 0 and not b.seen):
+			if not hostile(b.team, team) or not b.alive or (side_of(team) == 0 and not b.seen):
 				continue
 			var d := b.world_center().distance_to(pos) - b.radius_px()
 			if d > max_d:
@@ -637,10 +794,10 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false):
 ## Ennemi (du point de vue du joueur) sous le curseur.
 func enemy_at(world_pos: Vector2):
 	for u in units:
-		if u.team != 0 and u.alive and u.seen and u.position.distance_to(world_pos) < u.radius + 8.0:
+		if hostile(u.team, 0) and u.alive and u.seen and u.position.distance_to(world_pos) < u.radius + 8.0:
 			return u
 	for b in buildings:
-		if b.team != 0 and b.alive and b.visible and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
+		if hostile(b.team, 0) and b.alive and b.visible and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
 			return b
 	return null
 
@@ -682,55 +839,54 @@ func on_building_destroyed(b: Building) -> void:
 
 
 func _check_end() -> void:
-	if over or ai == null:
+	if over:
 		return
-	var mine := 0
-	var theirs := 0
-	for b in buildings:
-		if b.team == 0:
-			mine += 1
+	var lost := not _team_alive(0)
+	var reason := ""
+	if lost:
+		reason = "Votre base est tombée."
+	if not mission.is_empty() and not lost:
+		var types := []
+		for o in mission["objectives"]:
+			types.append(o["type"])
+		if "protect_ally" in types and not _team_alive(2):
+			lost = true
+			reason = "Votre allié est tombé."
+		if "escort" in types and not escort_done and _convoy_alive() + arrived < int(mission["convoy"]["need"]):
+			lost = true
+			reason = "Le convoi a été détruit."
+	var won := false
+	if not lost:
+		if mission.is_empty():
+			won = not _side_alive(1)
 		else:
-			theirs += 1
-	var won := theirs == 0
-	if not won and not mission.is_empty() and mine > 0:
-		won = objective_progress()[1] >= 1.0 and mission["type"] != "destroy"
-	if mine == 0 or won:
+			_update_objectives(0.0)
+			won = not _side_alive(1)
+			if not won:
+				won = true
+				for i in mission["objectives"].size():
+					if not obj_state[i]["done"] and mission["objectives"][i]["type"] != "protect_ally":
+						won = false
+	if lost or won:
 		over = true
-		ai.active = false
+		for a in ais.values():
+			a.active = false
 		sfx.play_ui("victory" if won else "defeat")
 		if won and not mission.is_empty():
 			Campaign.mark_cleared(faction_id, GameSession.mission)
-		ui.show_end(won)
-
-
-## [texte, avancement 0..1] de l'objectif de la mission en cours.
-func objective_progress() -> Array:
-	if mission.is_empty():
-		return ["", 0.0]
-	match mission["type"]:
-		"harvest":
-			var a: int = mission["amount"]
-			return ["%d / %d Solaris récoltés" % [mini(earned, a), a], clampf(float(earned) / a, 0.0, 1.0)]
-		"survive":
-			var t: float = mission["time"]
-			var left := maxf(t - game_time, 0.0)
-			return ["Tenir encore %d:%02d" % [int(left / 60.0), int(left) % 60], clampf(game_time / t, 0.0, 1.0)]
-		_:
-			var n := 0
-			for b in buildings:
-				if b.team == 1:
-					n += 1
-			return ["%d structure(s) ennemie(s) restante(s)" % n, 0.0 if n > 0 else 1.0]
+		ui.show_end(won, "L'adversaire est vaincu." if (won and mission.is_empty()) else reason)
 
 
 # --- Boucle -------------------------------------------------------------------
 
 func _process(delta: float) -> void:
 	game_time += delta
-	if not mission.is_empty() and not over:
+	if not over:
 		_obj_t -= delta
 		if _obj_t <= 0.0:
 			_obj_t = 0.5
+			if not mission.is_empty():
+				_update_objectives(0.5)
 			_check_end()
 	_update_production(delta)
 	_update_worm(delta)
@@ -755,7 +911,11 @@ func _process(delta: float) -> void:
 	if dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		dragging = false # relâché au-dessus de l'interface
 		_finish_selection(get_global_mouse_position())
-	if dragging or placing_id != "":
+	var mcv_sel := false
+	for u in selected:
+		if u.role == "mcv":
+			mcv_sel = true
+	if dragging or placing_id != "" or mcv_sel:
 		queue_redraw()
 	Input.set_default_cursor_shape(
 			Input.CURSOR_CROSS if (placing_id != "" or command_mode != "") else Input.CURSOR_ARROW)
@@ -780,12 +940,12 @@ func _move_camera(delta: float) -> void:
 ## Garde la caméra dans le monde, quelle que soit la taille de la fenêtre.
 func _clamp_camera() -> void:
 	var vp := get_viewport_rect().size
-	var min_z := maxf(vp.x / (WORLD_SIZE.x + SIDEBAR_EXTRA), vp.y / WORLD_SIZE.y)
+	var min_z := maxf(vp.x / (world_size.x + SIDEBAR_EXTRA), vp.y / world_size.y)
 	if camera.zoom.x < min_z:
 		camera.zoom = Vector2(min_z, min_z)
 	var half := vp / camera.zoom / 2.0
-	camera.position.x = clampf(camera.position.x, half.x, WORLD_SIZE.x + SIDEBAR_EXTRA - half.x)
-	camera.position.y = clampf(camera.position.y, half.y, WORLD_SIZE.y - half.y)
+	camera.position.x = clampf(camera.position.x, half.x, world_size.x + SIDEBAR_EXTRA - half.x)
+	camera.position.y = clampf(camera.position.y, half.y, world_size.y - half.y)
 
 
 func center_camera(world_pos: Vector2) -> void:
@@ -815,6 +975,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F11:
 				var w := get_window()
 				w.mode = Window.MODE_MAXIMIZED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
+			KEY_D:
+				on_command("deploy")
 			KEY_M:
 				var off := sfx.toggle_mute()
 				ui.toast("Son coupé" if off else "Son activé", GameData.AMBER)
@@ -954,6 +1116,14 @@ func _formation_offset(i: int, n: int) -> Vector2i:
 
 func on_command(cmd: String) -> void:
 	match cmd:
+		"deploy":
+			var any := false
+			for u in selected.duplicate():
+				if u.role == "mcv":
+					any = true
+					deploy_mcv(u)
+			if not any:
+				ui.toast("Sélectionnez l'engin de chantier", GameData.AMBER)
 		"stop":
 			for u in selected:
 				u.stop()
@@ -1178,7 +1348,7 @@ func _can_place(id: String, cell: Vector2i, team := 0) -> bool:
 	for dx in size.x:
 		for dy in size.y:
 			var c := cell + Vector2i(dx, dy)
-			if c.x < 0 or c.y < 0 or c.x >= MAP_W or c.y >= MAP_H:
+			if c.x < 0 or c.y < 0 or c.x >= map_w or c.y >= map_h:
 				return false
 			if terrain[c.x][c.y] != T.ROCK or occupied.has(c):
 				return false
@@ -1201,24 +1371,37 @@ func _place_building(id: String, cell: Vector2i, team := 0) -> Building:
 	for c in b.cells():
 		occupied[c] = true
 		grid.set_point_solid(c, true)
+	# La raffinerie et la fonderie livrent leur premier ouvrier
+	if id == "raffinerie":
+		_spawn_unit("recolteur", _find_free_cell(dock_cell(b, home_of(team))), team)
+	elif id == "fonderie":
+		_spawn_unit("mineur", _find_free_cell(dock_cell(b, home_of(team))), team)
 	return b
 
 
-func _setup_enemy() -> void:
-	var others: Array = GameData.FACTIONS.keys().filter(func(k: String) -> bool: return k != faction_id)
-	enemy_faction = others.pick_random()
-	if not mission.is_empty():
-		enemy_faction = Campaign.enemy_of(faction_id, GameSession.mission)
-	ai = SkirmishAI.new()
-	ai.setup(self, enemy_faction)
-	if not mission.is_empty():
-		ai.configure(mission["ai"])
-	add_child(ai)
-	_place_base(ENEMY_START, 1)
-	_spawn_base_units(ENEMY_START, 1)
+## Crée l'engin de chantier de chaque camp (et les IA adverse / alliée).
+func _setup_sides() -> void:
+	for t in team_factions.keys():
+		var home := home_of(t)
+		if GameSession.instant_bases:
+			_place_base(Vector2(home), t)
+			_spawn_base_units(Vector2(home), t)
+		else:
+			_spawn_unit("mcv", _find_free_cell(home), t)
+		if t == 0:
+			continue
+		var a := SkirmishAI.new()
+		a.setup(self, team_factions[t], t)
+		a.home = Vector2(home)
+		a.foe = enemy_cell if t == 2 else start_cell
+		if not mission.is_empty():
+			a.configure(mission["ai"] if t == 1 else mission.get("ally_ai", mission["ai"]))
+		add_child(a)
+		ais[t] = a
+	ai = ais.get(1)
 
 
-## Base de départ autour d'un point (même disposition pour les deux camps).
+## Base complète instantanée (tests automatisés uniquement).
 func _place_base(origin: Vector2, team: int) -> void:
 	var o := Vector2i(origin)
 	_place_building("chantier", o + Vector2i(-1, -2), team)
@@ -1229,11 +1412,263 @@ func _place_base(origin: Vector2, team: int) -> void:
 
 func _spawn_base_units(origin: Vector2, team: int) -> void:
 	var o := Vector2i(origin)
-	_spawn_unit("recolteur", _find_free_cell(_dock_of("raffinerie", team)), team)
-	_spawn_unit("mineur", _find_free_cell(_dock_of("fonderie", team)), team)
 	var ids: Array = fdata_of(team)["units"]
 	for i in 2:
 		_spawn_unit(ids[i], _find_free_cell(o + Vector2i(-1 + i * 2, 3)), team)
+
+
+# --- Engin de chantier ----------------------------------------------------------
+
+func _deploy_ok(cell: Vector2i) -> bool:
+	var size: Vector2i = GameData.START_BUILDING["size"]
+	for dx in size.x:
+		for dy in size.y:
+			var c := cell + Vector2i(dx, dy)
+			if c.x < 0 or c.y < 0 or c.x >= map_w or c.y >= map_h:
+				return false
+			if terrain[c.x][c.y] != T.ROCK or occupied.has(c):
+				return false
+	return true
+
+
+## Case (coin haut-gauche) où l'engin se déploierait, ou (-1, -1).
+func deploy_cell_for(u: Unit, search := false) -> Vector2i:
+	var base := _world_to_cell(u.position) - Vector2i(1, 1)
+	if _deploy_ok(base):
+		return base
+	if search:
+		for r in range(1, 9):
+			for dx in range(-r, r + 1):
+				for dy in range(-r, r + 1):
+					if maxi(absi(dx), absi(dy)) == r and _deploy_ok(base + Vector2i(dx, dy)):
+						return base + Vector2i(dx, dy)
+	return Vector2i(-1, -1)
+
+
+func deploy_mcv(u: Unit, search := false) -> bool:
+	var cell := deploy_cell_for(u, search)
+	if cell.x < 0:
+		if u.team == 0 and ui != null:
+			ui.toast("Déploiement impossible : il faut un terrain rocheux dégagé", GameData.RED)
+			sfx.play_ui("error")
+		return false
+	var team := u.team
+	u.alive = false
+	units.erase(u)
+	selected.erase(u)
+	if inspected == u:
+		inspected = null
+	u.queue_free()
+	var b := _place_building("chantier", cell, team)
+	Fx.burst(self, b.world_center(), Color(0.85, 0.65, 0.5), 30, 1.4)
+	if team == 0 and ui != null:
+		ui.toast("Chantier déployé — vous pouvez construire", GameData.GREEN)
+		sfx.play_ui("ready")
+	return true
+
+
+# --- Missions -------------------------------------------------------------------
+
+func _setup_mission() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+	for id in Campaign.resolve_units(faction_id, mission.get("start_units", [])):
+		_spawn_unit(id, _find_free_cell(Vector2i(start_cell) + Vector2i(rng.randi_range(-3, 3), 3)), 0)
+	if ally_cell.x >= 0:
+		var ids: Array = fdata_of(2)["units"]
+		for i in int(mission.get("ally_units", 0)):
+			_spawn_unit(ids[i % ids.size()], _find_free_cell(Vector2i(ally_cell) + Vector2i(rng.randi_range(-3, 3), 3)), 2)
+	var foe_ids: Array = fdata_of(1)["units"]
+	for i in int(mission.get("outposts", 0)):
+		var p: Vector2 = mission_points["outpost%d" % i]
+		var offs := [Vector2i(-3, -1), Vector2i(2, -1), Vector2i(-1, 2)]
+		for o in offs:
+			var cell: Vector2i = Vector2i(p) + o
+			if _can_place_free("tourelle", cell):
+				var b := _place_building("tourelle", cell, 1)
+				b.outpost = i
+		for g in 3:
+			var u := _spawn_unit(foe_ids[g % foe_ids.size()], _find_free_cell(Vector2i(p) + Vector2i(g - 1, 4)), 1)
+			u.guard = true
+	if mission.has("convoy"):
+		var dest := Vector2i(mission_points["dest"])
+		var n := int(mission["convoy"]["count"])
+		for i in n:
+			var u := _spawn_unit("convoi", _find_free_cell(Vector2i(start_cell) + Vector2i(i - n / 2, 5)), 0)
+			u.convoy = true
+		convoy_total = n
+		# Embuscades : groupes ennemis immobiles le long de la route
+		var amb := int(mission["convoy"].get("ambushes", 0))
+		for k in amb:
+			var f := float(k + 1) / float(amb + 1)
+			var pos := start_cell.lerp(Vector2(dest), f) + Vector2(rng.randf_range(-4, 4), rng.randf_range(-4, 4))
+			for g in 3:
+				var u := _spawn_unit(foe_ids[g % foe_ids.size()], _find_free_cell(Vector2i(pos) + Vector2i(g - 1, 0)), 1)
+				u.guard = true
+	obj_state = []
+	for o in mission["objectives"]:
+		obj_state.append({"done": false})
+	_update_objectives(0.0)
+
+
+func _can_place_free(id: String, cell: Vector2i) -> bool:
+	var size: Vector2i = GameData.BUILDINGS[id]["size"]
+	for dx in size.x:
+		for dy in size.y:
+			var c := cell + Vector2i(dx, dy)
+			if c.x < 0 or c.y < 0 or c.x >= map_w or c.y >= map_h:
+				return false
+			if terrain[c.x][c.y] != T.ROCK or occupied.has(c):
+				return false
+	return true
+
+
+func _team_alive(t: int) -> bool:
+	for b in buildings:
+		if b.team == t and b.alive:
+			return true
+	for u in units:
+		if u.team == t and u.alive and u.id == "mcv":
+			return true
+	return false
+
+
+func _side_alive(side: int) -> bool:
+	for t in team_factions.keys():
+		if side_of(t) == side and _team_alive(t):
+			return true
+	return false
+
+
+func _count_combat(team := 0) -> int:
+	var n := 0
+	for u in units:
+		if u.team == team and u.alive and u.role == "combat":
+			n += 1
+	return n
+
+
+## Met à jour la progression des objectifs (appelée toutes les 0,5 s).
+func _update_objectives(dt: float) -> void:
+	if mission.is_empty():
+		return
+	var objs: Array = mission["objectives"]
+	var tile := float(TILE)
+	# Convoi : départ différé pour laisser le temps de s'organiser
+	if mission_points.has("dest") and not convoy_started and game_time >= float(mission["convoy"].get("start", 150.0)):
+		convoy_started = true
+		var dcell := _find_free_cell(Vector2i(mission_points["dest"]))
+		for u in units:
+			if u.convoy and u.alive:
+				u.order_path(path_to(u.position, dcell))
+		ui.toast("Le convoi se met en route : escortez-le !", GameData.GOLD)
+		sfx.play_ui("alert")
+	# Convoi : arrivées
+	if mission_points.has("dest"):
+		var dpos: Vector2 = mission_points["dest"] * tile + Vector2(tile, tile) * 0.5
+		for u in units.duplicate():
+			if u.convoy and u.alive and u.position.distance_to(dpos) < 3.5 * tile:
+				arrived += 1
+				popup(u.position, "Convoi arrivé", GameData.GREEN)
+				sfx.play_ui("unit_ready")
+				u.alive = false
+				units.erase(u)
+				selected.erase(u)
+				u.queue_free()
+	# Zone à tenir
+	if mission_points.has("zone"):
+		var zpos: Vector2 = mission_points["zone"] * tile + Vector2(tile, tile) * 0.5
+		var mine := 0
+		var foes := 0
+		for u in units:
+			if u.alive and u.role == "combat" and u.position.distance_to(zpos) < ZONE_RADIUS * tile:
+				if side_of(u.team) == 0:
+					mine += 1
+				else:
+					foes += 1
+		hold_ok = mine >= int(mission["zone"]["units"]) and foes == 0
+		if hold_ok:
+			hold_t += dt
+	for i in objs.size():
+		if obj_state[i]["done"]:
+			continue
+		obj_state[i]["done"] = float(objective_info(i)["frac"]) >= 1.0
+	zone_done = mission_points.has("zone") and hold_t >= float(mission["zone"]["time"])
+	escort_done = mission_points.has("dest") and arrived >= int(mission["convoy"]["need"])
+
+
+## Texte et avancement (0..1) de l'objectif i.
+func objective_info(i: int) -> Dictionary:
+	var o: Dictionary = mission["objectives"][i]
+	match o["type"]:
+		"build":
+			var need := 0
+			var have := 0
+			for id in o["ids"]:
+				need += int(o["ids"][id])
+				have += mini(count_buildings(id), int(o["ids"][id]))
+			return {"text": "Construire %s : %d/%d" % [o["label"], have, need], "frac": float(have) / need}
+		"harvest":
+			var a: int = o["amount"]
+			return {"text": "Récolter %d Solaris : %d" % [a, mini(earned, a)], "frac": clampf(float(earned) / a, 0.0, 1.0)}
+		"train":
+			var n: int = o["count"]
+			var c := _count_combat()
+			return {"text": "Armée de %d unités : %d" % [n, mini(c, n)], "frac": clampf(float(c) / n, 0.0, 1.0)}
+		"survive":
+			var t: float = o["time"]
+			var left := maxf(t - game_time, 0.0)
+			return {"text": "Tenir encore %d:%02d" % [int(left / 60.0), int(left) % 60], "frac": clampf(game_time / t, 0.0, 1.0)}
+		"destroy_all":
+			var n := 0
+			for b in buildings:
+				if b.alive and hostile(b.team, 0):
+					n += 1
+			var alive := _side_alive(1)
+			return {"text": "Détruire l'ennemi : %d structure(s)" % n, "frac": 0.0 if alive else 1.0}
+		"outposts":
+			var total := int(mission.get("outposts", 0))
+			var left := 0
+			for k in total:
+				for b in buildings:
+					if b.alive and b.outpost == k:
+						left += 1
+						break
+			return {"text": "Avant-postes détruits : %d/%d" % [total - left, total], "frac": float(total - left) / maxf(total, 1)}
+		"escort":
+			var need: int = mission["convoy"]["need"]
+			if not convoy_started:
+				var wait := int(maxf(float(mission["convoy"].get("start", 150.0)) - game_time, 0.0))
+				return {"text": "Le convoi part dans %d:%02d" % [wait / 60, wait % 60], "frac": 0.0}
+			return {"text": "Convoi arrivé : %d/%d (%d en route)" % [arrived, need, _convoy_alive()],
+					"frac": clampf(float(arrived) / need, 0.0, 1.0)}
+		"hold":
+			var t: float = mission["zone"]["time"]
+			return {"text": "Tenir la zone : %d/%d s" % [int(minf(hold_t, t)), int(t)] + ("" if hold_ok or hold_t >= t else "  (en attente)"),
+					"frac": clampf(hold_t / t, 0.0, 1.0)}
+		"protect_ally":
+			var ok := _team_alive(2)
+			return {"text": "Base alliée intacte" if ok else "Base alliée détruite", "frac": 1.0 if ok else 0.0}
+	return {"text": "", "frac": 0.0}
+
+
+func _convoy_alive() -> int:
+	var n := 0
+	for u in units:
+		if u.convoy and u.alive:
+			n += 1
+	return n
+
+
+func objectives_status() -> Array:
+	var out: Array = []
+	if mission.is_empty():
+		return out
+	for i in mission["objectives"].size():
+		var info := objective_info(i)
+		info["done"] = obj_state[i]["done"] and mission["objectives"][i]["type"] != "protect_ally"
+		out.append(info)
+	return out
 
 
 func _spawn_produced_unit(id: String) -> void:
@@ -1247,7 +1682,7 @@ func spawn_for(id: String, team: int) -> Unit:
 
 
 func _dock_of(building_id: String, team := 0) -> Vector2i:
-	var s := Vector2i(START if team == 0 else ENEMY_START)
+	var s := home_of(team)
 	for b in buildings:
 		if b.id == building_id and b.team == team:
 			return dock_cell(b, s)
@@ -1305,7 +1740,7 @@ func world_to_cell(p: Vector2) -> Vector2i:
 
 func _world_to_cell(p: Vector2) -> Vector2i:
 	var c := Vector2i((p / TILE).floor())
-	return c.clamp(Vector2i.ZERO, Vector2i(MAP_W - 1, MAP_H - 1))
+	return c.clamp(Vector2i.ZERO, Vector2i(map_w - 1, map_h - 1))
 
 
 func _cell_to_world(c: Vector2i) -> Vector2:
@@ -1319,6 +1754,14 @@ func _draw() -> void:
 		var r := Rect2(drag_start, get_global_mouse_position() - drag_start).abs()
 		draw_rect(r, Color(0.3, 1.0, 0.6, 0.12))
 		draw_rect(r, GameData.GREEN, false, 1.5)
+	for u in selected:
+		if u.role == "mcv":
+			var dc := _world_to_cell(u.position) - Vector2i(1, 1)
+			var ok_d := _deploy_ok(dc)
+			var col_d := Color(0.3, 1.0, 0.5, 0.28) if ok_d else Color(1.0, 0.25, 0.25, 0.28)
+			for dx in 3:
+				for dy in 3:
+					draw_rect(Rect2(Vector2(dc + Vector2i(dx, dy)) * TILE, Vector2(TILE, TILE)), col_d)
 	if placing_id != "":
 		var size: Vector2i = GameData.BUILDINGS[placing_id]["size"]
 		var cell := _ghost_cell()

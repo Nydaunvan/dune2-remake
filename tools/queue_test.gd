@@ -5,6 +5,7 @@ var f := 0
 
 
 func _initialize() -> void:
+	GameSession.instant_bases = true
 	GameSession.faction = "solis"
 	GameSession.mode = "skirmish"
 	main = load("res://main.tscn").instantiate()

@@ -76,13 +76,13 @@ func _splash(radius: float) -> void:
 	for u in game.units.duplicate():
 		if not is_instance_valid(u) or not u.alive:
 			continue
-		if u.team == team and not friendly:
+		if not game.hostile(u.team, team) and not friendly:
 			continue
 		var d: float = u.position.distance_to(position) - u.radius
 		if d < radius:
 			u.take_damage(damage * (1.0 - 0.5 * clampf(d / radius, 0.0, 1.0)), weapon, shooter)
 	for b in game.buildings.duplicate():
-		if not is_instance_valid(b) or not b.alive or b.team == team:
+		if not is_instance_valid(b) or not b.alive or not game.hostile(b.team, team):
 			continue
 		var d: float = b.world_center().distance_to(position) - b.radius_px()
 		if d < radius:

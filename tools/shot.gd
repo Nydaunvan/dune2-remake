@@ -21,6 +21,13 @@ func _initialize() -> void:
 
 func _process(_d: float) -> bool:
 	f += 1
+	if f == 8 and OS.has_environment("SHOT_MCV"):
+		for u in node.units:
+			if u.team == 0 and u.id == "mcv":
+				u.selected = true
+				node.selected.append(u)
+	if f == 8 and OS.has_environment("SHOT_ALLYVIEW"):
+		node.center_camera(node.ally_cell * 32.0)
 	if f == 5 and OS.has_environment("SHOT_OVERLAY"):
 		node._open_campaign()
 	if f == 3 and OS.has_environment("SHOT_FOCUS"):

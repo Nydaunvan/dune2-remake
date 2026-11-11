@@ -9,6 +9,7 @@ var worm_spawned := false
 
 
 func _initialize() -> void:
+	GameSession.instant_bases = true
 	GameSession.faction = OS.get_environment("FACTION") if OS.has_environment("FACTION") else "solis"
 	main = load("res://main.tscn").instantiate()
 	root.add_child(main)

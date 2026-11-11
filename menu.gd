@@ -61,7 +61,7 @@ func _ready() -> void:
 		b.custom_minimum_size = Vector2(250, 58)
 		btns.add_child(b)
 
-	_hint = _label("Campagne : 3 missions par faction — Escarmouche : détruisez la base adverse", 15,
+	_hint = _label("Campagne : 5 missions par faction — Escarmouche : détruisez la base adverse", 15,
 			Color(1, 1, 1, 0.55), false)
 	vb.add_child(_hint)
 
@@ -115,9 +115,9 @@ func _open_campaign() -> void:
 	var vb := VBoxContainer.new()
 	vb.add_theme_constant_override("separation", 24)
 	cc.add_child(vb)
-	vb.add_child(_label("CAMPAGNE — " + String(fd["name"]).to_upper(), 52, fd["accent"], true))
+	vb.add_child(_label("CAMPAGNE — " + String(fd["name"]).to_upper(), 46, fd["accent"], true))
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 24)
+	row.add_theme_constant_override("separation", 14)
 	vb.add_child(row)
 	for i in Campaign.MISSIONS.size():
 		row.add_child(_mission_card(i, done, fd))
@@ -135,13 +135,13 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	var m: Dictionary = Campaign.MISSIONS[i]
 	var unlocked := i <= done
 	var pc := PanelContainer.new()
-	pc.custom_minimum_size = Vector2(500, 520)
+	pc.custom_minimum_size = Vector2(340, 640)
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.07, 0.04, 0.13, 0.95)
 	sb.set_border_width_all(2)
 	sb.border_color = fd["color"] if unlocked else Color(0.3, 0.27, 0.35)
 	sb.set_corner_radius_all(6)
-	sb.set_content_margin_all(26)
+	sb.set_content_margin_all(20)
 	pc.add_theme_stylebox_override("panel", sb)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 14)
@@ -150,13 +150,16 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	if i < done:
 		tag += "  —  TERMINÉE"
 	v.add_child(_left(tag, 15, GameData.GOLD))
-	v.add_child(_left(String(m["title"]).to_upper(), 30, Color.WHITE))
-	var br := _left(Campaign.briefing(selected, i), 17, Color(1, 1, 1, 0.8))
+	v.add_child(_left(String(m["title"]).to_upper(), 24, Color.WHITE))
+	var br := _left(Campaign.briefing(selected, i), 14, Color(1, 1, 1, 0.8))
 	br.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	br.custom_minimum_size = Vector2(448, 230)
+	br.custom_minimum_size = Vector2(300, 330)
 	v.add_child(br)
 	v.add_child(_left("OBJECTIF", 13, GameData.GOLD))
-	v.add_child(_left(String(m["obj"]), 18, Color.WHITE))
+	var ob := _left(String(m["obj"]), 15, Color.WHITE)
+	ob.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ob.custom_minimum_size = Vector2(300, 40)
+	v.add_child(ob)
 	v.add_child(_left("Adversaire : " + String(GameData.FACTIONS[Campaign.enemy_of(selected, i)]["name"]), 15,
 			Color(1, 0.55, 0.5)))
 	var spacer := Control.new()
@@ -165,7 +168,7 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	var go := GameUI.NeonButton.new("JOUER" if unlocked else "VERROUILLÉE")
 	go.enabled = unlocked
 	go.accent = fd["accent"]
-	go.custom_minimum_size = Vector2(448, 54)
+	go.custom_minimum_size = Vector2(300, 50)
 	go.pressed.connect(func() -> void:
 		GameSession.faction = selected
 		GameSession.mode = "campaign"
