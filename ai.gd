@@ -308,3 +308,24 @@ func _attack_goal() -> Vector2i:
 	if best == null:
 		return Vector2i(-1, -1)
 	return game.dock_cell(best, game.world_to_cell(home * game.TILE))
+
+# --- Sauvegarde -----------------------------------------------------------------
+
+func export_state() -> Dictionary:
+	return {"credits": credits, "ore": ore, "build_q": build_q.duplicate(true), "unit_q": unit_q.duplicate(true),
+			"wave_size": wave_size, "assaulting": assaulting, "wave_started": wave_started,
+			"wave_ended": wave_ended, "think_t": _think_t, "deploy_at": deploy_at, "active": active}
+
+
+func restore_state(s: Dictionary) -> void:
+	credits = int(s["credits"])
+	ore = int(s["ore"])
+	build_q = s["build_q"]
+	unit_q = s["unit_q"]
+	wave_size = int(s["wave_size"])
+	assaulting = bool(s["assaulting"])
+	wave_started = float(s["wave_started"])
+	wave_ended = float(s["wave_ended"])
+	_think_t = float(s["think_t"])
+	deploy_at = float(s["deploy_at"])
+	active = bool(s["active"])

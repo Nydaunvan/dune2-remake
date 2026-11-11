@@ -66,6 +66,9 @@ var over := false
 var mission := {}          # mission de campagne en cours (vide en escarmouche)
 var earned := 0            # Solaris récoltés par le joueur
 var _obj_t := 0.0
+var map_seed := 0          # graine de la carte (sauvegarde : la carte est régénérée à l'identique)
+var _save := {}            # sauvegarde en cours de chargement (vide : partie neuve)
+var pause_menu: PauseMenu = null
 var obj_state: Array = []
 var arrived := 0
 var convoy_total := 0
@@ -121,6 +124,15 @@ var noise_s := FastNoiseLite.new()
 func _ready() -> void:
 	RenderingServer.set_default_clear_color(Color("1c0f20"))
 	Fx.setup_display(self, FX_GLOW)
+	_save = {}
+	if GameSession.load_slot >= 0:
+		_save = SaveGame.read(GameSession.load_slot)
+		GameSession.load_slot = -1
+		if not _save.is_empty():
+			GameSession.faction = String(_save["faction"])
+			GameSession.mode = String(_save["mode"])
+			GameSession.mission = int(_save["mission"])
+	map_seed = int(_save["seed"]) if not _save.is_empty() else randi()
 	faction_id = GameSession.faction
 	fdata = GameData.FACTIONS[faction_id]
 	if GameSession.mode == "campaign":
@@ -173,6 +185,8 @@ func _ready() -> void:
 	ui.setup(self)
 	if not mission.is_empty():
 		_setup_mission()
+	if not _save.is_empty():
+		_apply_state()
 	_load_terrain = 1.0
 	if loading != null:
 		while not bank.ready_all:
@@ -227,12 +241,17 @@ func _setup_factions() -> void:
 		for k in others:
 			if k != enemy:
 				team_factions[2] = k
+	if not _save.is_empty():
+		team_factions = {}
+		for t in _save["team_factions"]:
+			team_factions[int(t)] = String(_save["team_factions"][t])
+		enemy_faction = String(team_factions[1])
 
 
 ## Place bases, champs et couloirs de façon aléatoire (carte carrée).
 func _generate_layout() -> void:
 	var rng := RandomNumberGenerator.new()
-	rng.randomize()
+	rng.seed = map_seed
 	var size := 96
 	if not mission.is_empty():
 		size = int(mission.get("size", 96))
@@ -335,7 +354,7 @@ func _field_near(rng: RandomNumberGenerator, base: Vector2, dmin: float, dmax: f
 # --- Terrain ------------------------------------------------------------------
 
 func _setup_noise() -> void:
-	var base := randi()
+	var base := map_seed
 	noise_h.seed = base
 	noise_h.noise_type = FastNoiseLite.TYPE_SIMPLEX_SMOOTH
 	noise_h.frequency = 0.07
@@ -1047,9 +1066,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
 			KEY_ESCAPE:
+				if placing_id == "" and command_mode == "" and selected_building == null and inspected == null:
+					open_pause_menu()
 				placing_id = ""
 				command_mode = ""
 				_clear_focus()
+			KEY_P:
+				open_pause_menu()
+			KEY_F6:
+				save_game(0)
+			KEY_F7:
+				load_game(0)
 			KEY_F11:
 				var w := get_window()
 				w.mode = Window.MODE_MAXIMIZED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
@@ -1835,7 +1862,7 @@ func _can_place(id: String, cell: Vector2i, team := 0) -> bool:
 	return false
 
 
-func _place_building(id: String, cell: Vector2i, team := 0) -> Building:
+func _place_building(id: String, cell: Vector2i, team := 0, with_worker := true) -> Building:
 	var d: Dictionary = GameData.BUILDINGS.get(id, GameData.START_BUILDING)
 	var b := Building.new()
 	b.setup(id, cell, d["size"], TILE, d["power"], faction_color(team))
@@ -1848,6 +1875,8 @@ func _place_building(id: String, cell: Vector2i, team := 0) -> Building:
 		occupied[c] = true
 		grid.set_point_solid(c, true)
 	# La raffinerie et la fonderie livrent leur premier ouvrier
+	if not with_worker:
+		return b
 	if id == "raffinerie":
 		_spawn_unit("recolteur", _find_free_cell(dock_cell(b, home_of(team))), team)
 	elif id == "fonderie":
@@ -1859,7 +1888,9 @@ func _place_building(id: String, cell: Vector2i, team := 0) -> Building:
 func _setup_sides() -> void:
 	for t in team_factions.keys():
 		var home := home_of(t)
-		if GameSession.instant_bases:
+		if not _save.is_empty():
+			pass # les bâtiments et unités viennent de la sauvegarde
+		elif GameSession.instant_bases:
 			_place_base(Vector2(home), t)
 			_spawn_base_units(Vector2(home), t)
 		else:
@@ -1946,6 +1977,11 @@ func deploy_mcv(u: Unit, search := false) -> bool:
 # --- Missions -------------------------------------------------------------------
 
 func _setup_mission() -> void:
+	if not _save.is_empty():
+		obj_state = []
+		for o in mission["objectives"]:
+			obj_state.append({"done": false})
+		return
 	var rng := RandomNumberGenerator.new()
 	rng.randomize()
 	for id in Campaign.resolve_units(faction_id, mission.get("start_units", [])):
@@ -2248,3 +2284,133 @@ func _draw() -> void:
 				var rect := Rect2(Vector2(cell + Vector2i(dx, dy)) * TILE, Vector2(TILE, TILE))
 				draw_rect(rect, col)
 				draw_rect(rect, Color(1, 1, 1, 0.25), false, 1.0)
+
+
+# --- Sauvegarde / chargement --------------------------------------------------
+
+func open_pause_menu() -> void:
+	if pause_menu != null or loading != null:
+		return
+	pause_menu = PauseMenu.new()
+	add_child(pause_menu)
+	pause_menu.setup(self)
+
+
+## État complet de la partie (la carte est régénérée à partir de sa graine).
+func _collect_state() -> Dictionary:
+	var ulist: Array = []
+	var idx := {}
+	for u in units:
+		if is_instance_valid(u) and u.alive:
+			idx[u] = ulist.size()
+			ulist.append(u)
+	var us: Array = []
+	for u in ulist:
+		us.append(u.export_state(idx))
+	var bs: Array = []
+	for b in buildings:
+		if is_instance_valid(b) and b.alive:
+			bs.append(b.export_state())
+	var res := {}
+	for c in resource:
+		res[c] = float(resource[c]["amount"])
+	var ai_state := {}
+	for t in ais:
+		ai_state[t] = ais[t].export_state()
+	return {
+		"seed": map_seed, "faction": faction_id, "mode": GameSession.mode, "mission": GameSession.mission,
+		"team_factions": team_factions, "game_time": game_time,
+		"credits": credits, "ore": ore, "earned": earned,
+		"production": production.duplicate(true),
+		"units": us, "buildings": bs, "resource": res, "ais": ai_state,
+		"fog_seen": fog_seen, "worm_cooldown": worm_cooldown,
+		"inc_acc": _inc_acc.duplicate(), "obj_state": obj_state.duplicate(true),
+		"arrived": arrived, "convoy_total": convoy_total, "hold_t": hold_t, "hold_ok": hold_ok,
+		"zone_done": zone_done, "escort_done": escort_done, "convoy_started": convoy_started,
+		"cam_pos": camera.position, "cam_zoom": camera.zoom,
+	}
+
+
+func save_game(slot: int, announce := true) -> bool:
+	if over or loading != null or ui == null:
+		return false
+	var ok := SaveGame.write(slot, _collect_state())
+	if announce:
+		ui.toast("Partie sauvegardée — %s" % SaveGame.slot_name(slot) if ok else "Échec de la sauvegarde",
+				GameData.GREEN if ok else GameData.RED)
+		sfx.play_ui("ready" if ok else "error", -4.0)
+	return ok
+
+
+func load_game(slot: int) -> void:
+	if not SaveGame.exists(slot) or SaveGame.read(slot).is_empty():
+		if ui != null:
+			ui.toast("Aucune sauvegarde dans cet emplacement", GameData.RED)
+		return
+	GameSession.load_slot = slot
+	get_tree().paused = false
+	get_tree().change_scene_to_file("res://main.tscn")
+
+
+## Reconstruit la partie sauvegardée par-dessus la carte régénérée.
+func _apply_state() -> void:
+	var d := _save
+	# Gisements : cases épuisées ou entamées
+	var saved_res: Dictionary = d["resource"]
+	for c in resource.keys():
+		if not saved_res.has(c):
+			extract(c, 1.0e9)
+		else:
+			var r: Dictionary = resource[c]
+			var a := float(saved_res[c])
+			if absf(a - float(r["amount"])) > 0.01:
+				r["amount"] = a
+				dirty[c] = {"kind": r["kind"], "frac": a / float(r["max"])}
+	# Bâtiments (de gros bâtiments d'abord : ordre sans importance, les cases sont disjointes)
+	for bd in d["buildings"]:
+		var b := _place_building(String(bd["id"]), bd["cell"], int(bd["team"]), false)
+		b.restore_state(bd)
+	# Unités
+	var made: Array = []
+	for ud in d["units"]:
+		var u := _spawn_unit(String(ud["id"]), Vector2i.ZERO, int(ud["team"]))
+		u.restore_state(ud)
+		made.append(u)
+	for i in made.size():
+		for k in d["units"][i].get("cargo", []):
+			var c: Unit = made[int(k)]
+			c.carried = true
+			c.visible = false
+			made[i].cargo_units.append(c)
+	# Camps adverses
+	for t in d["ais"]:
+		if ais.has(int(t)):
+			ais[int(t)].restore_state(d["ais"][t])
+	# Économie et files
+	credits = int(d["credits"])
+	ore = int(d["ore"])
+	earned = int(d["earned"])
+	production = d["production"]
+	game_time = float(d["game_time"])
+	worm_cooldown = float(d["worm_cooldown"])
+	for k in d["inc_acc"]:
+		_inc_acc[int(k)] = float(d["inc_acc"][k])
+	# Mission
+	obj_state = d["obj_state"]
+	arrived = int(d["arrived"])
+	convoy_total = int(d["convoy_total"])
+	hold_t = float(d["hold_t"])
+	hold_ok = bool(d["hold_ok"])
+	zone_done = bool(d["zone_done"])
+	escort_done = bool(d["escort_done"])
+	convoy_started = bool(d["convoy_started"])
+	# Brouillard et caméra
+	var fs: PackedByteArray = d["fog_seen"]
+	if FOG and fs.size() == fog_seen.size():
+		fog_seen = fs
+	camera.position = d["cam_pos"]
+	camera.zoom = d["cam_zoom"]
+	_clamp_camera()
+	_save = {}
+	_obj_t = 0.0
+	ui.toast("Partie chargée", GameData.GREEN)

@@ -55,10 +55,13 @@ func _ready() -> void:
 	var skirmish := GameUI.NeonButton.new("ESCARMOUCHE")
 	skirmish.accent = GameData.MAGENTA
 	skirmish.pressed.connect(_start)
+	var load_btn := GameUI.NeonButton.new("CHARGER")
+	load_btn.accent = GameData.GREEN
+	load_btn.pressed.connect(_open_load)
 	var quit := GameUI.NeonButton.new("QUITTER")
 	quit.accent = GameData.RED
 	quit.pressed.connect(get_tree().quit)
-	for b in [campaign, skirmish, quit]:
+	for b in [campaign, skirmish, load_btn, quit]:
 		b.custom_minimum_size = Vector2(250, 58)
 		btns.add_child(b)
 
@@ -93,6 +96,38 @@ func _start() -> void:
 	GameSession.faction = selected
 	GameSession.mode = "skirmish"
 	get_tree().change_scene_to_file("res://main.tscn")
+
+
+# --- Chargement d'une sauvegarde ---------------------------------------------
+
+func _open_load() -> void:
+	if _overlay != null:
+		_overlay.queue_free()
+	_overlay = ColorRect.new()
+	(_overlay as ColorRect).color = Color(0.045, 0.024, 0.075, 1.0)
+	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_overlay)
+	var cc := CenterContainer.new()
+	cc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(cc)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 24)
+	cc.add_child(vb)
+	vb.add_child(_label("CHARGER UNE PARTIE", 46, Color.WHITE, true))
+	var slots := SaveSlots.new(false)
+	slots.load_requested.connect(func(slot: int) -> void:
+		GameSession.load_slot = slot
+		get_tree().change_scene_to_file("res://main.tscn"))
+	vb.add_child(slots)
+	var back := GameUI.NeonButton.new("RETOUR")
+	back.accent = GameData.RED
+	back.custom_minimum_size = Vector2(250, 56)
+	back.pressed.connect(func() -> void: _overlay.queue_free(); _overlay = null)
+	var hb := HBoxContainer.new()
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_child(back)
+	vb.add_child(hb)
 
 
 # --- Sélection de mission -----------------------------------------------------

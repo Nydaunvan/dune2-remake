@@ -96,8 +96,13 @@ func _build_topbar() -> void:
 	topbar = HudBar.new()
 	topbar.game = game
 	topbar.position = Vector2(6, 6)
-	topbar.size = Vector2(1100, 84)
+	topbar.size = Vector2(1250, 84)
 	root.add_child(topbar)
+	var menu_btn := NeonButton.new("MENU")
+	menu_btn.position = Vector2(1118, 22)
+	menu_btn.size = Vector2(112, 42)
+	menu_btn.pressed.connect(game.open_pause_menu)
+	topbar.add_child(menu_btn)
 
 
 func _build_sidebar() -> void:
@@ -214,7 +219,7 @@ func _process(_delta: float) -> void:
 	elif game.command_mode == "attack":
 		info_label.text = "Cliquez : les unités avancent en attaquant tout sur leur route."
 	else:
-		info_label.text = "File : bâtiments %d/%d — unités %d/%d\nClic droit : ordre / annuler une icône\nF11 plein écran — F10 menu — M son" \
+		info_label.text = "File : bâtiments %d/%d — unités %d/%d\nClic droit : ordre / annuler une icône\nÉchap pause — F6 sauvegarde rapide — F7 chargement — M son" \
 				% [game.production["building"].size(), game.queue_max("building"),
 				game.production["unit"].size(), game.queue_max("unit")]
 

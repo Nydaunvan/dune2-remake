@@ -738,3 +738,60 @@ func _draw_overlay() -> void:
 	if selected:
 		var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
 		draw_arc(Vector2.ZERO, radius + 6.0 + pulse * 2.0, 0.0, TAU, 40, GameData.GREEN, 2.0, true)
+
+# --- Sauvegarde -----------------------------------------------------------------
+
+func export_state(idx: Dictionary) -> Dictionary:
+	var cl: Array = []
+	for c in cargo_units:
+		if idx.has(c):
+			cl.append(idx[c])
+	return {
+		"id": id, "team": _orig_team if control_timer > 0.0 else team, "pos": position, "rot": rotation,
+		"hp": hp, "max_hp": max_hp, "base_max_hp": base_max_hp, "dps": dps, "speed": speed, "w_range": w_range,
+		"vision": vision, "cargo_cap": cargo_cap, "harvest_rate": harvest_rate,
+		"tech": tech, "tech_left": tech_left, "tech_total": tech_total, "rank": rank, "kills": kills,
+		"cargo": cl, "cargo_amount": cargo, "guard": guard, "convoy": convoy,
+		"state": state, "path": path, "amove_goal": amove_goal,
+	}
+
+
+## Rétablit l'unité (créée par setup) ; les ordres en cours sont repris quand c'est possible.
+func restore_state(s: Dictionary) -> void:
+	position = s["pos"]
+	rotation = float(s["rot"])
+	base_max_hp = float(s["base_max_hp"])
+	max_hp = float(s["max_hp"])
+	hp = minf(float(s["hp"]), max_hp)
+	dps = float(s["dps"])
+	speed = float(s["speed"])
+	w_range = float(s["w_range"])
+	vision = int(s["vision"])
+	cargo_cap = float(s["cargo_cap"])
+	harvest_rate = float(s["harvest_rate"])
+	tech = int(s["tech"])
+	tech_left = float(s["tech_left"])
+	tech_total = float(s["tech_total"])
+	rank = int(s["rank"])
+	kills = int(s["kills"])
+	cargo = float(s["cargo_amount"])
+	guard = bool(s["guard"])
+	convoy = bool(s["convoy"])
+	var st := String(s["state"])
+	var p: PackedVector2Array = s["path"]
+	match st:
+		"move":
+			path = p
+			state = "move" if not p.is_empty() else ("seek" if is_worker() else "idle")
+		"amove":
+			amove_goal = s["amove_goal"]
+			if amove_goal.x >= 0:
+				order_amove(amove_goal)
+		"return":
+			if is_worker() and cargo > 0.0:
+				_start_return()
+		_:
+			state = "seek" if is_worker() else "idle"
+	if is_worker() and state == "idle":
+		state = "seek"
+	queue_redraw()

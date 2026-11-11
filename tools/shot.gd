@@ -23,6 +23,9 @@ func _process(_d: float) -> bool:
 	if OS.has_environment("SHOT_AFTERLOAD") and node.get("loading") != null:
 		return false # on attend la fin du chargement
 	f += 1
+	if f == 8 and OS.has_environment("SHOT_PAUSE"):
+		node.save_game(1, false)
+		node.open_pause_menu()
 	if f == 8 and OS.has_environment("SHOT_MCV"):
 		for u in node.units:
 			if u.team == 0 and u.id == "mcv":

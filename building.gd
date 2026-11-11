@@ -288,3 +288,24 @@ func _draw_hp(s: Vector2) -> void:
 		draw_rect(Rect2(4, -9, w, 5), Color(0, 0, 0, 0.65))
 		draw_rect(Rect2(4, -9, w * clampf(hp / max_hp, 0.0, 1.0), 5),
 				GameData.GREEN if game.side_of(team) == 0 else GameData.RED)
+
+# --- Sauvegarde -----------------------------------------------------------------
+
+func export_state() -> Dictionary:
+	return {"id": id, "cell": cell, "team": team, "hp": hp, "level": level, "up_left": up_left,
+			"up_total": up_total, "repairing": repairing, "outpost": outpost}
+
+
+func restore_state(s: Dictionary) -> void:
+	level = int(s["level"])
+	max_hp = base_hp * (1.0 + 0.25 * (level - 1))
+	if id == "centrale":
+		power = base_power + 50 * (level - 1)
+	if weapon != "":
+		dps = base_dps * (1.0 + 0.25 * (level - 1))
+	hp = minf(float(s["hp"]), max_hp)
+	up_left = float(s["up_left"])
+	up_total = float(s["up_total"])
+	repairing = bool(s["repairing"])
+	outpost = int(s["outpost"])
+	queue_redraw()
