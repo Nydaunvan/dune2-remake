@@ -30,6 +30,11 @@ var special_t := 0.0
 var _orig_team := 0
 var _orig_color := Color.WHITE
 var _scan_t := 0.0
+var kills := 0
+var rank := 0
+var base_max_hp := 100.0
+var vision := 7
+var seen := true # visible actuellement par le joueur (brouillard de guerre)
 var _frame_idx := -1
 var _sprite_ready := false
 var _repath := 0.0
@@ -63,6 +68,8 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	speed = d.get("speed", 100.0)
 	max_hp = float(d.get("hp", 200))
 	hp = max_hp
+	base_max_hp = max_hp
+	vision = int(d.get("vision", 6 if is_worker() else GameData.DEFAULT_VISION))
 	cargo_cap = d.get("capacity", 0.0)
 	harvest_rate = d.get("rate", 100.0)
 	cargo_kind = d.get("resource", "")
@@ -184,6 +191,8 @@ func take_damage(raw: float, wpn: String, attacker = null) -> void:
 	hp -= raw * GameData.mult(wpn, armor)
 	queue_redraw()
 	if hp <= 0.0:
+		if is_instance_valid(attacker) and attacker is Unit and attacker.alive and attacker.team != team:
+			attacker.add_kill()
 		_die()
 		return
 	if _valid(attacker) and attacker.team != team:
@@ -192,6 +201,24 @@ func take_damage(raw: float, wpn: String, attacker = null) -> void:
 				flee()
 		elif weapon != "" and not forced and (state == "idle" or state == "amove" or (state == "attack" and not _valid(target))):
 			_set_target(attacker, false)
+
+
+## Éliminations -> rang (Recrue, Vétéran, Élite) : +15 % de dégâts et de PV par rang.
+func add_kill() -> void:
+	kills += 1
+	var r := 0
+	for i in GameData.RANKS.size():
+		if kills >= int(GameData.RANKS[i]["kills"]):
+			r = i
+	if r > rank:
+		rank = r
+		var old := max_hp
+		max_hp = base_max_hp * (1.0 + GameData.RANK_HP * rank)
+		hp += max_hp - old
+		Fx.burst(game, position, GameData.GOLD, 14, 0.9)
+		if team == 0:
+			game.popup(position, "★ %s" % GameData.RANKS[rank]["name"], GameData.GOLD)
+	queue_redraw()
 
 
 func _die() -> void:
@@ -338,7 +365,7 @@ func _shoot(t) -> void:
 		ctrl = true
 		special_t = 20.0
 	var from := position + Vector2.from_angle(rotation) * 16.0
-	game.fire(self, t, weapon, dps * float(wd["cd"]), from, ctrl)
+	game.fire(self, t, weapon, dps * float(wd["cd"]) * (1.0 + GameData.RANK_DMG * rank), from, ctrl)
 
 
 func _move(delta: float) -> void:
@@ -509,6 +536,9 @@ func _draw_overlay() -> void:
 		var w := 26.0
 		draw_rect(Rect2(-w / 2.0, -22, w, 4), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(-w / 2.0, -22, w * hp / max_hp, 4), GameData.GREEN if team == 0 else GameData.RED)
+	for i in rank:
+		var o := Vector2(-13 + i * 7, -29)
+		draw_polyline(PackedVector2Array([o + Vector2(-3, 2), o + Vector2(0, -1), o + Vector2(3, 2)]), GameData.GOLD, 2.0)
 	if control_timer > 0.0:
 		draw_arc(Vector2.ZERO, radius + 4.0, 0.0, TAU, 24, Color(1.9, 0.4, 2.0), 2.0, true)
 	if selected:

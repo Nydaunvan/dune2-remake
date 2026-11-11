@@ -58,6 +58,7 @@ func _process(delta: float) -> void:
 
 func _progress(delta: float) -> void:
 	var factor := (1.0 if game.power_produced(TEAM) >= game.power_used(TEAM) else 0.5) / SLOWDOWN
+	var ufactor: float = factor * game.unit_speed_bonus(TEAM)
 	if not build_q.is_empty():
 		if not build_q["ready"]:
 			build_q["progress"] += delta * factor / build_q["time"]
@@ -66,7 +67,7 @@ func _progress(delta: float) -> void:
 		if build_q["ready"] and _place(build_q["id"]):
 			build_q = {}
 	if not unit_q.is_empty():
-		unit_q["progress"] += delta * factor / unit_q["time"]
+		unit_q["progress"] += delta * ufactor / unit_q["time"]
 		if unit_q["progress"] >= 1.0:
 			game.spawn_for(unit_q["id"], TEAM)
 			unit_q = {}
@@ -111,11 +112,26 @@ func _think_build() -> void:
 			if _count(id) < int(seen[id]):
 				want = id
 				break
-	if want == "" or not _available(want) or ore < _cost(want):
+	if want == "":
+		_try_upgrade()
+		return
+	if not _available(want) or ore < _cost(want):
 		return
 	ore -= _cost(want)
 	build_q = {"id": want, "progress": 0.0, "ready": false,
 			"time": float(GameData.def(want)["time"]) * float(fdata["build_time_mult"])}
+
+
+## Une fois la base construite, l'IA améliore ses bâtiments quand elle a du minerai en réserve.
+func _try_upgrade() -> void:
+	for id in ["usine", "chantier", "centrale", "tourelle", "raffinerie", "fonderie"]:
+		for b in game.buildings:
+			if b.team != TEAM or b.id != id:
+				continue
+			if game.upgrade_block(b, ore) == "" and ore >= game.upgrade_cost(b) + 400:
+				ore -= game.upgrade_cost(b)
+				b.upgrade()
+				return
 
 
 func _think_units() -> void:

@@ -19,6 +19,7 @@ var sidebar: GlassPanel
 var topbar: HudBar
 var radar: Radar
 var info_label: Label
+var info_panel: InfoPanel
 var icon_box: GridContainer
 var icons: Array = []
 var tab_buttons: Array = []
@@ -33,11 +34,14 @@ func setup(p_game) -> void:
 	_build_topbar()
 	_build_sidebar()
 	_rebuild_icons()
+	info_panel = InfoPanel.new(game)
+	root.add_child(info_panel)
 
 
 func is_mouse_over_ui() -> bool:
 	var m := get_viewport().get_mouse_position()
-	return sidebar.get_global_rect().has_point(m) or topbar.get_global_rect().has_point(m)
+	return sidebar.get_global_rect().has_point(m) or topbar.get_global_rect().has_point(m) \
+			or (info_panel != null and info_panel.visible and info_panel.get_global_rect().has_point(m))
 
 
 ## Notification qui monte et s'efface.
@@ -177,8 +181,9 @@ func _process(_delta: float) -> void:
 	elif game.command_mode == "attack":
 		info_label.text = "Cliquez : les unités avancent en attaquant tout sur leur route."
 	else:
-		info_label.text = "%d unité(s) sélectionnée(s)\nClic droit sur un ennemi : attaquer\nClic droit sur une icône : annuler (remboursé)\nF11 : plein écran — F10 : menu — F9 : test ver" \
-				% game.selected.size()
+		info_label.text = "File : bâtiments %d/%d — unités %d/%d\nClic droit : ordre / annuler une icône\nF11 plein écran — F10 menu" \
+				% [game.production["building"].size(), game.queue_max("building"),
+				game.production["unit"].size(), game.queue_max("unit")]
 
 
 ## Écran de fin de partie.
@@ -288,6 +293,188 @@ class HudBar extends GlassPanel:
 		# Images par seconde
 		_text(Vector2(o + 950, o + 22), "FPS", 12, dim)
 		_text(Vector2(o + 950, o + 56), str(Engine.get_frames_per_second()), 22, GameData.GREEN)
+
+
+# --- Panneau d'informations ---------------------------------------------------
+
+class InfoPanel extends GlassPanel:
+	const ARMOR := {"light": "Léger", "medium": "Moyen", "heavy": "Lourd", "building": "Structure"}
+	const WEAPON := {"autocannon": "Autocanon", "cannon": "Canon", "rocket": "Roquettes",
+			"sonic": "Onde sonique", "acid": "Acide", "control": "Contrôle mental"}
+
+	var game
+	var btn: GameUI.NeonButton
+	var _focus = null
+
+	func _init(p_game) -> void:
+		super(8.0, 18.0, p_game.fdata["color"], p_game.fdata["accent"])
+		game = p_game
+		anchor_top = 1.0
+		anchor_bottom = 1.0
+		offset_left = 16.0
+		offset_right = 16.0 + 700.0
+		offset_top = -226.0
+		offset_bottom = -16.0
+		btn = GameUI.NeonButton.new("AMÉLIORER")
+		btn.accent = GameData.GOLD
+		btn.position = Vector2(24, 158)
+		btn.size = Vector2(250, 42)
+		btn.pressed.connect(func() -> void:
+			if game.selected_building != null:
+				game.upgrade_building(game.selected_building))
+		add_child(btn)
+		visible = false
+
+	func _ok(e) -> bool:
+		return e != null and is_instance_valid(e) and e.alive
+
+	func _find_focus():
+		if _ok(game.selected_building):
+			return game.selected_building
+		if _ok(game.inspected):
+			return game.inspected
+		if game.selected.size() == 1 and _ok(game.selected[0]):
+			return game.selected[0]
+		if game.selected.size() > 1:
+			return "multi"
+		return null
+
+	func _process(_delta: float) -> void:
+		if game == null:
+			return
+		_focus = _find_focus()
+		visible = _focus != null
+		btn.visible = _focus is Building and _focus.team == 0
+		if btn.visible:
+			var b: Building = _focus
+			var why: String = game.upgrade_block(b, game.ore)
+			btn.enabled = why == ""
+			btn.text = "NIVEAU MAX" if b.level >= GameData.MAX_LEVEL else "AMÉLIORER — %d min." % game.upgrade_cost(b)
+			btn.tooltip_text = why
+		queue_redraw()
+
+	func _text(pos: Vector2, s: String, fs: int, col: Color) -> void:
+		var font := ThemeDB.fallback_font
+		draw_string_outline(font, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs, 4, Color(0, 0, 0, 0.8))
+		draw_string(font, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs, col)
+
+	func _bar(pos: Vector2, w: float, frac: float, col: Color) -> void:
+		draw_rect(Rect2(pos, Vector2(w, 10)), Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(pos, Vector2(w * clampf(frac, 0.0, 1.0), 10)), col)
+		draw_rect(Rect2(pos, Vector2(w, 10)), Color(1, 1, 1, 0.25), false, 1.0)
+
+	func _draw() -> void:
+		if _focus == null:
+			return
+		var cream := GameData.CREAM
+		if _focus is String:
+			_draw_multi(cream)
+		elif _focus is Building:
+			_draw_building(_focus, cream)
+		else:
+			_draw_unit(_focus, cream)
+
+	func _draw_multi(cream: Color) -> void:
+		_text(Vector2(24, 44), "%d unités sélectionnées" % game.selected.size(), 24, Color.WHITE)
+		var counts := {}
+		var hp := 0.0
+		var hp_max := 0.0
+		for u in game.selected:
+			counts[u.id] = int(counts.get(u.id, 0)) + 1
+			hp += u.hp
+			hp_max += u.max_hp
+		_bar(Vector2(24, 60), 320, hp / maxf(hp_max, 1.0), GameData.GREEN)
+		var y := 98.0
+		var x := 24.0
+		for id in counts:
+			_text(Vector2(x, y), "%d × %s" % [counts[id], GameData.def(id)["name"]], 16, cream)
+			y += 24.0
+			if y > 190.0:
+				y = 98.0
+				x += 230.0
+		_text(Vector2(380, 98), "Clic droit : déplacer / attaquer", 15, Color(1, 1, 1, 0.6))
+		_text(Vector2(380, 122), "Bouton ATTAQUER : avance en tirant", 15, Color(1, 1, 1, 0.6))
+
+	func _draw_unit(u: Unit, cream: Color) -> void:
+		var d := GameData.def(u.id)
+		var mine: bool = u.team == 0
+		_text(Vector2(24, 40), String(d["name"]), 24, Color.WHITE if mine else GameData.RED)
+		if d.has("desc"):
+			_text(Vector2(24, 62), String(d["desc"]), 14, Color(1, 1, 1, 0.65))
+		_bar(Vector2(24, 72), 320, u.hp / u.max_hp, GameData.GREEN if mine else GameData.RED)
+		_text(Vector2(352, 82), "%d / %d PV" % [int(u.hp), int(u.max_hp)], 14, cream)
+		var lines: Array = []
+		lines.append("Blindage : %s" % ARMOR.get(u.armor, u.armor))
+		lines.append("Vitesse : %d   Vision : %d cases" % [int(u.speed), u.vision])
+		if u.weapon != "":
+			var mult := 1.0 + GameData.RANK_DMG * u.rank
+			lines.append("Arme : %s" % WEAPON.get(u.weapon, u.weapon))
+			lines.append("Dégâts : %.0f /s   Portée : %d cases" % [u.dps * mult, int(u.w_range / 32.0)])
+		else:
+			lines.append("Capacité : %d (%d en soute)" % [int(u.cargo_cap), int(u.cargo)])
+			lines.append("Rendement : %d /s" % int(u.harvest_rate))
+		var y := 108.0
+		for l in lines:
+			_text(Vector2(24, y), l, 15, cream)
+			y += 22.0
+		if u.role == "combat":
+			var nxt := ""
+			if u.rank + 1 < GameData.RANKS.size():
+				nxt = " — prochain rang : %d éliminations" % GameData.RANKS[u.rank + 1]["kills"]
+			_text(Vector2(380, 108), "Rang : %s%s" % [GameData.RANKS[u.rank]["name"], nxt], 15, GameData.GOLD)
+			_text(Vector2(380, 130), "Éliminations : %d" % u.kills, 15, cream)
+			_text(Vector2(380, 152), "Chaque rang : +15 %% dégâts et PV", 14, Color(1, 1, 1, 0.6))
+		if u.weapon == "control":
+			_text(Vector2(380, 174), "Contrôle un char ennemi 15 s (toutes les 20 s)", 14, GameData.CYAN)
+		elif u.weapon == "sonic":
+			_text(Vector2(380, 174), "Dégâts de zone — touche aussi les alliés", 14, GameData.AMBER)
+
+	func _draw_building(b: Building, cream: Color) -> void:
+		var d := GameData.def(b.id)
+		var mine: bool = b.team == 0
+		_text(Vector2(24, 40), "%s — niveau %d/%d" % [d["name"], b.level, GameData.MAX_LEVEL], 24,
+				Color.WHITE if mine else GameData.RED)
+		_bar(Vector2(24, 52), 320, b.hp / b.max_hp, GameData.GREEN if mine else GameData.RED)
+		_text(Vector2(352, 62), "%d / %d PV" % [int(b.hp), int(b.max_hp)], 14, cream)
+		var lines: Array = []
+		match b.id:
+			"chantier":
+				lines.append("File de construction : %d places" % (2 + 2 * (b.level - 1)))
+			"usine":
+				lines.append("File d'unités : %d places" % game.queue_max("unit"))
+				lines.append("Production : +%d %%" % int(25 * (b.level - 1)))
+			"centrale":
+				lines.append("Énergie produite : %d" % b.power)
+			"raffinerie":
+				lines.append("Solaris par récolte : +%d %%" % int(12 * (b.level - 1)))
+			"fonderie":
+				lines.append("Minerai par récolte : +%d %%" % int(12 * (b.level - 1)))
+			"tourelle":
+				lines.append("Dégâts : %.0f /s   Portée : %d cases" % [b.dps, int(b.w_range / 32.0)])
+		if b.power < 0:
+			lines.append("Consomme %d d'énergie" % -b.power)
+		lines.append("Vision : %d cases" % b.vision)
+		var y := 90.0
+		for l in lines:
+			_text(Vector2(24, y), l, 15, cream)
+			y += 22.0
+		if mine:
+			if b.level < GameData.MAX_LEVEL:
+				_text(Vector2(380, 92), "Niveau suivant :", 14, GameData.GOLD)
+				var parts := String(GameData.UPGRADES.get(b.id, "")).split(", ")
+				var yy := 112.0
+				if parts.size() > 0:
+					for p in parts:
+						if yy < 160.0:
+							_text(Vector2(380, yy), "• " + p, 13, Color(1, 1, 1, 0.8))
+							yy += 18.0
+				var why: String = game.upgrade_block(b, game.ore)
+				if why != "":
+					_text(Vector2(380, 196), why, 14, GameData.RED)
+			else:
+				_text(Vector2(380, 92), "Niveau maximum atteint", 15, GameData.GOLD)
+		else:
+			_text(Vector2(380, 92), "Structure ennemie", 15, GameData.RED)
 
 
 # --- Bouton néon --------------------------------------------------------------
@@ -402,6 +589,13 @@ class BuildIcon extends Control:
 
 		var c := Vector2(size.x * 0.5, 50.0 - hover_t * 2.0)
 		_draw_icon(c, avail)
+		var queued: int = game.queued_count(id)
+		if queued > 0:
+			var bc := Vector2(size.x - 22.0, 20.0)
+			draw_circle(bc, 14.0, Color(0.05, 0.03, 0.1, 0.95))
+			draw_arc(bc, 14.0, 0.0, TAU, 24, GameData.AMBER_HDR, 2.0, true)
+			draw_string(ThemeDB.fallback_font, bc + Vector2(-14, 5), "x%d" % queued,
+					HORIZONTAL_ALIGNMENT_CENTER, 28.0, 14, Color.WHITE)
 		if busy:
 			draw_arc(c, 38.0, 0.0, TAU, 48, Color(1, 1, 1, 0.12), 4.0, true)
 			draw_arc(c, 38.0, -PI / 2.0, -PI / 2.0 + TAU * float(p["progress"]), 48,

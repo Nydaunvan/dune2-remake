@@ -28,6 +28,16 @@ var cooldown := 0.0
 var aim := 0.0
 var _scan := 0.0
 var _sprite_ok := false
+var level := 1
+var base_hp := 500.0
+var base_power := 0
+var base_dps := 0.0
+var vision := 7
+var seen := true # visible actuellement par le joueur (brouillard de guerre)
+var selected := false:
+	set(value):
+		selected = value
+		queue_redraw()
 var _target
 
 
@@ -49,9 +59,13 @@ func init_combat(p_game, p_team: int) -> void:
 	var d := GameData.def(id)
 	max_hp = float(d.get("hp", 500))
 	hp = max_hp
+	base_hp = max_hp
+	base_power = power
+	vision = int(d.get("vision", GameData.BUILDING_VISION))
 	armor = d.get("armor", "building")
 	weapon = d.get("weapon", "")
 	dps = float(d.get("dps", 0))
+	base_dps = dps
 	w_range = float(d.get("range", 0)) * tile
 	if weapon == "":
 		set_physics_process(false)
@@ -63,6 +77,22 @@ func _process(_delta: float) -> void:
 		_sprite_ok = true
 		queue_redraw()
 		set_process(false)
+
+
+## Monte d'un niveau : plus de PV, et un bonus propre au bâtiment (voir GameData.UPGRADES).
+func upgrade() -> void:
+	if level >= GameData.MAX_LEVEL:
+		return
+	level += 1
+	var old := max_hp
+	max_hp = base_hp * (1.0 + 0.25 * (level - 1))
+	hp += max_hp - old
+	if id == "centrale":
+		power = base_power + 50 * (level - 1)
+	if weapon != "":
+		dps = base_dps * (1.0 + 0.25 * (level - 1))
+	Fx.burst(game, world_center(), GameData.GOLD, 24, 1.3)
+	queue_redraw()
 
 
 func world_center() -> Vector2:
@@ -203,6 +233,11 @@ func _draw() -> void:
 
 
 func _draw_hp(s: Vector2) -> void:
+	for i in level - 1:
+		draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), GameData.GOLD)
+		draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), Color.BLACK, false, 1.0)
+	if selected:
+		draw_rect(Rect2(Vector2(-2, -2), s + Vector2(4, 4)), GameData.GREEN, false, 2.5)
 	if hp < max_hp:
 		var w := s.x - 8.0
 		draw_rect(Rect2(4, -9, w, 5), Color(0, 0, 0, 0.65))

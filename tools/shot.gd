@@ -22,6 +22,16 @@ func _process(_d: float) -> bool:
 		var p := OS.get_environment("SHOT_FOCUS").split(",")
 		node.camera.zoom = Vector2(float(OS.get_environment("SHOT_ZOOM")), float(OS.get_environment("SHOT_ZOOM"))) if OS.has_environment("SHOT_ZOOM") else node.camera.zoom
 		node.center_camera(Vector2(float(p[0]), float(p[1])) * 32.0)
+	if f == 3 and OS.has_environment("SHOT_NOBANK") and node.bank != null:
+		node.bank.queue_free()
+		node.bank = null
+	if f == 10 and OS.has_environment("SHOT_SELECT"):
+		for b in node.buildings:
+			if b.team == 0 and b.id == OS.get_environment("SHOT_SELECT"):
+				node.inspected = b
+				node.selected_building = b
+				b.selected = true
+				node.ore = 3000
 	if f == frames:
 		var out := OS.get_environment("SHOT_OUT") if OS.has_environment("SHOT_OUT") else "/tmp/shots/shot.png"
 		root.get_texture().get_image().save_png(out)

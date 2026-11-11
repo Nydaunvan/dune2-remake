@@ -12,6 +12,7 @@ const SIDEBAR_EXTRA := 390.0 # la caméra peut défiler sous le panneau latéral
 const CAM_SPEED := 800.0
 const EDGE_SCROLL := true
 const EDGE_MARGIN := 12
+const FOG := true       # brouillard de guerre
 const FX_GLOW := true # HDR 2D + bloom (Forward+). Mettre false en cas de souci d'affichage.
 
 # Terrain
@@ -58,6 +59,15 @@ var ai: SkirmishAI
 var bank: SpriteBank # modèles 3D cuits en sprites (absent sans affichage)
 var enemy_faction := ""
 var over := false
+var selected_building: Building = null
+var inspected = null # unité ou bâtiment (ami ou ennemi) examiné par un clic
+var fog_vis := PackedByteArray()  # 1 = visible maintenant
+var fog_seen := PackedByteArray() # 1 = déjà exploré
+var fog_img: Image
+var fog_tex: ImageTexture
+var fog_radar_img: Image
+var fog_radar_tex: ImageTexture # même brouillard en RGBA pour le radar
+var _fog_t := 0.0
 var _alert_cd := -100.0
 
 var units: Array[Unit] = []
@@ -68,7 +78,7 @@ var occupied := {} # Vector2i -> true (cases prises par un bâtiment)
 var credits := 1500 # Solaris (épice raffinée) : payent les unités
 var ore := 1500     # Minerai : paye les bâtiments
 var game_time := 0.0
-var production := {"building": {}, "unit": {}}
+var production := {"building": [], "unit": []} # files d'attente (le premier élément est en cours)
 var placing_id := ""
 var command_mode := ""
 
@@ -101,6 +111,8 @@ func _ready() -> void:
 	camera.zoom = Vector2(1.3, 1.3)
 	add_child(camera)
 	_clamp_camera()
+	if FOG:
+		_setup_fog()
 	_place_base(START, 0)
 	_spawn_base_units(START, 0)
 	if GameSession.mode == "skirmish":
@@ -345,7 +357,7 @@ func dock_cell(b: Building, from: Vector2i) -> Vector2i:
 ## Dépôt d'une cargaison : épice → Solaris, minerai → minerai (bonus de faction).
 func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void:
 	var fd := fdata_of(team)
-	var gain := int(amount * float(fd["spice_mult" if kind == "spice" else "ore_mult"]))
+	var gain := int(amount * float(fd["spice_mult" if kind == "spice" else "ore_mult"]) * income_bonus(kind, team))
 	if team == 0:
 		if kind == "spice":
 			credits += gain
@@ -473,6 +485,98 @@ func on_unit_lost(u: Unit) -> void:
 	selected.erase(u)
 
 
+# --- Brouillard de guerre -----------------------------------------------------
+
+func _setup_fog() -> void:
+	fog_vis.resize(MAP_W * MAP_H)
+	fog_seen.resize(MAP_W * MAP_H)
+	var data := PackedByteArray()
+	data.resize(MAP_W * MAP_H)
+	data.fill(255)
+	fog_img = Image.create_from_data(MAP_W, MAP_H, false, Image.FORMAT_R8, data)
+	fog_tex = ImageTexture.create_from_image(fog_img)
+	var rdata := PackedByteArray()
+	rdata.resize(MAP_W * MAP_H * 4)
+	fog_radar_img = Image.create_from_data(MAP_W, MAP_H, false, Image.FORMAT_RGBA8, rdata)
+	fog_radar_tex = ImageTexture.create_from_image(fog_radar_img)
+	var mat := ShaderMaterial.new()
+	mat.shader = load("res://shaders/fog.gdshader")
+	mat.set_shader_parameter("fog", fog_tex)
+	var rect := ColorRect.new()
+	rect.size = WORLD_SIZE
+	rect.color = Color.WHITE
+	rect.material = mat
+	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	rect.z_index = 40
+	add_child(rect)
+
+
+func _reveal(world_pos: Vector2, radius: int) -> void:
+	var c := _world_to_cell(world_pos)
+	for dx in range(-radius, radius + 1):
+		for dy in range(-radius, radius + 1):
+			if dx * dx + dy * dy > radius * radius:
+				continue
+			var x := c.x + dx
+			var y := c.y + dy
+			if x < 0 or y < 0 or x >= MAP_W or y >= MAP_H:
+				continue
+			var i := y * MAP_W + x
+			fog_vis[i] = 1
+			fog_seen[i] = 1
+
+
+func is_visible_cell(c: Vector2i) -> bool:
+	return fog_vis[c.y * MAP_W + c.x] == 1
+
+
+func _update_fog() -> void:
+	fog_vis.fill(0)
+	for u in units:
+		if u.team == 0 and u.alive:
+			_reveal(u.position, u.vision)
+	for b in buildings:
+		if b.team == 0 and b.alive:
+			_reveal(b.world_center(), b.vision)
+	var data := PackedByteArray()
+	data.resize(MAP_W * MAP_H)
+	for i in data.size():
+		data[i] = 0 if fog_vis[i] == 1 else (140 if fog_seen[i] == 1 else 255)
+	fog_img.set_data(MAP_W, MAP_H, false, Image.FORMAT_R8, data)
+	fog_tex.update(fog_img)
+	var rdata := PackedByteArray()
+	rdata.resize(MAP_W * MAP_H * 4)
+	for i in data.size():
+		rdata[i * 4] = 8
+		rdata[i * 4 + 1] = 3
+		rdata[i * 4 + 2] = 20
+		rdata[i * 4 + 3] = int(data[i] * 0.92)
+	fog_radar_img.set_data(MAP_W, MAP_H, false, Image.FORMAT_RGBA8, rdata)
+	fog_radar_tex.update(fog_radar_img)
+	# Les ennemis n'apparaissent que dans les zones visibles ; leurs bâtiments restent une fois repérés
+	for u in units:
+		if u.team == 0:
+			u.seen = true
+		else:
+			u.seen = is_visible_cell(_world_to_cell(u.position))
+		u.visible = u.seen
+	for b in buildings:
+		if b.team == 0:
+			b.seen = true
+			b.visible = true
+			continue
+		var vis := false
+		var known := false
+		for c in b.cells():
+			var i: int = c.y * MAP_W + c.x
+			vis = vis or fog_vis[i] == 1
+			known = known or fog_seen[i] == 1
+		b.seen = vis
+		b.visible = known
+	if worm != null:
+		worm.visible = is_visible_cell(_world_to_cell(worm.position))
+
+
 # --- Équipes & combat ---------------------------------------------------------
 
 func fdata_of(team: int) -> Dictionary:
@@ -492,7 +596,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false):
 	var best = null
 	var best_s := INF
 	for u in units:
-		if u.team == team or not u.alive:
+		if u.team == team or not u.alive or (team == 0 and not u.seen):
 			continue
 		var d := u.position.distance_to(pos) - u.radius
 		if d > max_d:
@@ -503,7 +607,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false):
 			best = u
 	if not units_only:
 		for b in buildings:
-			if b.team == team or not b.alive:
+			if b.team == team or not b.alive or (team == 0 and not b.seen):
 				continue
 			var d := b.world_center().distance_to(pos) - b.radius_px()
 			if d > max_d:
@@ -518,10 +622,10 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false):
 ## Ennemi (du point de vue du joueur) sous le curseur.
 func enemy_at(world_pos: Vector2):
 	for u in units:
-		if u.team != 0 and u.alive and u.position.distance_to(world_pos) < u.radius + 8.0:
+		if u.team != 0 and u.alive and u.seen and u.position.distance_to(world_pos) < u.radius + 8.0:
 			return u
 	for b in buildings:
-		if b.team != 0 and b.alive and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
+		if b.team != 0 and b.alive and b.visible and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
 			return b
 	return null
 
@@ -582,6 +686,11 @@ func _process(delta: float) -> void:
 	game_time += delta
 	_update_production(delta)
 	_update_worm(delta)
+	if FOG:
+		_fog_t -= delta
+		if _fog_t <= 0.0:
+			_fog_t = 0.2
+			_update_fog()
 	_move_camera(delta)
 
 	_field_timer += delta
@@ -654,6 +763,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_ESCAPE:
 				placing_id = ""
 				command_mode = ""
+				_clear_focus()
 			KEY_F11:
 				var w := get_window()
 				w.mode = Window.MODE_MAXIMIZED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
@@ -690,7 +800,7 @@ func _left_pressed() -> void:
 		var cell := _ghost_cell()
 		if _can_place(placing_id, cell):
 			_place_building(placing_id, cell)
-			production["building"] = {}
+			production["building"].pop_front()
 			placing_id = ""
 		else:
 			ui.toast("Emplacement invalide : roche libre, près de la base", GameData.RED)
@@ -707,11 +817,30 @@ func _left_pressed() -> void:
 
 # --- Sélection & ordres -------------------------------------------------------
 
+func _clear_focus() -> void:
+	if selected_building != null and is_instance_valid(selected_building):
+		selected_building.selected = false
+	selected_building = null
+	inspected = null
+
+
+## Entité (ami ou ennemi, visible) sous le curseur : unité d'abord, puis bâtiment.
+func entity_at(world_pos: Vector2):
+	for u in units:
+		if u.alive and u.seen and u.position.distance_to(world_pos) < u.radius + 6.0:
+			return u
+	for b in buildings:
+		if b.alive and b.visible and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
+			return b
+	return null
+
+
 func _finish_selection(end: Vector2) -> void:
 	if not Input.is_key_pressed(KEY_SHIFT):
 		for u in selected:
 			u.selected = false
 		selected.clear()
+		_clear_focus()
 	var rect := Rect2(drag_start, end - drag_start).abs()
 	var is_click := rect.size.length() < 6.0
 	for u in units:
@@ -722,6 +851,14 @@ func _finish_selection(end: Vector2) -> void:
 		if hit and u not in selected:
 			u.selected = true
 			selected.append(u)
+	# Clic sans unité amie : on examine le bâtiment ou l'ennemi visé
+	if is_click and selected.is_empty():
+		var e = entity_at(end)
+		if e != null:
+			inspected = e
+			if e is Building and e.team == 0:
+				selected_building = e
+				e.selected = true
 
 
 ## Clic droit : attaque si un ennemi est sous le curseur, sinon déplacement.
@@ -807,11 +944,82 @@ func power_used(team := 0) -> int:
 	return total
 
 
+## Élément en cours de production s'il s'agit de `id`, sinon {}.
 func production_for(id: String) -> Dictionary:
-	var p: Dictionary = production["unit" if GameData.UNITS.has(id) else "building"]
-	if not p.is_empty() and p["id"] == id:
-		return p
+	var q: Array = production["unit" if GameData.UNITS.has(id) else "building"]
+	if not q.is_empty() and q[0]["id"] == id:
+		return q[0]
 	return {}
+
+
+func queued_count(id: String) -> int:
+	var n := 0
+	for p in production["unit" if GameData.UNITS.has(id) else "building"]:
+		if p["id"] == id:
+			n += 1
+	return n
+
+
+## Niveau le plus haut d'un type de bâtiment pour une équipe (1 s'il n'y en a pas).
+func best_level(id: String, team := 0) -> int:
+	var lvl := 1
+	for b in buildings:
+		if b.team == team and b.id == id:
+			lvl = maxi(lvl, b.level)
+	return lvl
+
+
+func count_buildings(id: String, team := 0) -> int:
+	var n := 0
+	for b in buildings:
+		if b.team == team and b.id == id:
+			n += 1
+	return n
+
+
+## Taille maximale d'une file d'attente : petite au départ, grandit avec le Chantier (bâtiments)
+## ou l'Usine et ses niveaux (unités).
+func queue_max(cat: String) -> int:
+	if cat == "building":
+		return 2 + 2 * (best_level("chantier") - 1)
+	return mini(8, 2 + 2 * (best_level("usine") - 1) + maxi(0, count_buildings("usine") - 1))
+
+
+## Production d'unités plus rapide avec le niveau de l'Usine.
+func unit_speed_bonus(team := 0) -> float:
+	return 1.0 + 0.25 * (best_level("usine", team) - 1)
+
+
+func income_bonus(kind: String, team := 0) -> float:
+	return 1.0 + 0.12 * (best_level("raffinerie" if kind == "spice" else "fonderie", team) - 1)
+
+
+func upgrade_cost(b: Building) -> int:
+	return int(round(GameData.base_cost(b.id) * GameData.UPGRADE_COST * b.level))
+
+
+## Raison pour laquelle on ne peut pas améliorer le bâtiment ("" si c'est possible).
+func upgrade_block(b: Building, money: int) -> String:
+	if b.level >= GameData.MAX_LEVEL:
+		return "Niveau maximum atteint"
+	if b.id != "chantier" and b.level + 1 >= 3 and best_level("chantier", b.team) < 2:
+		return "Améliorez d'abord le Chantier (niveau 2)"
+	if money < upgrade_cost(b):
+		return "Minerai insuffisant"
+	return ""
+
+
+func upgrade_building(b: Building) -> bool:
+	if b.team != 0:
+		return false
+	var why := upgrade_block(b, ore)
+	if why != "":
+		ui.toast(why, GameData.RED)
+		return false
+	ore -= upgrade_cost(b)
+	b.upgrade()
+	ui.toast("%s — niveau %d" % [GameData.def(b.id)["name"], b.level], GameData.GOLD)
+	return true
 
 
 ## Coût réel (bonus de faction inclus). Unités : Solaris. Bâtiments : minerai.
@@ -839,27 +1047,30 @@ func _add_money(id: String, amount: int) -> void:
 
 func on_item_clicked(id: String, button: int) -> void:
 	var cat := "unit" if GameData.UNITS.has(id) else "building"
-	var p: Dictionary = production[cat]
+	var q: Array = production[cat]
 	var d := GameData.def(id)
 	if button == MOUSE_BUTTON_RIGHT:
-		if not p.is_empty() and p["id"] == id:
-			_add_money(id, int(p["paid"])) # annulation : remboursement intégral
-			production[cat] = {}
-			if placing_id == id:
-				placing_id = ""
-			ui.toast("%s annulé — remboursé" % d["name"], GameData.AMBER)
+		# Annule le dernier exemplaire en file (remboursement intégral)
+		for i in range(q.size() - 1, -1, -1):
+			if q[i]["id"] == id:
+				_add_money(id, int(q[i]["paid"]))
+				q.remove_at(i)
+				if i == 0 and placing_id == id:
+					placing_id = ""
+				ui.toast("%s annulé — remboursé" % d["name"], GameData.AMBER)
+				return
 		return
 	if button != MOUSE_BUTTON_LEFT:
 		return
-	if not p.is_empty():
-		if p["id"] == id and p["ready"] and cat == "building":
-			command_mode = ""
-			placing_id = id
-		else:
-			ui.toast("Production déjà en cours", GameData.AMBER)
+	if cat == "building" and not q.is_empty() and q[0]["id"] == id and q[0]["ready"]:
+		command_mode = ""
+		placing_id = id
 		return
 	if not is_available(id):
 		ui.toast("Prérequis manquant", GameData.RED)
+		return
+	if q.size() >= queue_max(cat):
+		ui.toast("File d'attente pleine (%d) — améliorez %s" % [q.size(), "le Chantier" if cat == "building" else "l'Usine"], GameData.AMBER)
 		return
 	if not can_afford(id):
 		ui.toast("Minerai insuffisant" if cat == "building" else "Solaris insuffisants", GameData.RED)
@@ -869,24 +1080,30 @@ func on_item_clicked(id: String, button: int) -> void:
 	var t := float(d["time"])
 	if cat == "building":
 		t *= float(fdata["build_time_mult"])
-	production[cat] = {"id": id, "progress": 0.0, "time": t, "ready": false, "paid": cost}
+	q.append({"id": id, "progress": 0.0, "time": t, "ready": false, "paid": cost})
 
 
 func _update_production(delta: float) -> void:
 	# Énergie insuffisante : production deux fois plus lente
 	var factor := 1.0 if power_produced() >= power_used() else 0.5
-	for cat in production.keys():
-		var p: Dictionary = production[cat]
-		if p.is_empty() or p["ready"]:
+	for cat in ["building", "unit"]:
+		var q: Array = production[cat]
+		if q.is_empty() or q[0]["ready"]:
 			continue
-		p["progress"] += delta * factor / p["time"]
+		var p: Dictionary = q[0]
+		var f := factor * (unit_speed_bonus() if cat == "unit" else 1.0)
+		p["progress"] += delta * f / p["time"]
 		if p["progress"] >= 1.0:
 			p["progress"] = 1.0
 			var item_name: String = GameData.def(p["id"])["name"]
 			if cat == "unit":
-				_spawn_produced_unit(p["id"])
-				production[cat] = {}
-				ui.toast("%s prêt !" % item_name, GameData.GREEN)
+				q.pop_front()
+				if has_building(GameData.def(p["id"])["from"]):
+					_spawn_produced_unit(p["id"])
+					ui.toast("%s prêt !" % item_name, GameData.GREEN)
+				else:
+					credits += int(p["paid"]) # le bâtiment a été détruit : remboursé
+					ui.toast("%s annulé — bâtiment perdu" % item_name, GameData.RED)
 			else:
 				p["ready"] = true
 				ui.toast("%s prêt — cliquez sur l'icône pour le poser" % item_name, GameData.GREEN)

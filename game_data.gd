@@ -30,9 +30,9 @@ const FACTIONS := {
 	"kharn": {
 		"name": "Légion Kharn",
 		"tagline": "Puissance brute",
-		"desc": "Unités 10 % moins chères, minerai +10 %.\nBlindés lourds et lents, constructions standard.",
+		"desc": "Unités 5 % moins chères, minerai +10 %.\nBlindés lourds et lents, constructions standard.",
 		"color": Color("e8433a"), "accent": Color("ffb199"),
-		"build_time_mult": 1.0, "unit_cost_mult": 0.9, "spice_mult": 1.0, "ore_mult": 1.1,
+		"build_time_mult": 1.0, "unit_cost_mult": 0.95, "spice_mult": 1.0, "ore_mult": 1.1,
 		"units": ["belier", "brute", "salve"],
 	},
 	"vael": {
@@ -65,9 +65,35 @@ const MULT := {
 	"control": {"light": 1.0, "medium": 1.0, "heavy": 1.0, "building": 1.0},
 }
 
+# Vision par défaut (en cases) quand l'entrée n'a pas de "vision"
+const DEFAULT_VISION := 7
+const BUILDING_VISION := 7
+
+# Rangs d'unité : nombre d'éliminations requis, bonus de dégâts et de PV par rang
+const RANKS := [
+	{"name": "Recrue", "kills": 0},
+	{"name": "Vétéran", "kills": 3},
+	{"name": "Élite", "kills": 8},
+]
+const RANK_DMG := 0.15
+const RANK_HP := 0.15
+
+# Niveaux de bâtiment : 1 à MAX_LEVEL. Coût du niveau suivant = coût de base * UPGRADE_COST * niveau.
+const MAX_LEVEL := 3
+const UPGRADE_COST := 0.6
+const UPGRADES := {
+	"chantier": "+2 places dans la file de construction, +25 % PV",
+	"centrale": "+50 énergie, +25 % PV",
+	"raffinerie": "+12 % de Solaris par récolte, +25 % PV",
+	"fonderie": "+12 % de minerai par récolte, +25 % PV",
+	"usine": "+2 places dans la file d'unités, production +25 % plus rapide, +25 % PV",
+	"tourelle": "+25 % de dégâts, +25 % PV",
+}
+const CHANTIER_COST := 800 # base de calcul pour l'amélioration du Chantier
+
 # Bâtiment de départ (non constructible par le joueur)
 const START_BUILDING := {
-	"name": "Chantier", "size": Vector2i(3, 3), "power": 0, "hp": 1500, "armor": "building",
+	"name": "Chantier", "size": Vector2i(3, 3), "power": 0, "hp": 1500, "armor": "building", "vision": 9,
 }
 
 # Bâtiments : coût en MINERAI
@@ -91,7 +117,7 @@ const BUILDINGS := {
 	"tourelle": {
 		"name": "Tourelle", "cost": 350, "time": 8.0,
 		"size": Vector2i(2, 2), "power": -15, "requires": ["usine"], "hp": 700, "armor": "building",
-		"weapon": "cannon", "dps": 22, "range": 7,
+		"weapon": "cannon", "dps": 22, "range": 7, "vision": 9,
 	},
 }
 
@@ -114,26 +140,26 @@ const UNITS := {
 		"name": "Sentinelle", "role": "combat", "desc": "Éclaireur rapide",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 220, "time": 5.0, "requires": ["usine"], "from": "usine",
-		"hp": 160, "dps": 14, "speed": 160.0, "range": 5,
+		"hp": 190, "dps": 15, "speed": 160.0, "range": 5, "vision": 11,
 	},
 	"egide": {
 		"name": "Égide", "role": "combat", "desc": "Char moyen polyvalent",
 		"armor": "medium", "weapon": "cannon",
 		"cost": 480, "time": 8.0, "requires": ["usine"], "from": "usine",
-		"hp": 520, "dps": 24, "speed": 95.0, "range": 6,
+		"hp": 520, "dps": 27, "speed": 95.0, "range": 6,
 	},
 	"resonateur": {
 		"name": "Résonateur", "role": "combat", "desc": "Artillerie sonique (zone, tir allié)",
 		"armor": "light", "weapon": "sonic",
 		"cost": 510, "time": 9.0, "requires": ["usine"], "from": "usine",
-		"hp": 300, "dps": 40, "speed": 70.0, "range": 9,
+		"hp": 300, "dps": 40, "speed": 70.0, "range": 9, "vision": 9,
 	},
 	# --- Légion Kharn ---
 	"belier": {
 		"name": "Bélier", "role": "combat", "desc": "Buggy d'assaut bon marché",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 290, "time": 6.0, "requires": ["usine"], "from": "usine",
-		"hp": 280, "dps": 18, "speed": 120.0, "range": 3,
+		"hp": 230, "dps": 17, "speed": 120.0, "range": 3,
 	},
 	"brute": {
 		"name": "Brute", "role": "combat", "desc": "Char lourd",
@@ -145,28 +171,35 @@ const UNITS := {
 		"name": "Salve", "role": "combat", "desc": "Lance-roquettes longue portée",
 		"armor": "light", "weapon": "rocket",
 		"cost": 540, "time": 9.0, "requires": ["usine"], "from": "usine",
-		"hp": 280, "dps": 55, "speed": 80.0, "range": 11,
+		"hp": 260, "dps": 46, "speed": 80.0, "range": 11, "vision": 9,
 	},
 	# --- Cartel Vael ---
 	"faucon": {
 		"name": "Faucon", "role": "combat", "desc": "Raider ultra-rapide",
 		"armor": "light", "weapon": "autocannon",
-		"cost": 190, "time": 4.0, "requires": ["usine"], "from": "usine",
-		"hp": 130, "dps": 12, "speed": 200.0, "range": 4,
+		"cost": 170, "time": 4.0, "requires": ["usine"], "from": "usine",
+		"hp": 170, "dps": 17, "speed": 200.0, "range": 4, "vision": 11,
 	},
 	"vipere": {
 		"name": "Vipère", "role": "combat", "desc": "Char antiblindage (acide)",
 		"armor": "medium", "weapon": "acid",
-		"cost": 510, "time": 8.0, "requires": ["usine"], "from": "usine",
-		"hp": 400, "dps": 34, "speed": 105.0, "range": 6,
+		"cost": 460, "time": 8.0, "requires": ["usine"], "from": "usine",
+		"hp": 420, "dps": 41, "speed": 105.0, "range": 6,
 	},
 	"mirage": {
 		"name": "Mirage", "role": "combat", "desc": "Prend le contrôle d'un char ennemi",
 		"armor": "light", "weapon": "control",
-		"cost": 480, "time": 9.0, "requires": ["usine"], "from": "usine",
-		"hp": 260, "dps": 22, "speed": 85.0, "range": 6,
+		"cost": 430, "time": 9.0, "requires": ["usine"], "from": "usine",
+		"hp": 300, "dps": 32, "speed": 85.0, "range": 6,
 	},
 }
+
+
+## Coût de base pour calculer l'amélioration d'un bâtiment.
+static func base_cost(id: String) -> int:
+	if id == "chantier":
+		return CHANTIER_COST
+	return int(BUILDINGS[id]["cost"])
 
 
 static func def(id: String) -> Dictionary:

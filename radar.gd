@@ -33,13 +33,19 @@ func _draw() -> void:
 		pts.append(pt)
 		uvs.append((pt - map_rect.position) / map_rect.size)
 	draw_colored_polygon(pts, Color(1, 1, 1, 0.92), uvs, game.map_texture)
+	if game.fog_radar_tex != null: # brouillard de guerre sur la carte
+		draw_colored_polygon(pts, Color.WHITE, uvs, game.fog_radar_tex)
 
 	# Bâtiments et unités
 	for b in game.buildings:
+		if b.team != 0 and not b.visible:
+			continue
 		var rp := _to_radar(b.position)
 		var rs := Vector2(b.cell_size * b.tile) / world_size * map_rect.size
 		draw_rect(Rect2(rp, rs), Color(0.6, 0.85, 1.0) if b.team == 0 else Color(1.0, 0.35, 0.3))
 	for u in game.units:
+		if u.team != 0 and not u.seen:
+			continue
 		var up := _to_radar(u.position)
 		if up.distance_to(c) < r:
 			draw_circle(up, 2.6, GameData.CYAN if u.team == 0 else Color(2.0, 0.4, 0.3))
