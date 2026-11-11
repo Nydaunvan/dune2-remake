@@ -71,12 +71,12 @@ func _build_topbar() -> void:
 	topbar = HudBar.new()
 	topbar.game = game
 	topbar.position = Vector2(6, 6)
-	topbar.size = Vector2(872, 84)
+	topbar.size = Vector2(1090, 84)
 	root.add_child(topbar)
 
 
 func _build_sidebar() -> void:
-	sidebar = GlassPanel.new(0.0, 22.0)
+	sidebar = GlassPanel.new(0.0, 22.0, game.fdata["color"], game.fdata["accent"])
 	sidebar.anchor_left = 1.0
 	sidebar.anchor_right = 1.0
 	sidebar.anchor_top = 0.0
@@ -158,8 +158,9 @@ func _rebuild_icons() -> void:
 		icon_box.remove_child(c)
 		c.queue_free()
 	icons.clear()
-	var data: Dictionary = GameData.BUILDINGS if category == "building" else GameData.UNITS
-	for id in data.keys():
+	var ids: Array = GameData.BUILDINGS.keys() if category == "building" \
+			else GameData.units_for(game.faction_id)
+	for id in ids:
 		var icon := BuildIcon.new(id, game)
 		icon.clicked.connect(game.on_item_clicked)
 		icon_box.add_child(icon)
@@ -174,7 +175,7 @@ func _process(_delta: float) -> void:
 	elif game.command_mode == "move":
 		info_label.text = "Cliquez sur la carte pour déplacer les unités sélectionnées."
 	else:
-		info_label.text = "%d unité(s) sélectionnée(s)\nClic droit sur une icône : annuler (remboursé)\nF11 : plein écran" \
+		info_label.text = "%d unité(s) sélectionnée(s)\nClic droit sur une icône : annuler (remboursé)\nF11 : plein écran — F10 : menu — F9 : test ver" \
 				% game.selected.size()
 
 
@@ -183,6 +184,7 @@ func _process(_delta: float) -> void:
 class HudBar extends GlassPanel:
 	var game
 	var shown_credits := 0.0
+	var shown_ore := 0.0
 	var _init_done := false
 
 	func _init() -> void:
@@ -193,8 +195,10 @@ class HudBar extends GlassPanel:
 			return
 		if not _init_done:
 			shown_credits = float(game.credits)
+			shown_ore = float(game.ore)
 			_init_done = true
 		shown_credits = lerpf(shown_credits, float(game.credits), clampf(delta * 7.0, 0.0, 1.0))
+		shown_ore = lerpf(shown_ore, float(game.ore), clampf(delta * 7.0, 0.0, 1.0))
 		queue_redraw()
 
 	func _text(pos: Vector2, s: String, fs: int, col: Color, align := HORIZONTAL_ALIGNMENT_LEFT, w := -1.0) -> void:
@@ -218,27 +222,32 @@ class HudBar extends GlassPanel:
 		_text(Vector2(o + 24, o + 56), str(int(round(shown_credits))), 30, col)
 		draw_circle(Vector2(o + 10, o + 46), 7.0, GameData.AMBER_HDR)
 
+		# Minerai
+		_text(Vector2(o + 250, o + 22), "MINERAI", 12, dim)
+		_text(Vector2(o + 250, o + 56), str(int(round(shown_ore))), 30, GameData.ORE_BLUE)
+		draw_rect(Rect2(o + 228, o + 38, 12, 12), GameData.CYAN)
+
 		# Énergie : jauge néon
 		var prod: int = game.power_produced()
 		var used: int = game.power_used()
 		var ratio := 1.0 if used <= 0 else clampf(float(prod) / float(used), 0.0, 1.0)
 		var ok := prod >= used
 		var gcol := GameData.CYAN if ok else GameData.RED
-		_text(Vector2(o + 270, o + 22), "ÉNERGIE", 12, dim)
-		_text(Vector2(o + 270, o + 56), "%d / %d" % [prod, used], 22, Color(1, 1, 1) if ok else GameData.RED)
-		var track := Rect2(o + 400, o + 40, 190, 10)
+		_text(Vector2(o + 470, o + 22), "ÉNERGIE", 12, dim)
+		_text(Vector2(o + 470, o + 56), "%d / %d" % [prod, used], 22, Color(1, 1, 1) if ok else GameData.RED)
+		var track := Rect2(o + 590, o + 40, 170, 10)
 		draw_rect(track, Color(1, 1, 1, 0.12))
 		draw_rect(Rect2(track.position, Vector2(track.size.x * ratio, track.size.y)), gcol)
 
 		# Temps
 		var t: float = game.game_time
-		_text(Vector2(o + 620, o + 22), "TEMPS", 12, dim)
-		_text(Vector2(o + 620, o + 56),
+		_text(Vector2(o + 800, o + 22), "TEMPS", 12, dim)
+		_text(Vector2(o + 800, o + 56),
 				"%02d:%02d:%02d" % [int(t / 3600.0), int(t / 60.0) % 60, int(t) % 60], 24, Color.WHITE)
 
 		# Images par seconde
-		_text(Vector2(o + 760, o + 22), "FPS", 12, dim)
-		_text(Vector2(o + 760, o + 56), str(Engine.get_frames_per_second()), 22, GameData.GREEN)
+		_text(Vector2(o + 950, o + 22), "FPS", 12, dim)
+		_text(Vector2(o + 950, o + 56), str(Engine.get_frames_per_second()), 22, GameData.GREEN)
 
 
 # --- Bouton néon --------------------------------------------------------------
@@ -310,7 +319,9 @@ class BuildIcon extends Control:
 		_sb.set_border_width_all(2)
 		_sb.anti_aliasing = true
 		var d := GameData.def(id)
-		var tip := "%s — %d $" % [d["name"], d["cost"]]
+		var tip := "%s — %s" % [d["name"], game.cost_label(id)]
+		if d.has("desc"):
+			tip += "\n" + d["desc"]
 		var names := PackedStringArray()
 		for r in d["requires"]:
 			names.append(GameData.BUILDINGS[r]["name"])
@@ -366,12 +377,39 @@ class BuildIcon extends Control:
 			draw_string(font, Vector2(0, 124), "PRÊT — CLIC !", HORIZONTAL_ALIGNMENT_CENTER, size.x, 13,
 					Color(0.5, 1.0, 0.7, 0.6 + 0.4 * pulse))
 		else:
-			draw_string(font, Vector2(0, 124), "%d $" % d["cost"], HORIZONTAL_ALIGNMENT_CENTER, size.x, 13,
-					GameData.GOLD if avail else Color(0.4, 0.35, 0.3))
+			var rich: bool = game.can_afford(id)
+			var cc := GameData.GOLD if GameData.UNITS.has(id) else GameData.ORE_BLUE
+			if not avail:
+				cc = Color(0.4, 0.35, 0.3)
+			elif not rich:
+				cc = GameData.RED
+			draw_string(font, Vector2(0, 124), game.cost_label(id), HORIZONTAL_ALIGNMENT_CENTER, size.x, 13, cc)
 
 	func _draw_icon(c: Vector2, avail: bool) -> void:
 		var fill := Color("2a3350") if avail else Color("201c2c")
-		var line := GameData.CYAN if avail else Color(0.4, 0.35, 0.5)
+		var line: Color = game.fdata["color"] * 1.6 if avail else Color(0.4, 0.35, 0.5)
+		line.a = 1.0
+		var role: String = GameData.def(id).get("role", "")
+		if role == "harvester":
+			draw_rect(Rect2(c + Vector2(-22, -13), Vector2(44, 26)), fill)
+			draw_rect(Rect2(c + Vector2(-22, -13), Vector2(44, 26)), line, false, 2.0)
+			draw_rect(Rect2(c + Vector2(-16, -8), Vector2(26, 16)), Color("e2762a") if avail else fill)
+			draw_rect(Rect2(c + Vector2(12, -9), Vector2(8, 18)), line)
+			return
+		if role == "miner":
+			draw_rect(Rect2(c + Vector2(-20, -12), Vector2(34, 24)), fill)
+			draw_rect(Rect2(c + Vector2(-20, -12), Vector2(34, 24)), line, false, 2.0)
+			draw_rect(Rect2(c + Vector2(-15, -7), Vector2(18, 14)), GameData.ORE_BLUE if avail else fill)
+			draw_colored_polygon(PackedVector2Array([
+				c + Vector2(14, -10), c + Vector2(30, 0), c + Vector2(14, 10)]), Color("9aa3b5"))
+			return
+		if role == "combat":
+			draw_rect(Rect2(c + Vector2(-20, -12), Vector2(40, 24)), fill)
+			draw_rect(Rect2(c + Vector2(-20, -12), Vector2(40, 24)), line, false, 2.0)
+			draw_circle(c, 8.0, fill)
+			draw_arc(c, 8.0, 0.0, TAU, 20, line, 2.0, true)
+			draw_line(c, c + Vector2(28, 0), line, 3.0, true)
+			return
 		match id:
 			"centrale":
 				for s in [-1.0, 1.0]:
@@ -383,14 +421,14 @@ class BuildIcon extends Control:
 				draw_rect(Rect2(c + Vector2(-34, -12), Vector2(44, 28)), line, false, 2.0)
 				draw_circle(c + Vector2(20, 2), 15.0, fill)
 				draw_arc(c + Vector2(20, 2), 15.0, 0.0, TAU, 28, line, 2.0, true)
+			"fonderie":
+				draw_rect(Rect2(c + Vector2(-30, -10), Vector2(36, 28)), fill)
+				draw_rect(Rect2(c + Vector2(-30, -10), Vector2(36, 28)), line, false, 2.0)
+				draw_rect(Rect2(c + Vector2(10, -22), Vector2(9, 22)), fill)
+				draw_rect(Rect2(c + Vector2(24, -22), Vector2(9, 22)), fill)
+				draw_rect(Rect2(c + Vector2(-22, 6), Vector2(20, 7)), Color(1.9, 0.7, 0.25) if avail else fill)
 			"usine":
 				draw_rect(Rect2(c + Vector2(-34, -8), Vector2(68, 26)), fill)
 				draw_rect(Rect2(c + Vector2(-34, -8), Vector2(68, 26)), line, false, 2.0)
 				draw_rect(Rect2(c + Vector2(16, -20), Vector2(10, 14)), fill)
 				draw_rect(Rect2(c + Vector2(16, -20), Vector2(10, 14)), line, false, 2.0)
-			"char":
-				draw_rect(Rect2(c + Vector2(-20, -12), Vector2(40, 24)), fill)
-				draw_rect(Rect2(c + Vector2(-20, -12), Vector2(40, 24)), line, false, 2.0)
-				draw_circle(c, 8.0, fill)
-				draw_arc(c, 8.0, 0.0, TAU, 20, line, 2.0, true)
-				draw_line(c, c + Vector2(28, 0), line, 3.0, true)

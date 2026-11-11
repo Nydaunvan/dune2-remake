@@ -1,14 +1,15 @@
 shader_type canvas_item;
 // Terrain Dune : sable rosé, plateaux rocheux fissurés, montagnes, épice.
-// Le relief (hauteur + épice) vient d'une petite texture générée par le jeu ;
+// Le relief (hauteur + épice + minerai) vient d'une petite texture générée par le jeu ;
 // tout le détail (grain, dunes, fissures, ombres, nuages) est calculé ici, sur GPU.
 
-uniform sampler2D field : filter_linear, repeat_disable; // R = hauteur, G = épice
+uniform sampler2D field : filter_linear, repeat_disable; // R = hauteur, G = épice, B = minerai
 uniform vec2 world_size = vec2(2048.0, 2048.0);
 uniform float tile = 32.0;
 uniform float rock_h = 0.12;
 uniform float mountain_h = 0.5;
 uniform float spice_t = 0.35;
+uniform float ore_t = 0.35;
 uniform vec2 light_dir = vec2(0.7071, -0.7071); // direction de la lumière (haut-droite)
 
 uniform vec3 sand_a : source_color = vec3(0.788, 0.502, 0.435);
@@ -19,6 +20,7 @@ uniform vec3 rock_b : source_color = vec3(0.541, 0.275, 0.227);
 uniform vec3 mount_c : source_color = vec3(0.165, 0.063, 0.055);
 uniform vec3 shadow_c : source_color = vec3(0.165, 0.129, 0.322);
 uniform vec3 rim_c : source_color = vec3(0.949, 0.604, 0.525);
+uniform vec3 ore_c : source_color = vec3(0.55, 0.68, 0.90);
 
 float hash(vec2 p) {
 	p = fract(p * vec2(123.34, 456.21));
@@ -74,9 +76,10 @@ void fragment() {
 	vec2 wp = UV * world_size; // pixels monde
 	vec2 cp = wp / tile;       // coordonnées en cases
 	vec2 px = 1.0 / vec2(textureSize(field, 0));
-	vec2 fv = texture(field, UV).rg;
+	vec3 fv = texture(field, UV).rgb;
 	float h = fv.r;
 	float sp = fv.g;
+	float ore = fv.b;
 
 	// Ombre portée : on remonte vers la lumière et on cherche un relief plus haut
 	float lvl = rock_h;
@@ -109,6 +112,10 @@ void fragment() {
 		float crack = 1.0 - smoothstep(0.0, 0.09, vr.y - vr.x);
 		col *= 1.0 - crack * 0.55;
 		col *= 0.9 + 0.2 * vnoise(wp * 0.7);
+		// filons de minerai : reflets métalliques et étincelles
+		float om = smoothstep(ore_t - 0.08, ore_t + 0.1, ore + (fbm(cp * 3.0) - 0.5) * 0.2);
+		float spark = step(0.94, hash(floor(cp * 12.0) + floor(TIME * 1.5)));
+		col = mix(col, ore_c * (0.75 + 0.5 * vnoise(cp * 8.0)) + vec3(spark * 0.6), om * 0.85);
 		col = mix(col, mount_c, smoothstep(mountain_h - 0.08, mountain_h, h) * 0.7);
 		float rim = 1.0 - smoothstep(0.0, 0.05, h - rock_h);
 		col = mix(col, rim_c, rim * 0.5);

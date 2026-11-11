@@ -44,6 +44,13 @@ func _draw() -> void:
 		if up.distance_to(c) < r:
 			draw_circle(up, 2.6, GameData.CYAN)
 
+	# Ver géant (visible sur le radar une fois l'alerte donnée)
+	if game.worm != null:
+		var wp := _to_radar(game.worm.position)
+		var blink := 0.5 + 0.5 * sin(t * 8.0)
+		draw_circle(wp, 4.0 + blink * 3.0, Color(2.0, 0.3, 0.2, 0.9))
+		draw_arc(wp, 9.0 + blink * 4.0, 0.0, TAU, 24, Color(2.0, 0.3, 0.2, 0.6), 1.5, true)
+
 	# Balayage
 	var a0 := t * 2.2
 	for k in 14:
