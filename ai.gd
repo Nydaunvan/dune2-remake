@@ -69,9 +69,9 @@ func configure(p: Dictionary) -> void:
 
 func add_income(kind: String, amount: int) -> void:
 	if kind == "spice":
-		credits += amount
+		credits = mini(credits + amount, maxi(game.storage_cap("spice", team), credits))
 	else:
-		ore += amount
+		ore = mini(ore + amount, maxi(game.storage_cap("ore", team), ore))
 
 
 func _process(delta: float) -> void:

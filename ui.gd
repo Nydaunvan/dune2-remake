@@ -329,10 +329,19 @@ class HudBar extends GlassPanel:
 		shown_ore = lerpf(shown_ore, float(game.ore), clampf(delta * 7.0, 0.0, 1.0))
 		queue_redraw()
 
-	func _chip(x: float, label: String, value: String, vcol: Color, glyph: String, gcol: Color, vsize := 30) -> void:
+	func _chip(x: float, label: String, value: String, vcol: Color, glyph: String, gcol: Color, vsize := 30,
+			cap := 0, amount := 0) -> void:
 		UiStyle.glyph(self, glyph, Vector2(x + 10, 54), 14.0, gcol)
 		UiStyle.text(self, Vector2(x + 28, 36), label, 11, UiStyle.TEXT_DIM, true)
 		UiStyle.text(self, Vector2(x + 28, 64), value, vsize, vcol)
+		if cap > 0:
+			# Capacité de stockage : « / max » à droite du compteur, et une jauge de remplissage
+			var full := amount >= cap
+			var w := UiStyle.text_width(value, vsize)
+			UiStyle.text(self, Vector2(x + 28 + w + 6, 64), "/ %d" % cap, 15, GameData.RED if full else UiStyle.TEXT_DIM)
+			var fill := clampf(float(amount) / float(cap), 0.0, 1.0)
+			draw_rect(Rect2(x + 28, 70, 150, 3), Color(1, 1, 1, 0.12))
+			draw_rect(Rect2(x + 28, 70, 150.0 * fill, 3), GameData.RED if fill > 0.95 else (GameData.AMBER if fill > 0.8 else gcol))
 
 	func _sep(x: float) -> void:
 		draw_line(Vector2(x, 28), Vector2(x, 66), Color(UiStyle.GOLD.r, UiStyle.GOLD.g, UiStyle.GOLD.b, 0.35), 1.2)
@@ -347,9 +356,11 @@ class HudBar extends GlassPanel:
 		if absf(diff) > 1.0:
 			var k := clampf(absf(diff) / 200.0, 0.0, 1.0)
 			col = GameData.GOLD.lerp(Color("5dff9a") if diff > 0.0 else Color("ff5a4a"), k)
-		_chip(30, "SOLARIS", str(int(round(shown_credits))), col, "credit", GameData.AMBER_HDR)
+		_chip(30, "SOLARIS", str(int(round(shown_credits))), col, "credit", GameData.AMBER_HDR, 30,
+				game.storage_cap("spice"), game.credits)
 		_sep(228)
-		_chip(246, "MINERAI", str(int(round(shown_ore))), GameData.ORE_BLUE, "ore", GameData.CYAN)
+		_chip(246, "MINERAI", str(int(round(shown_ore))), GameData.ORE_BLUE, "ore", GameData.CYAN, 30,
+				game.storage_cap("ore"), game.ore)
 		_sep(444)
 
 		# Énergie : jauge segmentée
@@ -656,13 +667,16 @@ class InfoPanel extends GlassPanel:
 				rows.append(["Énergie", "+%d" % b.power])
 			"raffinerie":
 				rows.append(["Solaris", "+%d %% par récolte" % int(12 * (b.level - 1))])
+				rows.append(["Stockage", "+1500 Solaris"])
 			"fonderie":
 				rows.append(["Minerai", "+%d %% par récolte" % int(12 * (b.level - 1))])
+				rows.append(["Stockage", "+1500 minerai"])
 			"tourelle", "batterie", "tour_sonique", "bunker", "tour_acide":
 				rows.append(["Dégâts", "%.0f /s" % b.dps])
 				rows.append(["Portée", "%d cases" % int(b.w_range / 32.0)])
 			"silo":
 				rows.append(["Solaris", "+10 % par silo (3 max.)"])
+				rows.append(["Stockage", "+2000 Solaris et minerai"])
 			"reparation":
 				rows.append(["Soins", "%d PV/s" % int(d["heal"])])
 				rows.append(["Rayon", "%d cases" % int(d["heal_range"])])

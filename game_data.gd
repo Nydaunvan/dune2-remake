@@ -112,6 +112,10 @@ const UNIT_TECH := {
 	"guepe": {"speed": 1.15, "dps": 1.25}, "frelon": {"dps": 1.3, "hp": 1.15},
 	"pelican": {"hp": 1.3, "speed": 1.15},
 }
+## Stockage : capacité de base, puis bonus par bâtiment [Solaris, minerai].
+const STORAGE_BASE := 3000
+const STORAGE := {"raffinerie": [1500, 0], "fonderie": [0, 1500], "silo": [2000, 2000]}
+
 ## Vitesse des véhicules : multiplicateur global (sol / air).
 const SPEED_MULT := 0.62
 const AIR_SPEED_MULT := 0.72
@@ -154,7 +158,7 @@ const BUILDINGS := {
 	"silo": {
 		"name": "Silo d'épice", "cost": 300, "time": 9.0, "size": Vector2i(2, 2), "power": -10,
 		"requires": ["raffinerie"], "hp": 700, "armor": "building", "unlock": 1, "no_upgrade": true,
-		"spice_bonus": 0.10, "desc": "+10 % de Solaris par récolte (3 silos max.)",
+		"spice_bonus": 0.10, "desc": "+2000 de stockage (Solaris et minerai), +10 % de Solaris par récolte (3 silos max.)",
 	},
 	"radar": {
 		"name": "Station radar", "cost": 450, "time": 11.0, "size": Vector2i(2, 2), "power": -30,

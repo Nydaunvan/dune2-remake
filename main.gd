@@ -93,6 +93,7 @@ var selected: Array[Unit] = []
 var buildings: Array[Building] = []
 var occupied := {} # Vector2i -> true (cases prises par un bâtiment)
 
+var _full_warn := -99.0
 var _rep_acc := 0.0
 var tier := 0 # missions de campagne terminées : débloque les bâtiments
 var _inc_acc := {0: 0.0, 1: 0.0, 2: 0.0}
@@ -559,9 +560,26 @@ func dock_cell(b: Building, from: Vector2i) -> Vector2i:
 
 
 ## Dépôt d'une cargaison : épice → Solaris, minerai → minerai (bonus de faction).
+## Capacité de stockage de Solaris ("spice") ou de minerai ("ore") d'un camp.
+func storage_cap(kind: String, team := 0) -> int:
+	var idx := 0 if kind == "spice" else 1
+	var cap: int = GameData.STORAGE_BASE
+	for b in buildings:
+		if b.team == team and b.alive and GameData.STORAGE.has(b.id):
+			cap += int(GameData.STORAGE[b.id][idx])
+	return cap
+
+
 func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void:
 	var fd := fdata_of(team)
 	var gain := int(amount * float(fd["spice_mult" if kind == "spice" else "ore_mult"]) * income_bonus(kind, team))
+	if team == 0:
+		var room := storage_cap(kind) - (credits if kind == "spice" else ore)
+		if gain > room:
+			gain = maxi(room, 0)
+			if game_time - _full_warn > 6.0:
+				_full_warn = game_time
+				ui.toast("Stockage de %s plein : construisez un Silo" % ("Solaris" if kind == "spice" else "minerai"), GameData.RED)
 	if team == 0:
 		if kind == "spice":
 			credits += gain
@@ -945,6 +963,7 @@ func _process(delta: float) -> void:
 				_update_objectives(0.5)
 			_building_effects(0.5)
 			_check_end()
+	_separate_units()
 	_update_production(delta)
 	_tick_upgrades(delta)
 	_tick_repairs(delta)
@@ -1388,9 +1407,9 @@ func _building_effects(dt: float) -> void:
 		if whole > 0:
 			_inc_acc[t] = float(_inc_acc[t]) - whole
 			if t == 0:
-				credits += whole
+				credits = mini(credits + whole, maxi(storage_cap("spice"), credits))
 			elif ais.has(t):
-				ais[t].credits += whole
+				ais[t].add_income("spice", whole)
 
 
 func upgrade_cost(b: Building) -> int:
@@ -1602,6 +1621,57 @@ func _tick_repairs(dt: float) -> void:
 			b.repairing = false
 			sfx.play_ui("ready", -4.0)
 			ui.toast("%s réparé" % GameData.def(b.id)["name"], GameData.GREEN)
+
+
+## Collisions entre unités terrestres : elles ne se superposent pas et ne se traversent pas.
+## Une unité immobile cède la place à celle qui avance ; deux unités qui avancent se contournent.
+func _separate_units() -> void:
+	var grid_u := {}
+	var ground: Array = []
+	for u in units:
+		if not u.alive or u.air or u.carried:
+			continue
+		ground.append(u)
+		var k := Vector2i(int(u.position.x / 32.0), int(u.position.y / 32.0))
+		if not grid_u.has(k):
+			grid_u[k] = []
+		grid_u[k].append(u)
+	for u in ground:
+		var k := Vector2i(int(u.position.x / 32.0), int(u.position.y / 32.0))
+		for dx in range(-1, 2):
+			for dy in range(-1, 2):
+				var bucket: Array = grid_u.get(k + Vector2i(dx, dy), [])
+				for v in bucket:
+					if v == u or v.get_instance_id() < u.get_instance_id():
+						continue # chaque paire une seule fois
+					_push_apart(u, v)
+
+
+func _push_apart(a: Unit, b: Unit) -> void:
+	var d := b.position - a.position
+	var min_d := (a.radius + b.radius) * 0.92
+	var dist := d.length()
+	if dist >= min_d:
+		return
+	var n := d / dist if dist > 0.01 else Vector2.from_angle(randf() * TAU)
+	var overlap := min_d - dist
+	var a_moving := not a.path.is_empty()
+	var b_moving := not b.path.is_empty()
+	var wa := 0.5
+	if a_moving and not b_moving:
+		wa = 0.15
+	elif b_moving and not a_moving:
+		wa = 0.85
+	var side := n.orthogonal() * overlap * 0.25 * (1.0 if a.get_instance_id() % 2 == 0 else -1.0)
+	_nudge(a, -n * overlap * (1.0 - wa) - side * (1.0 - wa))
+	_nudge(b, n * overlap * wa + side * wa)
+
+
+func _nudge(u: Unit, off: Vector2) -> void:
+	var np := u.position + off
+	var c := _world_to_cell(np)
+	if _is_walkable(c):
+		u.position = np
 
 
 ## Fait avancer les améliorations de bâtiments et les modernisations d'unités.
