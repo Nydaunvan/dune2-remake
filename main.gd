@@ -122,7 +122,7 @@ func _ready() -> void:
 	faction_id = GameSession.faction
 	fdata = GameData.FACTIONS[faction_id]
 	if GameSession.mode == "campaign":
-		mission = Campaign.MISSIONS[GameSession.mission]
+		mission = Campaign.mission(faction_id, GameSession.mission)
 		credits = int(mission["credits"])
 		ore = int(mission["ore"])
 	tier = GameSession.mission if GameSession.mode == "campaign" else Campaign.cleared(faction_id)

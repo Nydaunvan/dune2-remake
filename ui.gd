@@ -252,7 +252,7 @@ func show_end(victory: bool, reason := "") -> void:
 		var go := NeonButton.new("")
 		go.accent = col
 		go.custom_minimum_size = Vector2(320, 60)
-		if victory and m + 1 < Campaign.MISSIONS.size():
+		if victory and m + 1 < Campaign.count(game.faction_id):
 			go.text = "MISSION SUIVANTE"
 			go.pressed.connect(func() -> void:
 				GameSession.mission = m + 1

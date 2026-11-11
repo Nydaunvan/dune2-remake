@@ -119,7 +119,7 @@ func _open_campaign() -> void:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
 	vb.add_child(row)
-	for i in Campaign.MISSIONS.size():
+	for i in Campaign.count(selected):
 		row.add_child(_mission_card(i, done, fd))
 	var back := GameUI.NeonButton.new("RETOUR")
 	back.accent = GameData.RED
@@ -132,7 +132,7 @@ func _open_campaign() -> void:
 
 
 func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
-	var m: Dictionary = Campaign.MISSIONS[i]
+	var m: Dictionary = Campaign.mission(selected, i)
 	var unlocked := i <= done
 	var pc := PanelContainer.new()
 	pc.custom_minimum_size = Vector2(340, 640)
@@ -185,7 +185,7 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 
 func _open_details(i: int) -> void:
 	var fd: Dictionary = GameData.FACTIONS[selected]
-	var m: Dictionary = Campaign.MISSIONS[i]
+	var m: Dictionary = Campaign.mission(selected, i)
 	var ov := ColorRect.new()
 	ov.color = Color(0.045, 0.024, 0.075, 1.0)
 	ov.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
