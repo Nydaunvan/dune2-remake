@@ -26,6 +26,7 @@ const FACTIONS := {
 		"color": Color("4aa8ff"), "accent": Color("bfe3ff"),
 		"build_time_mult": 0.8, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.0,
 		"units": ["sentinelle", "egide", "resonateur"],
+		"air": ["libellule", "aigrette", "nacelle"],
 	},
 	"kharn": {
 		"name": "Légion Kharn",
@@ -34,6 +35,7 @@ const FACTIONS := {
 		"color": Color("e8433a"), "accent": Color("ffb199"),
 		"build_time_mult": 1.0, "unit_cost_mult": 0.95, "spice_mult": 1.0, "ore_mult": 1.1,
 		"units": ["belier", "brute", "salve"],
+		"air": ["faucheur", "marteau", "mule"],
 	},
 	"vael": {
 		"name": "Cartel Vael",
@@ -42,6 +44,7 @@ const FACTIONS := {
 		"color": Color("3ddc97"), "accent": Color("ffe08a"),
 		"build_time_mult": 1.0, "unit_cost_mult": 1.0, "spice_mult": 1.2, "ore_mult": 1.0,
 		"units": ["faucon", "vipere", "mirage"],
+		"air": ["guepe", "frelon", "pelican"],
 	},
 }
 
@@ -103,6 +106,11 @@ const UNIT_TECH := {
 	"faucon": {"speed": 1.2, "dps": 1.25, "vision": 2},
 	"vipere": {"dps": 1.3, "hp": 1.15},
 	"mirage": {"range": 2, "hp": 1.25, "dps": 1.2},
+	"libellule": {"speed": 1.2, "dps": 1.25}, "aigrette": {"range": 2, "dps": 1.2},
+	"nacelle": {"hp": 1.3, "speed": 1.15}, "faucheur": {"hp": 1.2, "dps": 1.2},
+	"marteau": {"hp": 1.25, "dps": 1.15}, "mule": {"hp": 1.3, "speed": 1.2},
+	"guepe": {"speed": 1.15, "dps": 1.25}, "frelon": {"dps": 1.3, "hp": 1.15},
+	"pelican": {"hp": 1.3, "speed": 1.15},
 }
 const CHANTIER_COST := 800 # base de calcul pour l'amélioration du Chantier
 
@@ -165,6 +173,11 @@ const BUILDINGS := {
 		"requires": ["usine", "radar"], "hp": 750, "armor": "building", "unlock": 3, "no_upgrade": true,
 		"weapon": "rocket", "dps": 40, "range": 11, "vision": 10, "desc": "Défense longue portée",
 	},
+	"aerodrome": {
+		"name": "Aérodrome", "cost": 600, "time": 12.0, "size": Vector2i(3, 2), "power": -30,
+		"requires": ["usine"], "hp": 800, "armor": "building", "unlock": 2, "no_upgrade": true,
+		"desc": "Construit les unités volantes",
+	},
 	# --- Spécifiques à une faction ---
 	"tour_sonique": {
 		"name": "Tour sonique", "cost": 520, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
@@ -223,6 +236,61 @@ const UNITS := {
 		"name": "Mineur", "role": "miner", "resource": "ore", "armor": "medium",
 		"cost": 350, "time": 8.0, "requires": ["fonderie"], "from": "fonderie",
 		"hp": 260, "speed": 80.0, "capacity": 160.0, "rate": 20.0,
+	},
+	# --- Unités volantes (Aérodrome) ---
+	"libellule": {
+		"name": "Libellule", "role": "combat", "desc": "Chasseur léger, touche l'air", "air": true,
+		"armor": "light", "weapon": "autocannon",
+		"cost": 380, "time": 7.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 160, "speed": 210.0, "vision": 12, "dps": 18, "range": 4,
+	},
+	"aigrette": {
+		"name": "Aigrette", "role": "combat", "desc": "Bombardier sonique (zone)", "air": true,
+		"armor": "light", "weapon": "sonic",
+		"cost": 640, "time": 10.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 260, "speed": 150.0, "vision": 10, "dps": 38, "range": 6,
+	},
+	"nacelle": {
+		"name": "Nacelle", "role": "transport", "desc": "Transport de 4 unités", "air": true,
+		"armor": "medium",
+		"cost": 520, "time": 9.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 320, "speed": 150.0, "vision": 9, "slots": 4,
+	},
+	"faucheur": {
+		"name": "Faucheur", "role": "combat", "desc": "Hélicoptère à roquettes", "air": true,
+		"armor": "medium", "weapon": "rocket",
+		"cost": 560, "time": 9.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 340, "speed": 150.0, "vision": 10, "dps": 40, "range": 7,
+	},
+	"marteau": {
+		"name": "Marteau", "role": "combat", "desc": "Bombardier lourd (sol)", "air": true,
+		"armor": "heavy", "weapon": "cannon",
+		"cost": 820, "time": 12.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 520, "speed": 110.0, "vision": 9, "dps": 46, "range": 5,
+	},
+	"mule": {
+		"name": "Mule", "role": "transport", "desc": "Transport de 6 unités", "air": true,
+		"armor": "heavy",
+		"cost": 600, "time": 10.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 600, "speed": 100.0, "vision": 9, "slots": 6,
+	},
+	"guepe": {
+		"name": "Guêpe", "role": "combat", "desc": "Chasseur ultra-rapide", "air": true,
+		"armor": "light", "weapon": "autocannon",
+		"cost": 330, "time": 6.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 140, "speed": 240.0, "vision": 13, "dps": 17, "range": 4,
+	},
+	"frelon": {
+		"name": "Frelon", "role": "combat", "desc": "Bombardier acide (sol)", "air": true,
+		"armor": "light", "weapon": "acid",
+		"cost": 580, "time": 10.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 230, "speed": 175.0, "vision": 10, "dps": 44, "range": 5,
+	},
+	"pelican": {
+		"name": "Pélican", "role": "transport", "desc": "Transport de 4 unités rapide", "air": true,
+		"armor": "medium",
+		"cost": 480, "time": 8.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 280, "speed": 190.0, "vision": 10, "slots": 4,
 	},
 	# --- Maison Solis ---
 	"sentinelle": {
@@ -300,6 +368,11 @@ static func def(id: String) -> Dictionary:
 
 
 ## Multiplicateur de dégâts d'une arme contre un type de blindage.
+## Les armes qui peuvent toucher une unité volante.
+static func hits_air(weapon: String) -> bool:
+	return weapon == "autocannon" or weapon == "rocket" or weapon == "sonic"
+
+
 static func mult(weapon: String, armor: String) -> float:
 	var row: Dictionary = MULT.get(weapon, {})
 	return float(row.get(armor, 1.0))
@@ -342,4 +415,5 @@ static func buildings_for(faction: String) -> Array:
 static func units_for(faction: String) -> Array:
 	var out: Array = ["recolteur", "mineur"]
 	out.append_array(FACTIONS[faction]["units"])
+	out.append_array(FACTIONS[faction]["air"])
 	return out

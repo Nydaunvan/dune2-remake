@@ -555,9 +555,13 @@ class InfoPanel extends GlassPanel:
 		y += 22.0
 		if u.weapon != "":
 			var mult := 1.0 + GameData.RANK_DMG * u.rank
-			_row(34, y, "Arme", WEAPON.get(u.weapon, u.weapon))
+			_row(34, y, "Arme", String(WEAPON.get(u.weapon, u.weapon)) + (" — air + sol" if GameData.hits_air(u.weapon) else " — sol seulement"))
 			y += 22.0
 			_row(34, y, "Dégâts", "%.0f /s    Portée %d cases" % [u.dps * mult, int(u.w_range / 32.0)])
+		elif u.role == "transport":
+			_row(34, y, "Soute", "%d / %d unités" % [u.cargo_units.size(), u.slots])
+			y += 22.0
+			_row(34, y, "Vol", "Ignore le terrain")
 		else:
 			_row(34, y, "Capacité", "%d  (%d en soute)" % [int(u.cargo_cap), int(u.cargo)])
 			y += 22.0
@@ -576,6 +580,10 @@ class InfoPanel extends GlassPanel:
 				UiStyle.text(self, Vector2(COL2, 176), "Dégâts de zone, touche aussi les alliés", 13, GameData.AMBER)
 			else:
 				UiStyle.text(self, Vector2(COL2, 176), "Chaque rang : +15 % dégâts et PV", 13, UiStyle.TEXT_DIM)
+			UiStyle.text(self, Vector2(COL2, 198), _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
+		elif u.role == "transport":
+			UiStyle.text(self, Vector2(COL2, 154), "Clic droit sur une unité : l'embarquer", 13, UiStyle.TEXT)
+			UiStyle.text(self, Vector2(COL2, 176), "Clic droit au sol : y aller et déposer (U)", 13, UiStyle.TEXT)
 			UiStyle.text(self, Vector2(COL2, 198), _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
 		else:
 			UiStyle.text(self, Vector2(COL2, 154), "Récolte automatiquement et rapporte", 14, UiStyle.TEXT)
@@ -805,23 +813,24 @@ class BuildIcon extends Control:
 	## Bâtiments débloqués : on affiche le modèle 3D cuit (ou un bloc simple sans affichage).
 	func _draw_baked_icon(c: Vector2, avail: bool) -> void:
 		var key := "%s|%s" % [id, game.faction_id]
-		var tex = game.bank.frame(key) if game.bank != null and game.bank.has(key) else null
-		if tex != null:
-			var sz: Vector2 = game.bank.draw_size(key)
-			var k := minf(1.0, minf(76.0 / sz.x, 62.0 / sz.y))
-			draw_texture_rect(tex, Rect2(c - sz * k / 2.0, sz * k), false,
-					Color.WHITE if avail else Color(0.45, 0.45, 0.5, 0.8))
-		else:
-			var line: Color = game.fdata["color"] * 1.6 if avail else Color(0.4, 0.35, 0.5)
-			draw_rect(Rect2(c + Vector2(-22, -14), Vector2(44, 28)), Color("2a3350"))
-			draw_rect(Rect2(c + Vector2(-22, -14), Vector2(44, 28)), line, false, 2.0)
+		var is_unit := GameData.UNITS.has(id)
+		var tex = game.bank.frame(key, 0.45) if is_unit else game.bank.frame(key)
+		if tex == null:
+			return
+		var sz: Vector2 = game.bank.draw_size(key)
+		var k := minf(2.2, minf(76.0 / sz.x, 62.0 / sz.y))
+		if is_unit:
+			k = 1.6
+		var col := Color.WHITE if avail else Color(0.45, 0.45, 0.5, 0.8)
+		var cc := c + (Vector2(0, -6) if GameData.def(id).get("air", false) else Vector2.ZERO)
+		draw_texture_rect(tex, Rect2(cc - sz * k / 2.0, sz * k), false, col)
 
 	func _draw_icon(c: Vector2, avail: bool) -> void:
 		var fill := Color("2a3350") if avail else Color("201c2c")
 		var line: Color = game.fdata["color"] * 1.6 if avail else Color(0.4, 0.35, 0.5)
 		line.a = 1.0
 		var role: String = GameData.def(id).get("role", "")
-		if GameData.BUILDINGS.has(id) and GameData.BUILDINGS[id].has("unlock"):
+		if game.bank != null and game.bank.has("%s|%s" % [id, game.faction_id]):
 			_draw_baked_icon(c, avail)
 			return
 		if role == "harvester":

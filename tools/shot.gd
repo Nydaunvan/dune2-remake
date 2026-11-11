@@ -39,6 +39,15 @@ func _process(_d: float) -> bool:
 	if f == 3 and OS.has_environment("SHOT_NOBANK") and node.bank != null:
 		node.bank.queue_free()
 		node.bank = null
+	if f == 9 and OS.has_environment("SHOT_AIR"):
+		node.tier = 9
+		node.ui._set_category("unit" if OS.get_environment("SHOT_AIR") == "unit" else "building")
+		var ids: Array = GameData.FACTIONS[node.faction_id]["air"]
+		for i in ids.size():
+			var u = node._spawn_unit(ids[i], node.world_to_cell(node.start_cell * 32.0) + Vector2i(i * 3 - 3, 3), 0)
+			u.position = node.start_cell * 32.0 + Vector2(i * 70 - 70, 70)
+			u.rotation = -0.4
+		node.center_camera(node.start_cell * 32.0 + Vector2(0, 70))
 	if f == 10 and OS.has_environment("SHOT_SELECT"):
 		for b in node.buildings:
 			if b.team == 0 and b.id == OS.get_environment("SHOT_SELECT"):

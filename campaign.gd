@@ -282,6 +282,10 @@ static func details(faction: String, m: int) -> Array:
 	for id in fd["units"]:
 		un.append("%s (Usine niv. %d)" % [GameData.UNITS[id]["name"], int(GameData.UNITS[id].get("level", 1))])
 	tech.append("Unités : " + ", ".join(un))
+	var ua: PackedStringArray = []
+	for id in fd["air"]:
+		ua.append("%s (Usine niv. %d)" % [GameData.UNITS[id]["name"], int(GameData.UNITS[id].get("level", 1))])
+	tech.append("Unités volantes (Aérodrome, dès la mission 3) : " + ", ".join(ua))
 	tech.append("Les unités plus puissantes demandent d'améliorer l'Usine")
 	out.append(["TECHNOLOGIE", tech])
 	return out

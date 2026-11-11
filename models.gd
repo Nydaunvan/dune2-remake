@@ -37,6 +37,16 @@ static func build(id: String, accent: Color) -> Node3D:
 		"usine": _usine(r, accent)
 		"tourelle": _tourelle_base(r, accent)
 		"tourelle_tete": _tourelle_tete(r, accent)
+		"libellule": _fighter(r, body, hi, accent, 0)
+		"aigrette": _fighter(r, body, hi, accent, 1)
+		"guepe": _fighter(r, body, hi, accent, 2)
+		"faucheur": _copter(r, body, hi, accent)
+		"marteau": _bomber(r, body, hi, accent, false)
+		"frelon": _bomber(r, body, hi, accent, true)
+		"nacelle": _carrier(r, body, hi, accent, 1.0)
+		"pelican": _carrier(r, body, hi, accent, 0.9)
+		"mule": _carrier(r, body, hi, accent, 1.3)
+		"aerodrome": _aerodrome(r, accent)
 		"mur": _mur(r, accent, false)
 		"mur_acier": _mur(r, accent, true)
 		"silo": _silo(r, accent)
@@ -506,3 +516,78 @@ static func _tour_tete(r: Node3D, acc: Color, id: String) -> void:
 			_cyl(r, 11, 13, 10, Vector3(0, y + 5, 0), LIGHT, 8)
 			_barrel(r, 8, y + 8, 0, 26, 2.8, DARK)
 			_cyl(r, 5, 5, 6, Vector3(10, y + 10, 0), GLOW_GREEN, 6, Vector3.ZERO, 1.8)
+
+
+# --- Unités volantes -----------------------------------------------------------
+
+static func _fighter(r: Node3D, body: Color, hi: Color, acc: Color, v: int) -> void:
+	var l := 30.0 if v != 2 else 34.0
+	_box(r, Vector3(l, 5, 7), Vector3(0, 12, 0), body)
+	_box(r, Vector3(10, 4, 6), Vector3(l / 2.0 - 2, 11.5, 0), hi, Vector3(0, 0, -0.35))     # nez
+	_box(r, Vector3(8, 3.5, 5), Vector3(2, 15, 0), METAL)                                   # cockpit
+	_box(r, Vector3(1, 2.5, 4), Vector3(6, 15.2, 0), GLOW_BLUE, Vector3.ZERO, 1.4)
+	if v == 1:
+		_cyl(r, 11, 11, 1.6, Vector3(-3, 13, 0), acc, 10, Vector3.ZERO, 0.9)                 # anneau sonique
+		_box(r, Vector3(10, 1.4, 32), Vector3(-3, 12, 0), hi)
+	else:
+		_box(r, Vector3(9, 1.4, 38 if v == 0 else 30), Vector3(-3, 12, 0), hi, Vector3(0, -0.0, 0))
+		_box(r, Vector3(5, 1.2, 16), Vector3(-l / 2.0 + 2, 12.5, 0), body)
+	_box(r, Vector3(7, 7, 1.2), Vector3(-l / 2.0 + 2, 15, 0), acc, Vector3.ZERO, 0.6)       # dérive
+	_box(r, Vector3(3, 3, 3.5), Vector3(-l / 2.0 - 1, 12, 0), GLOW_ORANGE, Vector3.ZERO, 2.2) # réacteur
+	_barrel(r, l / 2.0 - 2, 10, 5, 8, 0.9)
+	_barrel(r, l / 2.0 - 2, 10, -5, 8, 0.9)
+
+
+static func _copter(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
+	_box(r, Vector3(24, 9, 11), Vector3(0, 12, 0), body)
+	_box(r, Vector3(9, 6, 9), Vector3(11, 12, 0), hi, Vector3(0, 0, -0.3))
+	_box(r, Vector3(7, 4, 7), Vector3(10, 16, 0), GLOW_BLUE, Vector3.ZERO, 0.8)
+	_box(r, Vector3(26, 2.4, 2.6), Vector3(-22, 13, 0), METAL)                              # queue
+	_box(r, Vector3(1.5, 8, 5), Vector3(-34, 16, 0), acc, Vector3.ZERO, 0.6)
+	_cyl(r, 1.6, 1.6, 4, Vector3(-1, 19, 0), DARK, 6)
+	for a in 2:
+		_box(r, Vector3(46, 0.7, 2.4), Vector3(-1, 21.5, 0), LIGHT, Vector3(0, a * PI / 2.0 + 0.5, 0))
+	for s in [-1.0, 1.0]:
+		_box(r, Vector3(10, 3, 3), Vector3(2, 9, 9 * s), DARK)                              # nacelles roquettes
+		_cyl(r, 1.2, 1.2, 9, Vector3(8, 9, 9 * s), METAL, 6, Vector3(0, 0, PI / 2.0))
+
+
+static func _bomber(r: Node3D, body: Color, hi: Color, acc: Color, acid: bool) -> void:
+	_box(r, Vector3(32, 7, 12), Vector3(0, 12, 0), body)
+	_box(r, Vector3(10, 5, 10), Vector3(17, 11, 0), hi, Vector3(0, 0, -0.3))
+	_box(r, Vector3(8, 4, 7), Vector3(5, 16.5, 0), METAL)
+	_box(r, Vector3(14, 1.6, 52), Vector3(-2, 12, 0), hi)                                   # ailes
+	_box(r, Vector3(8, 1.4, 22), Vector3(-15, 12.5, 0), body)
+	_box(r, Vector3(7, 8, 1.4), Vector3(-15, 17, 0), acc, Vector3.ZERO, 0.6)
+	var glow := GLOW_GREEN if acid else GLOW_ORANGE
+	for z in [-9.0, 9.0]:
+		_cyl(r, 3.4, 3.4, 12, Vector3(-4, 9, z), DARK, 8, Vector3(0, 0, PI / 2.0))
+		_ball(r, 2.4, Vector3(-11, 9, z), glow, 2.0)
+	_box(r, Vector3(12, 3, 7), Vector3(0, 7.5, 0), DARK)                                    # soute
+	_ball(r, 2.6, Vector3(3, 7, 0), glow, 1.8)
+
+
+static func _carrier(r: Node3D, body: Color, hi: Color, acc: Color, k: float) -> void:
+	_box(r, Vector3(38 * k, 10 * k, 15 * k), Vector3(0, 12, 0), body)
+	_box(r, Vector3(10 * k, 7 * k, 12 * k), Vector3(21 * k, 12, 0), hi, Vector3(0, 0, -0.35))
+	_box(r, Vector3(6, 3.5, 9 * k), Vector3(16 * k, 16 * k + 1, 0), GLOW_BLUE, Vector3.ZERO, 0.8)
+	_box(r, Vector3(30 * k, 2.2, 7 * k), Vector3(-2, 17 * k + 2, 0), METAL)                  # soute dessus
+	_box(r, Vector3(14 * k, 1.5, 44 * k), Vector3(1, 12, 0), hi)                           # ailes
+	for z in [-1.0, 1.0]:
+		_cyl(r, 5 * k, 5 * k, 3, Vector3(2, 14, 22 * k * z), DARK, 10)                      # rotors
+		_cyl(r, 8 * k, 8 * k, 0.6, Vector3(2, 16, 22 * k * z), LIGHT, 10)
+	_box(r, Vector3(1.4, 7, 7), Vector3(-19 * k, 17, 0), acc, Vector3.ZERO, 0.6)
+	_box(r, Vector3(24 * k, 1.0, 1.2), Vector3(-4, 7, 7 * k), acc, Vector3.ZERO, 0.8)
+
+
+static func _aerodrome(r: Node3D, acc: Color) -> void:
+	_slab(r, 96, 64, acc)
+	_box(r, Vector3(42, 16, 30), Vector3(-22, 11, -6), Color(0.34, 0.36, 0.44))              # hangar
+	_box(r, Vector3(44, 3, 32), Vector3(-22, 20.5, -6), METAL, Vector3(0, 0, 0.0))
+	_box(r, Vector3(30, 9, 3), Vector3(-22, 7.5, 10), DARK)
+	_box(r, Vector3(30, 1.2, 3.5), Vector3(-22, 12.5, 10), acc, Vector3.ZERO, 1.2)
+	_cyl(r, 17, 17, 1.2, Vector3(24, 4, 8), Color(0.22, 0.24, 0.3), 12)                      # piste
+	_cyl(r, 11, 11, 0.8, Vector3(24, 5, 8), acc, 12, Vector3.ZERO, 0.9)
+	_cyl(r, 7, 7, 0.8, Vector3(24, 5.6, 8), DARK, 12)
+	_cyl(r, 1.5, 1.5, 26, Vector3(30, 16, -18), DARK, 6)
+	_ball(r, 3, Vector3(30, 30, -18), GLOW_ORANGE, 2.2)

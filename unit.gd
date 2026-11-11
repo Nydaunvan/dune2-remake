@@ -5,6 +5,12 @@ extends Node2D
 
 var id := ""
 var role := "combat" # combat | harvester | miner | mcv | convoy
+const AIR_LIFT := 22.0
+var air := false     # unité volante : ignore le terrain, ombre au sol
+var carried := false # transportée (cachée, suit son transport)
+var cargo_units: Array = []
+var slots := 0
+var load_target = null
 var guard := false   # garde immobile (avant-poste, embuscade) : n'entre pas dans les vagues de l'IA
 var convoy := false  # unité de convoi de mission
 var faction_color := Color("4aa8ff")
@@ -70,6 +76,8 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	faction_color = p_color
 	var d := GameData.def(id)
 	role = d.get("role", "combat")
+	air = d.get("air", false)
+	slots = int(d.get("slots", 0))
 	speed = d.get("speed", 100.0)
 	max_hp = float(d.get("hp", 200))
 	hp = max_hp
@@ -78,7 +86,7 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	cargo_cap = d.get("capacity", 0.0)
 	harvest_rate = d.get("rate", 100.0)
 	cargo_kind = d.get("resource", "")
-	radius = 14.0 if (is_worker() or role == "mcv" or role == "convoy") else 11.0
+	radius = 14.0 if (is_worker() or role == "mcv" or role == "convoy" or air) else 11.0
 	armor = d.get("armor", "medium")
 	weapon = d.get("weapon", "")
 	dps = float(d.get("dps", 0))
@@ -101,6 +109,7 @@ func is_worker() -> bool:
 
 ## Ordre du joueur : va quelque part, puis reprend le travail (ouvriers).
 func order_path(new_path: PackedVector2Array) -> void:
+	load_target = null
 	target = null
 	forced = false
 	amove_goal = Vector2i(-1, -1)
@@ -117,6 +126,7 @@ func follow(new_path: PackedVector2Array) -> void:
 
 
 func stop() -> void:
+	load_target = null
 	target = null
 	forced = false
 	amove_goal = Vector2i(-1, -1)
@@ -145,6 +155,8 @@ func flee() -> void:
 func order_attack(t) -> void:
 	if weapon == "" or not alive:
 		return
+	if t is Unit and t.air and not GameData.hits_air(weapon):
+		return
 	amove_goal = Vector2i(-1, -1)
 	_set_target(t, true)
 
@@ -160,7 +172,11 @@ func order_amove(goal: Vector2i) -> void:
 
 
 func _go_amove() -> void:
-	var p: PackedVector2Array = game.path_to(position, amove_goal)
+	var p: PackedVector2Array
+	if air:
+		p = PackedVector2Array([position, game._cell_to_world(amove_goal)])
+	else:
+		p = game.path_to(position, amove_goal)
 	if p.is_empty():
 		amove_goal = Vector2i(-1, -1)
 		state = "idle"
@@ -250,6 +266,11 @@ func _die() -> void:
 	if not alive:
 		return
 	alive = false
+	for c in cargo_units:
+		if is_instance_valid(c) and c.alive:
+			c.carried = false
+			c._die()
+	cargo_units.clear()
 	Fx.explosion(game, position, 1.0)
 	game.on_unit_lost(self)
 	queue_free()
@@ -296,6 +317,76 @@ func devour() -> void:
 	queue_free()
 
 
+# --- Transport aérien ---------------------------------------------------------
+
+## Ordre : va chercher cette unité terrestre alliée et l'embarque.
+func order_load(t) -> void:
+	if role != "transport" or not _valid(t) or t.air or t.carried or t == self:
+		return
+	if cargo_units.size() >= slots:
+		game.ui.toast("%s : soute pleine" % GameData.def(id)["name"], GameData.AMBER)
+		return
+	target = null
+	forced = false
+	load_target = t
+	state = "load"
+
+
+func _transport(delta: float) -> void:
+	if role != "transport" or state != "load":
+		return
+	if not _valid(load_target) or load_target.carried or cargo_units.size() >= slots:
+		load_target = null
+		state = "idle"
+		return
+	_repath -= delta
+	if _repath <= 0.0:
+		_repath = 0.25
+		follow(PackedVector2Array([position, load_target.position]))
+	if position.distance_to(load_target.position) < 22.0:
+		var t = load_target
+		load_target = null
+		path = PackedVector2Array()
+		state = "idle"
+		load_unit(t)
+
+
+func load_unit(t) -> void:
+	if cargo_units.size() >= slots or t.carried:
+		return
+	t.stop()
+	t.carried = true
+	t.visible = false
+	t.selected = false
+	game.selected.erase(t)
+	cargo_units.append(t)
+	if team == 0:
+		game.popup(position, "Embarqué %d/%d" % [cargo_units.size(), slots], GameData.GREEN)
+	queue_redraw()
+
+
+## Dépose toute la cargaison autour du transport (les ouvriers reprennent le travail).
+func unload_all() -> void:
+	if cargo_units.is_empty():
+		return
+	var n := 0
+	for c in cargo_units:
+		if not is_instance_valid(c) or not c.alive:
+			continue
+		var cell: Vector2i = game._find_free_cell(game.world_to_cell(position) + Vector2i(n % 3 - 1, n / 3))
+		c.position = game._cell_to_world(cell)
+		c.carried = false
+		c.visible = true
+		c.state = "seek" if c.is_worker() else "idle"
+		c._seek_started = false
+		n += 1
+	cargo_units.clear()
+	if team == 0:
+		game.popup(position, "Cargaison déposée", GameData.GREEN)
+		game.sfx.play_ui("unit_ready", -6.0)
+	queue_redraw()
+
+
 # --- Boucle -------------------------------------------------------------------
 
 func _sprite_key() -> String:
@@ -318,10 +409,16 @@ func _process(_delta: float) -> void:
 func _physics_process(delta: float) -> void:
 	if not alive:
 		return
+	if carried:
+		return
 	_work(delta)
 	_combat(delta)
+	_transport(delta)
 	_move(delta)
-	_dust.emitting = not path.is_empty() and game.is_sand_at(position)
+	_dust.emitting = not air and not path.is_empty() and game.is_sand_at(position)
+	for c in cargo_units:
+		if is_instance_valid(c):
+			c.position = position
 
 
 func _combat(delta: float) -> void:
@@ -341,20 +438,20 @@ func _combat(delta: float) -> void:
 			_scan_t -= delta
 			if _scan_t <= 0.0:
 				_scan_t = 0.3
-				var t = game.find_enemy(team, position, w_range)
+				var t = game.find_enemy(team, position, w_range, false, weapon)
 				if t != null and cooldown <= 0.0:
 					_shoot(t)
 		"idle", "amove":
 			_scan_t -= delta
 			if _scan_t <= 0.0:
 				_scan_t = 0.35
-				var t = game.find_enemy(team, position, w_range + 64.0)
+				var t = game.find_enemy(team, position, w_range + 64.0, false, weapon)
 				if t != null:
 					_set_target(t, false)
 
 
 func _attack(delta: float) -> void:
-	if not _valid(target):
+	if not _valid(target) or (target is Unit and (target.carried or (target.air and not GameData.hits_air(weapon)))):
 		target = null
 		forced = false
 		if amove_goal.x >= 0:
@@ -374,7 +471,10 @@ func _attack(delta: float) -> void:
 		_repath -= delta
 		if _repath <= 0.0 or path.is_empty():
 			_repath = 0.7
-			follow(game.path_to_target(position, target))
+			if air:
+				follow(PackedVector2Array([position, tp]))
+			else:
+				follow(game.path_to_target(position, target))
 		return
 	path = PackedVector2Array()
 	var want := (tp - position).angle()
@@ -401,7 +501,7 @@ func _move(delta: float) -> void:
 	var desired := (target - position).angle()
 	# Le véhicule tourne d'abord, puis avance (sensation jeu de stratégie classique)
 	rotation = lerp_angle(rotation, desired, clampf(turn_speed * delta, 0.0, 1.0))
-	if absf(angle_difference(rotation, desired)) < 0.6:
+	if air or absf(angle_difference(rotation, desired)) < 0.6:
 		position = position.move_toward(target, speed * delta)
 	if position.distance_to(target) < 1.0:
 		path.remove_at(0)
@@ -414,6 +514,8 @@ func _arrived() -> void:
 		"move":
 			state = "seek" if is_worker() else "idle"
 			_seek_started = false
+			if role == "transport" and not cargo_units.is_empty():
+				unload_all()
 		"amove":
 			amove_goal = Vector2i(-1, -1)
 			state = "idle"
@@ -518,6 +620,13 @@ func _draw_sprite() -> bool:
 		return false
 	var sz := bank.draw_size(key)
 	# Ombre portée douce (bas-gauche), puis le modèle sans la rotation du nœud
+	if air:
+		draw_set_transform(Vector2(-4, 22), 0.0, Vector2(1.0, 0.55))
+		draw_circle(Vector2.ZERO, radius * 1.3, Color(0.1, 0.03, 0.12, 0.3))
+		draw_set_transform(Vector2(0, -AIR_LIFT), -rotation, Vector2.ONE)
+		draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
+		draw_set_transform(Vector2.ZERO, -rotation, Vector2.ONE)
+		return true
 	draw_set_transform(Vector2(-5, 6), 0.0, Vector2(1.0, 0.55))
 	draw_circle(Vector2.ZERO, radius * 1.25, Color(0.1, 0.03, 0.12, 0.28))
 	draw_set_transform(Vector2.ZERO, -rotation, Vector2.ONE)
@@ -532,6 +641,14 @@ func _draw() -> void:
 		_draw_overlay()
 		return
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if air:
+		draw_circle(Vector2(-4, 14), 11.0, Color(0, 0, 0, 0.25))
+		var fwd := Vector2.from_angle(rotation)
+		var side := fwd.orthogonal()
+		draw_colored_polygon(PackedVector2Array([fwd * 16.0 + Vector2(0, -AIR_LIFT), side * 12.0 - fwd * 10.0 + Vector2(0, -AIR_LIFT),
+				-fwd * 6.0 + Vector2(0, -AIR_LIFT), -side * 12.0 - fwd * 10.0 + Vector2(0, -AIR_LIFT)]), body)
+		_draw_overlay()
+		return
 	match role:
 		"harvester":
 			draw_rect(Rect2(-17, -12, 34, 24), body.darkened(0.2))

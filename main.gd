@@ -611,7 +611,7 @@ func _update_worm(delta: float) -> void:
 func _harvesters_on_sand() -> Array:
 	var out := []
 	for u in units:
-		if u.is_worker() and u.state == "harvest" and is_sand_at(u.position):
+		if u.is_worker() and u.state == "harvest" and not u.carried and is_sand_at(u.position):
 			out.append(u)
 	return out
 
@@ -765,7 +765,7 @@ func _update_fog() -> void:
 			u.seen = true
 		else:
 			u.seen = is_visible_cell(_world_to_cell(u.position))
-		u.visible = u.seen
+		u.visible = u.seen and not u.carried
 	for b in buildings:
 		if side_of(b.team) == 0:
 			b.seen = true
@@ -816,11 +816,13 @@ func faction_color(team: int) -> Color:
 
 
 ## Ennemi le plus intéressant autour d'un point : unités armées d'abord.
-func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false):
+func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, wpn := ""):
 	var best = null
 	var best_s := INF
 	for u in units:
-		if not hostile(u.team, team) or not u.alive or (side_of(team) == 0 and not u.seen):
+		if not hostile(u.team, team) or not u.alive or u.carried or (side_of(team) == 0 and not u.seen):
+			continue
+		if u.air and wpn != "" and not GameData.hits_air(wpn):
 			continue
 		var d := u.position.distance_to(pos) - u.radius
 		if d > max_d:
@@ -846,7 +848,8 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false):
 ## Ennemi (du point de vue du joueur) sous le curseur.
 func enemy_at(world_pos: Vector2):
 	for u in units:
-		if hostile(u.team, 0) and u.alive and u.seen and u.position.distance_to(world_pos) < u.radius + 8.0:
+		if hostile(u.team, 0) and u.alive and u.seen and not u.carried \
+				and (u.position + Vector2(0, -Unit.AIR_LIFT if u.air else 0.0)).distance_to(world_pos) < u.radius + 8.0:
 			return u
 	for b in buildings:
 		if hostile(b.team, 0) and b.alive and b.visible and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
@@ -1031,6 +1034,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				w.mode = Window.MODE_MAXIMIZED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
 			KEY_D:
 				on_command("deploy")
+			KEY_U:
+				on_command("unload")
 			KEY_M:
 				var off := sfx.toggle_mute()
 				ui.toast("Son coupé" if off else "Son activé", GameData.AMBER)
@@ -1111,10 +1116,11 @@ func _finish_selection(end: Vector2) -> void:
 	var rect := Rect2(drag_start, end - drag_start).abs()
 	var is_click := rect.size.length() < 6.0
 	for u in units:
-		if u.team != 0:
+		if u.team != 0 or u.carried:
 			continue
-		var hit := u.position.distance_to(end) < u.radius + 4.0 if is_click \
-				else rect.has_point(u.position)
+		var up: Vector2 = u.position + Vector2(0, -Unit.AIR_LIFT if u.air else 0.0)
+		var hit := up.distance_to(end) < u.radius + 4.0 if is_click \
+				else rect.has_point(up)
 		if hit and u not in selected:
 			u.selected = true
 			selected.append(u)
@@ -1134,6 +1140,15 @@ func order_context(world_pos: Vector2) -> void:
 		sfx.play_ui("ack", -8.0)
 	var e = enemy_at(world_pos)
 	if e == null:
+		var friend = _friendly_ground_at(world_pos)
+		if friend != null:
+			var loaded := false
+			for u in selected:
+				if u.role == "transport":
+					u.order_load(friend)
+					loaded = true
+			if loaded:
+				return
 		order_move(world_pos)
 		return
 	for u in selected:
@@ -1141,13 +1156,22 @@ func order_context(world_pos: Vector2) -> void:
 	Fx.burst(self, e.world_center(), GameData.RED, 6, 0.5)
 
 
+## Unité terrestre alliée sous le curseur (pour l'embarquement).
+func _friendly_ground_at(world_pos: Vector2):
+	for u in units:
+		if u.team == 0 and u.alive and not u.air and not u.carried and u not in selected \
+				and u.position.distance_to(world_pos) < u.radius + 8.0:
+			return u
+	return null
+
+
 func order_amove(world_pos: Vector2) -> void:
 	var target := _world_to_cell(world_pos)
 	for i in selected.size():
 		var cell := target + _formation_offset(i, selected.size())
-		if not _is_walkable(cell):
+		if not _is_walkable(cell) and not selected[i].air:
 			cell = target
-		if _is_walkable(cell):
+		if _is_walkable(cell) or selected[i].air:
 			selected[i].order_amove(cell)
 
 
@@ -1155,6 +1179,9 @@ func order_move(world_pos: Vector2) -> void:
 	var target := _world_to_cell(world_pos)
 	for i in selected.size():
 		var cell := target + _formation_offset(i, selected.size())
+		if selected[i].air:
+			selected[i].order_path(PackedVector2Array([selected[i].position, _cell_to_world(cell)]))
+			continue
 		if not _is_walkable(cell):
 			cell = target
 		if not _is_walkable(cell):
@@ -1178,6 +1205,14 @@ func on_command(cmd: String) -> void:
 					deploy_mcv(u)
 			if not any:
 				ui.toast("Sélectionnez l'engin de chantier", GameData.AMBER)
+		"unload":
+			var any2 := false
+			for u in selected:
+				if u.role == "transport" and not u.cargo_units.is_empty():
+					u.unload_all()
+					any2 = true
+			if not any2:
+				ui.toast("Sélectionnez un transport chargé", GameData.AMBER)
 		"stop":
 			for u in selected:
 				u.stop()
