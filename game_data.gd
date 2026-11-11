@@ -237,12 +237,12 @@ const UNITS := {
 	"recolteur": {
 		"name": "Récolteur d'épice", "role": "harvester", "resource": "spice", "armor": "medium",
 		"cost": 400, "time": 8.0, "requires": ["raffinerie"], "from": "raffinerie",
-		"hp": 300, "speed": 70.0, "capacity": 200.0, "rate": 22.0,
+		"hp": 300, "speed": 70.0, "capacity": 200.0, "rate": 7.0,
 	},
 	"mineur": {
 		"name": "Mineur", "role": "miner", "resource": "ore", "armor": "medium",
 		"cost": 350, "time": 8.0, "requires": ["fonderie"], "from": "fonderie",
-		"hp": 260, "speed": 80.0, "capacity": 160.0, "rate": 20.0,
+		"hp": 260, "speed": 80.0, "capacity": 160.0, "rate": 6.0,
 	},
 	# --- Unités volantes (Aérodrome) ---
 	"libellule": {
