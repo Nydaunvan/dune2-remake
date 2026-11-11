@@ -31,7 +31,7 @@ func _ready() -> void:
 	vb.add_theme_constant_override("separation", 22)
 	center.add_child(vb)
 
-	vb.add_child(_label("DUNE II — REMAKE", 76, Color.WHITE, true))
+	vb.add_child(_label("THE BUILDING OF A DYNASTY", 76, Color.WHITE, true))
 	vb.add_child(_label("Choisissez votre faction", 26, Color(1.0, 0.85, 0.7), true))
 
 	var row := HBoxContainer.new()

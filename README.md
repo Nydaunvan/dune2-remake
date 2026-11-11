@@ -1,2 +1,2 @@
-# dune2-remake
+# The Building of a Dynasty
 dune2-remake

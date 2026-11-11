@@ -377,7 +377,7 @@ func _move(delta: float) -> void:
 		return
 	var target := path[0]
 	var desired := (target - position).angle()
-	# Le véhicule tourne d'abord, puis avance (sensation Dune II)
+	# Le véhicule tourne d'abord, puis avance (sensation jeu de stratégie classique)
 	rotation = lerp_angle(rotation, desired, clampf(turn_speed * delta, 0.0, 1.0))
 	if absf(angle_difference(rotation, desired)) < 0.6:
 		position = position.move_toward(target, speed * delta)

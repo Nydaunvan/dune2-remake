@@ -43,7 +43,7 @@ func set_progress(frac: float, text: String) -> void:
 func _draw_ui() -> void:
 	var sz := _canvas.size
 	var c := sz / 2.0
-	UiStyle.text(_canvas, Vector2(0, c.y - 90), "DUNE II — REMAKE", 54, Color.WHITE, true, HORIZONTAL_ALIGNMENT_CENTER, sz.x)
+	UiStyle.text(_canvas, Vector2(0, c.y - 90), "THE BUILDING OF A DYNASTY", 54, Color.WHITE, true, HORIZONTAL_ALIGNMENT_CENTER, sz.x)
 	var bar := Rect2(c.x - 340, c.y - 20, 680, 18)
 	UiStyle.frame(_canvas, bar.grow(8), 12.0, Color(_faction_color.r, _faction_color.g, _faction_color.b, 0.7), UiStyle.PANEL, 0.2, 0.3)
 	UiStyle.seg_bar(_canvas, bar, _shown, _faction_color * 1.3, 14.0, 4.0)
