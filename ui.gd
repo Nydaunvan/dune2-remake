@@ -32,6 +32,7 @@ func setup(p_game) -> void:
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(root)
 	_build_topbar()
+	_build_objective()
 	_build_sidebar()
 	_rebuild_icons()
 	info_panel = InfoPanel.new(game)
@@ -79,6 +80,15 @@ func toast(text: String, color := GameData.CREAM) -> void:
 
 
 # --- Construction de l'interface ---------------------------------------------
+
+func _build_objective() -> void:
+	if game.mission.is_empty():
+		return
+	var p := ObjectivePanel.new(game)
+	p.position = Vector2(6, 100)
+	p.size = Vector2(430, 76)
+	root.add_child(p)
+
 
 func _build_topbar() -> void:
 	topbar = HudBar.new()
@@ -197,7 +207,7 @@ func _process(_delta: float) -> void:
 	elif game.command_mode == "attack":
 		info_label.text = "Cliquez : les unités avancent en attaquant tout sur leur route."
 	else:
-		info_label.text = "File : bâtiments %d/%d — unités %d/%d\nClic droit : ordre / annuler une icône\nF11 plein écran — F10 menu" \
+		info_label.text = "File : bâtiments %d/%d — unités %d/%d\nClic droit : ordre / annuler une icône\nF11 plein écran — F10 menu — M son" \
 				% [game.production["building"].size(), game.queue_max("building"),
 				game.production["unit"].size(), game.queue_max("unit")]
 
@@ -231,6 +241,23 @@ func show_end(victory: bool) -> void:
 	sub.add_theme_font_size_override("font_size", 26)
 	sub.add_theme_color_override("font_color", GameData.CREAM)
 	vb.add_child(sub)
+	if not game.mission.is_empty():
+		var m: int = GameSession.mission
+		var go := NeonButton.new("")
+		go.accent = col
+		go.custom_minimum_size = Vector2(320, 60)
+		if victory and m + 1 < Campaign.MISSIONS.size():
+			go.text = "MISSION SUIVANTE"
+			go.pressed.connect(func() -> void:
+				GameSession.mission = m + 1
+				get_tree().change_scene_to_file("res://main.tscn"))
+			vb.add_child(go)
+		elif not victory:
+			go.text = "RECOMMENCER"
+			go.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://main.tscn"))
+			vb.add_child(go)
+		else:
+			sub.text = "Campagne terminée : Arrakis est à vous."
 	var b := NeonButton.new("RETOUR AU MENU")
 	b.accent = col
 	b.custom_minimum_size = Vector2(320, 60)
@@ -238,6 +265,28 @@ func show_end(victory: bool) -> void:
 	vb.add_child(b)
 	var tw := create_tween()
 	tw.tween_property(dim, "color:a", 0.6, 1.2)
+
+
+# --- Objectif de mission ------------------------------------------------------
+
+class ObjectivePanel extends GlassPanel:
+	var game
+
+	func _init(p_game) -> void:
+		super(8.0, 4.0, p_game.fdata["color"], p_game.fdata["accent"], 14.0)
+		game = p_game
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(_delta: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		var m: Dictionary = game.mission
+		var pr: Array = game.objective_progress()
+		UiStyle.text(self, Vector2(20, 27), "MISSION %d — %s" % [GameSession.mission + 1, String(m["title"]).to_upper()],
+				13, UiStyle.GOLD, true)
+		UiStyle.text(self, Vector2(20, 49), String(pr[0]), 14, UiStyle.TEXT)
+		UiStyle.seg_bar(self, Rect2(20, 57, size.x - 40.0, 8), float(pr[1]), UiStyle.GOLD, 8.0, 3.0)
 
 
 # --- Barre de ressources ------------------------------------------------------

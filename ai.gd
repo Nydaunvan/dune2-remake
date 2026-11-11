@@ -8,10 +8,6 @@ const TEAM := 1
 const THINK := 1.0
 const BUILD_ORDER := ["centrale", "raffinerie", "fonderie", "usine", "centrale",
 		"tourelle", "usine", "tourelle", "centrale", "tourelle", "tourelle"]
-const MAX_ARMY := 22
-const SLOWDOWN := 1.4     # l'IA construit et produit un peu plus lentement que le joueur
-const WAVE_GRACE := 240.0 # pas d'assaut avant 4 minutes de jeu
-const WAVE_PAUSE := 60.0  # répit minimum entre deux assauts
 
 var game # le nœud principal (main.gd)
 var faction_id := ""
@@ -23,6 +19,10 @@ var active := true
 var build_q := {}
 var unit_q := {}
 var wave_size := 6
+var max_army := 22
+var slowdown := 1.4     # l'IA construit et produit un peu plus lentement que le joueur
+var wave_grace := 240.0 # pas d'assaut avant 4 minutes de jeu
+var wave_pause := 60.0  # répit minimum entre deux assauts
 var assaulting := false
 var wave_started := 0.0
 var wave_ended := 0.0
@@ -33,6 +33,17 @@ func setup(p_game, p_faction: String) -> void:
 	game = p_game
 	faction_id = p_faction
 	fdata = GameData.FACTIONS[p_faction]
+
+
+## Réglages de mission (campagne).
+func configure(p: Dictionary) -> void:
+	slowdown = float(p.get("slowdown", slowdown))
+	wave_grace = float(p.get("grace", wave_grace))
+	wave_pause = float(p.get("pause", wave_pause))
+	max_army = int(p.get("max_army", max_army))
+	wave_size = int(p.get("wave", wave_size))
+	credits = int(p.get("credits", credits))
+	ore = int(p.get("ore", ore))
 
 
 func add_income(kind: String, amount: int) -> void:
@@ -57,7 +68,7 @@ func _process(delta: float) -> void:
 # --- Production ---------------------------------------------------------------
 
 func _progress(delta: float) -> void:
-	var factor := (1.0 if game.power_produced(TEAM) >= game.power_used(TEAM) else 0.5) / SLOWDOWN
+	var factor := (1.0 if game.power_produced(TEAM) >= game.power_used(TEAM) else 0.5) / slowdown
 	var ufactor: float = factor * game.unit_speed_bonus(TEAM)
 	if not build_q.is_empty():
 		if not build_q["ready"]:
@@ -144,7 +155,7 @@ func _think_units() -> void:
 		want = "recolteur"
 	elif game.has_building("fonderie", TEAM) and miners < 1:
 		want = "mineur"
-	elif game.has_building("usine", TEAM) and _army().size() < MAX_ARMY:
+	elif game.has_building("usine", TEAM) and _army().size() < max_army:
 		# Armée variée : on prend un type au hasard, légèrement pondéré
 		var ids: Array = fdata["units"]
 		want = ids[randi() % ids.size()]
@@ -223,7 +234,7 @@ func _think_army() -> void:
 
 	var idle := army.filter(func(u: Unit) -> bool: return u.state == "idle")
 	if not assaulting:
-		if game.game_time >= WAVE_GRACE and game.game_time - wave_ended >= WAVE_PAUSE \
+		if game.game_time >= wave_grace and game.game_time - wave_ended >= wave_pause \
 				and idle.size() >= wave_size:
 			assaulting = true
 			wave_started = game.game_time

@@ -217,6 +217,7 @@ func add_kill() -> void:
 		hp += max_hp - old
 		Fx.burst(game, position, GameData.GOLD, 14, 0.9)
 		if team == 0:
+			game.sfx.play_ui("rank", -4.0)
 			game.popup(position, "★ %s" % GameData.RANKS[rank]["name"], GameData.GOLD)
 	queue_redraw()
 
@@ -248,6 +249,7 @@ func convert_to(new_team: int, new_color: Color, duration: float) -> void:
 		selected = false
 		game.selected.erase(self)
 	Fx.burst(game, position, Color(1.9, 0.4, 2.0), 16, 1.0)
+	game.sfx.play("control", position)
 	queue_redraw()
 
 

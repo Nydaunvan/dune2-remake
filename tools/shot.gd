@@ -12,12 +12,17 @@ func _initialize() -> void:
 	var sc := OS.get_environment("SHOT_SCENE") if OS.has_environment("SHOT_SCENE") else "main"
 	if OS.has_environment("SHOT_FRAMES"):
 		frames = int(OS.get_environment("SHOT_FRAMES"))
+	if OS.has_environment("SHOT_MISSION"):
+		GameSession.mode = "campaign"
+		GameSession.mission = int(OS.get_environment("SHOT_MISSION"))
 	node = load("res://%s.tscn" % sc).instantiate()
 	root.add_child(node)
 
 
 func _process(_d: float) -> bool:
 	f += 1
+	if f == 5 and OS.has_environment("SHOT_OVERLAY"):
+		node._open_campaign()
 	if f == 3 and OS.has_environment("SHOT_FOCUS"):
 		var p := OS.get_environment("SHOT_FOCUS").split(",")
 		node.camera.zoom = Vector2(float(OS.get_environment("SHOT_ZOOM")), float(OS.get_environment("SHOT_ZOOM"))) if OS.has_environment("SHOT_ZOOM") else node.camera.zoom

@@ -56,9 +56,13 @@ var field_img: Image
 var field_tex: ImageTexture
 var ui: GameUI
 var ai: SkirmishAI
+var sfx: Sfx
 var bank: SpriteBank # modèles 3D cuits en sprites (absent sans affichage)
 var enemy_faction := ""
 var over := false
+var mission := {}          # mission de campagne en cours (vide en escarmouche)
+var earned := 0            # Solaris récoltés par le joueur
+var _obj_t := 0.0
 var selected_building: Building = null
 var inspected = null # unité ou bâtiment (ami ou ennemi) examiné par un clic
 var fog_vis := PackedByteArray()  # 1 = visible maintenant
@@ -115,8 +119,11 @@ func _ready() -> void:
 		_setup_fog()
 	_place_base(START, 0)
 	_spawn_base_units(START, 0)
-	if GameSession.mode == "skirmish":
-		_setup_enemy()
+	if GameSession.mode == "campaign":
+		mission = Campaign.MISSIONS[GameSession.mission]
+		credits = int(mission["credits"])
+		ore = int(mission["ore"])
+	_setup_enemy()
 	if DisplayServer.get_name() != "headless":
 		bank = SpriteBank.new()
 		add_child(bank)
@@ -124,10 +131,15 @@ func _ready() -> void:
 		if enemy_faction != "":
 			facs.append(enemy_faction)
 		bank.setup(self, facs)
+	sfx = Sfx.new()
+	add_child(sfx)
+	sfx.start_music()
 	ui = GameUI.new()
 	add_child(ui)
 	ui.setup(self)
-	if ai != null:
+	if not mission.is_empty():
+		ui.toast("Mission %d — %s : %s" % [GameSession.mission + 1, mission["title"], mission["obj"]], fdata["accent"])
+	elif ai != null:
 		ui.toast("%s — face à la %s" % [fdata["name"], ai.fdata["name"]], fdata["accent"])
 	else:
 		ui.toast("%s — bonne chance, commandant" % fdata["name"], fdata["accent"])
@@ -361,8 +373,10 @@ func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void
 	if team == 0:
 		if kind == "spice":
 			credits += gain
+			earned += gain
 		else:
 			ore += gain
+		sfx.play("coin", world_pos, -8.0)
 		popup(world_pos, ("+%d $" if kind == "spice" else "+%d min.") % gain,
 				GameData.GOLD if kind == "spice" else GameData.ORE_BLUE)
 	else:
@@ -412,6 +426,7 @@ func _harvesters_on_sand() -> Array:
 
 
 func _spawn_worm(target) -> void:
+	sfx.play_ui("worm", -2.0)
 	var start: Vector2 = target.position + Vector2.RIGHT * 640.0
 	for i in 16:
 		var p: Vector2 = target.position + Vector2.from_angle(randf() * TAU) * 640.0
@@ -635,6 +650,7 @@ func fire(shooter, target, weapon: String, damage: float, from: Vector2, control
 	p.setup(self, weapon, shooter.team, from, target, damage, shooter, control)
 	add_child(p)
 	Fx.burst(self, from, GameData.WEAPONS[weapon]["color"], 4, 0.35)
+	sfx.play(weapon, from, -4.0)
 
 
 ## Chemin jusqu'à une cible (case voisine d'un bâtiment, ou case de l'unité).
@@ -653,6 +669,7 @@ func path_to_target(from_world: Vector2, target) -> PackedVector2Array:
 func notify_attack(b: Building) -> void:
 	if b.team == 0 and game_time - _alert_cd > 12.0 and ui != null:
 		_alert_cd = game_time
+		sfx.play_ui("alert")
 		ui.toast("Votre base est attaquée !", GameData.RED)
 
 
@@ -674,16 +691,47 @@ func _check_end() -> void:
 			mine += 1
 		else:
 			theirs += 1
-	if mine == 0 or theirs == 0:
+	var won := theirs == 0
+	if not won and not mission.is_empty() and mine > 0:
+		won = objective_progress()[1] >= 1.0 and mission["type"] != "destroy"
+	if mine == 0 or won:
 		over = true
 		ai.active = false
-		ui.show_end(theirs == 0)
+		sfx.play_ui("victory" if won else "defeat")
+		if won and not mission.is_empty():
+			Campaign.mark_cleared(faction_id, GameSession.mission)
+		ui.show_end(won)
+
+
+## [texte, avancement 0..1] de l'objectif de la mission en cours.
+func objective_progress() -> Array:
+	if mission.is_empty():
+		return ["", 0.0]
+	match mission["type"]:
+		"harvest":
+			var a: int = mission["amount"]
+			return ["%d / %d Solaris récoltés" % [mini(earned, a), a], clampf(float(earned) / a, 0.0, 1.0)]
+		"survive":
+			var t: float = mission["time"]
+			var left := maxf(t - game_time, 0.0)
+			return ["Tenir encore %d:%02d" % [int(left / 60.0), int(left) % 60], clampf(game_time / t, 0.0, 1.0)]
+		_:
+			var n := 0
+			for b in buildings:
+				if b.team == 1:
+					n += 1
+			return ["%d structure(s) ennemie(s) restante(s)" % n, 0.0 if n > 0 else 1.0]
 
 
 # --- Boucle -------------------------------------------------------------------
 
 func _process(delta: float) -> void:
 	game_time += delta
+	if not mission.is_empty() and not over:
+		_obj_t -= delta
+		if _obj_t <= 0.0:
+			_obj_t = 0.5
+			_check_end()
 	_update_production(delta)
 	_update_worm(delta)
 	if FOG:
@@ -767,6 +815,9 @@ func _unhandled_input(event: InputEvent) -> void:
 			KEY_F11:
 				var w := get_window()
 				w.mode = Window.MODE_MAXIMIZED if w.mode == Window.MODE_FULLSCREEN else Window.MODE_FULLSCREEN
+			KEY_M:
+				var off := sfx.toggle_mute()
+				ui.toast("Son coupé" if off else "Son activé", GameData.AMBER)
 			KEY_F10:
 				get_tree().change_scene_to_file("res://menu.tscn")
 			KEY_F9: # test : fait surgir un ver tout de suite
@@ -863,6 +914,8 @@ func _finish_selection(end: Vector2) -> void:
 
 ## Clic droit : attaque si un ennemi est sous le curseur, sinon déplacement.
 func order_context(world_pos: Vector2) -> void:
+	if not selected.is_empty():
+		sfx.play_ui("ack", -8.0)
 	var e = enemy_at(world_pos)
 	if e == null:
 		order_move(world_pos)
@@ -1015,9 +1068,11 @@ func upgrade_building(b: Building) -> bool:
 	var why := upgrade_block(b, ore)
 	if why != "":
 		ui.toast(why, GameData.RED)
+		sfx.play_ui("error")
 		return false
 	ore -= upgrade_cost(b)
 	b.upgrade()
+	sfx.play_ui("upgrade")
 	ui.toast("%s — niveau %d" % [GameData.def(b.id)["name"], b.level], GameData.GOLD)
 	return true
 
@@ -1046,6 +1101,7 @@ func _add_money(id: String, amount: int) -> void:
 
 
 func on_item_clicked(id: String, button: int) -> void:
+	sfx.play_ui("click", -6.0)
 	var cat := "unit" if GameData.UNITS.has(id) else "building"
 	var q: Array = production[cat]
 	var d := GameData.def(id)
@@ -1100,12 +1156,14 @@ func _update_production(delta: float) -> void:
 				q.pop_front()
 				if has_building(GameData.def(p["id"])["from"]):
 					_spawn_produced_unit(p["id"])
+					sfx.play_ui("unit_ready")
 					ui.toast("%s prêt !" % item_name, GameData.GREEN)
 				else:
 					credits += int(p["paid"]) # le bâtiment a été détruit : remboursé
 					ui.toast("%s annulé — bâtiment perdu" % item_name, GameData.RED)
 			else:
 				p["ready"] = true
+				sfx.play_ui("ready")
 				ui.toast("%s prêt — cliquez sur l'icône pour le poser" % item_name, GameData.GREEN)
 
 
@@ -1138,6 +1196,8 @@ func _place_building(id: String, cell: Vector2i, team := 0) -> Building:
 	b.init_combat(self, team)
 	add_child(b)
 	buildings.append(b)
+	if sfx != null and game_time > 1.0:
+		sfx.play("place", b.world_center(), -3.0)
 	for c in b.cells():
 		occupied[c] = true
 		grid.set_point_solid(c, true)
@@ -1147,8 +1207,12 @@ func _place_building(id: String, cell: Vector2i, team := 0) -> Building:
 func _setup_enemy() -> void:
 	var others: Array = GameData.FACTIONS.keys().filter(func(k: String) -> bool: return k != faction_id)
 	enemy_faction = others.pick_random()
+	if not mission.is_empty():
+		enemy_faction = Campaign.enemy_of(faction_id, GameSession.mission)
 	ai = SkirmishAI.new()
 	ai.setup(self, enemy_faction)
+	if not mission.is_empty():
+		ai.configure(mission["ai"])
 	add_child(ai)
 	_place_base(ENEMY_START, 1)
 	_spawn_base_units(ENEMY_START, 1)
