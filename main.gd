@@ -42,6 +42,7 @@ var enemy_cell := Vector2(48, 16)      # case de départ de l'adversaire
 var ally_cell := Vector2(-1, -1)       # case de départ de l'allié (-1 : pas d'allié)
 var spice_fields: Array = []           # bassins de sable à épice (cases)
 var ore_fields: Array = []             # filons sur plateaux rocheux
+var corridor_w := 5.5
 var corridors: Array = []              # couloirs garantis (sans montagne)
 var plateaus: Array = []               # [centre, rayon] des plateaux rocheux
 var team_factions := {}                # équipe -> faction
@@ -250,6 +251,7 @@ func _generate_layout() -> void:
 		ally_cell = (c + Vector2.from_angle(a0 + da) * radius * 0.95).round()
 		plateaus.append([ally_cell, 9.0])
 		keys.append(ally_cell)
+	corridor_w = 8.0 if mission.has("convoy") else 5.5
 	# Avant-postes, destination de convoi, zone à tenir : points d'intérêt
 	mission_points = {}
 	var pts := int(mission.get("outposts", 0))
@@ -355,7 +357,7 @@ func _height(p: Vector2) -> float:
 	for orf in ore_fields:
 		h = lerpf(h, 0.28, smoothstep(7.0, 3.5, p.distance_to(orf)))     # plateaux à minerai
 	for cor in corridors:
-		h = lerpf(h, minf(h, 0.2), smoothstep(4.0, 2.0, _seg_dist(p, cor[0], cor[1])))
+		h = lerpf(h, minf(h, 0.2), smoothstep(corridor_w, corridor_w * 0.55, _seg_dist(p, cor[0], cor[1])))
 	var edge := minf(minf(p.x, map_w - p.x), minf(p.y, map_h - p.y))
 	h = lerpf(h, 0.7, smoothstep(3.0, 0.5, edge))                       # chaîne de bord de carte
 	return h
@@ -1710,7 +1712,7 @@ func _setup_mission() -> void:
 		for k in amb:
 			var f := lerpf(0.4, 0.85, float(k) / maxf(amb - 1, 1.0))
 			var pos := start_cell.lerp(Vector2(dest), f) + Vector2(rng.randf_range(-4, 4), rng.randf_range(-4, 4))
-			for g in 3:
+			for g in int(mission["convoy"].get("ambush_size", 3)):
 				var u := _spawn_unit(foe_ids[g % foe_ids.size()], _find_free_cell(Vector2i(pos) + Vector2i(g - 1, 0)), 1)
 				u.guard = true
 	obj_state = []

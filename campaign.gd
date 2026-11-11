@@ -21,12 +21,12 @@ const MISSIONS := [
 		"id": "convoi", "title": "Convoi d'épice", "size": 96,
 		"credits": 1500, "ore": 1800,
 		"start_units": ["@0", "@1"],
-		"convoy": {"count": 4, "need": 3, "ambushes": 3},
+		"convoy": {"count": 4, "need": 3, "ambushes": 2, "start": 420.0, "ambush_size": 2},
 		"objectives": [
 			{"type": "escort"},
 			{"type": "train", "count": 4},
 		],
-		"ai": {"slowdown": 2.0, "grace": 480.0, "pause": 90.0, "max_army": 8, "wave": 4, "credits": 1200, "ore": 1500},
+		"ai": {"slowdown": 2.0, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 4, "credits": 1200, "ore": 1500},
 		"obj": "Escortez le convoi jusqu'au point de livraison",
 	},
 	{
@@ -37,7 +37,7 @@ const MISSIONS := [
 			{"type": "survive", "time": 480.0},
 			{"type": "protect_ally"},
 		],
-		"ai": {"slowdown": 1.4, "grace": 60.0, "pause": 40.0, "max_army": 16, "wave": 5, "credits": 1800, "ore": 2000},
+		"ai": {"slowdown": 1.4, "grace": 240.0, "pause": 50.0, "max_army": 16, "wave": 5, "credits": 1800, "ore": 2000},
 		"ally_ai": {"slowdown": 1.8, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 5, "credits": 1200, "ore": 1500},
 		"obj": "Survivez 8 minutes sans perdre la base alliée",
 	},
@@ -49,7 +49,7 @@ const MISSIONS := [
 			{"type": "outposts"},
 			{"type": "train", "count": 6},
 		],
-		"ai": {"slowdown": 1.7, "grace": 300.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1500, "ore": 1800},
+		"ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1500, "ore": 1800},
 		"obj": "Détruisez les 3 avant-postes ennemis",
 	},
 	{
@@ -61,7 +61,7 @@ const MISSIONS := [
 			{"type": "hold"},
 			{"type": "destroy_all"},
 		],
-		"ai": {"slowdown": 1.15, "grace": 200.0, "pause": 45.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
+		"ai": {"slowdown": 1.15, "grace": 360.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
 		"ally_ai": {"slowdown": 1.3, "grace": 240.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 2000, "ore": 2200},
 		"obj": "Tenez la zone centrale, puis détruisez l'ennemi",
 	},
@@ -83,7 +83,7 @@ const FLAVOR := {
 ## {ENEMY} et {ALLY} sont remplacés par le nom des factions.
 const BRIEFINGS := [
 	"Un engin de chantier vous a déposé en terrain inconnu. Trouvez un sol rocheux dégagé, déployez-le, puis bâtissez centrale, raffinerie, fonderie et usine. {ENEMY} s'installe aussi quelque part sur la carte, mais pas avant un bon moment.",
-	"Un convoi d'épice doit traverser le désert jusqu'au point de livraison. {ENEMY} a posté des groupes d'embuscade sur la route : éclairez, escortez et gardez au moins trois camions en vie. Pensez à monter une armée en parallèle.",
+	"Un convoi d'épice doit traverser le désert jusqu'au point de livraison. {ENEMY} a posté des groupes d'embuscade sur la route : éclairez, escortez et gardez au moins trois camions en vie. Le convoi ne part qu'après sept minutes : profitez-en pour monter une armée.",
 	"{ALLY} installe sa base à vos côtés, mais elle est fragile. {ENEMY} lance des assauts dès les premières minutes. Tenez huit minutes et ne laissez pas tomber votre allié.",
 	"{ENEMY} a fortifié trois avant-postes autour de la zone. Chacun est gardé par des tourelles et des patrouilles. Montez une armée solide et rasez-les un par un.",
 	"La bataille décisive. Avec l'appui de {ALLY}, prenez la zone centrale et tenez-la avec au moins quatre unités pendant une minute, puis anéantissez {ENEMY}. Il ne doit rien rester debout.",
@@ -177,7 +177,8 @@ static func details(faction: String, m: int) -> Array:
 	if ally != "":
 		sit.append("Allié : %s (IA, démarre aussi avec un engin de chantier)" % GameData.FACTIONS[ally]["name"])
 	if d.has("convoy"):
-		sit.append("%d embuscades ennemies sur la route du convoi" % int(d["convoy"]["ambushes"]))
+		sit.append("Le convoi part après %s : préparez votre escorte avant" % _mins(float(d["convoy"]["start"])))
+		sit.append("%d embuscades ennemies (%d unités chacune) sur une route dégagée" % [int(d["convoy"]["ambushes"]), int(d["convoy"]["ambush_size"])])
 	if d.has("outposts"):
 		sit.append("Chaque avant-poste est gardé par des tourelles et des patrouilles")
 	out.append(["SITUATION", sit])
