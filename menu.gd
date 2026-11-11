@@ -165,6 +165,11 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(spacer)
+	var det := GameUI.NeonButton.new("DÉTAILS")
+	det.accent = GameData.CYAN
+	det.custom_minimum_size = Vector2(300, 44)
+	det.pressed.connect(_open_details.bind(i))
+	v.add_child(det)
 	var go := GameUI.NeonButton.new("JOUER" if unlocked else "VERROUILLÉE")
 	go.enabled = unlocked
 	go.accent = fd["accent"]
@@ -176,6 +181,51 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 		get_tree().change_scene_to_file("res://main.tscn"))
 	v.add_child(go)
 	return pc
+
+
+func _open_details(i: int) -> void:
+	var fd: Dictionary = GameData.FACTIONS[selected]
+	var m: Dictionary = Campaign.MISSIONS[i]
+	var ov := ColorRect.new()
+	ov.color = Color(0.045, 0.024, 0.075, 1.0)
+	ov.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ov.mouse_filter = Control.MOUSE_FILTER_STOP
+	_overlay.add_child(ov)
+	var cc := CenterContainer.new()
+	cc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ov.add_child(cc)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 14)
+	cc.add_child(vb)
+	vb.add_child(_label("MISSION %d — %s" % [i + 1, String(m["title"]).to_upper()], 40, fd["accent"], true))
+	var br := _left(Campaign.briefing(selected, i), 16, Color(1, 1, 1, 0.8))
+	br.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	br.custom_minimum_size = Vector2(1100, 0)
+	vb.add_child(br)
+	var grid := GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 40)
+	grid.add_theme_constant_override("v_separation", 14)
+	vb.add_child(grid)
+	for sec in Campaign.details(selected, i):
+		var box := VBoxContainer.new()
+		box.custom_minimum_size = Vector2(530, 0)
+		box.add_theme_constant_override("separation", 4)
+		box.add_child(_left(String(sec[0]), 14, GameData.GOLD))
+		for line in sec[1]:
+			var l := _left("◆ " + String(line), 15, Color.WHITE)
+			l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			l.custom_minimum_size = Vector2(520, 0)
+			box.add_child(l)
+		grid.add_child(box)
+	var back := GameUI.NeonButton.new("RETOUR")
+	back.accent = GameData.RED
+	back.custom_minimum_size = Vector2(250, 56)
+	back.pressed.connect(func() -> void: ov.queue_free())
+	var hb := HBoxContainer.new()
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_child(back)
+	vb.add_child(hb)
 
 
 func _left(text: String, size: int, color: Color) -> Label:

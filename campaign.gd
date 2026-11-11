@@ -119,6 +119,97 @@ static func briefing(faction: String, m: int) -> String:
 	return FLAVOR[faction] + "\n\n" + t
 
 
+static func _mins(s: float) -> String:
+	var mn := int(s) / 60
+	var sec := int(s) % 60
+	if mn == 0:
+		return "%d s" % sec
+	return "%d min" % mn if sec == 0 else "%d min %02d s" % [mn, sec]
+
+
+## Fiche détaillée d'une mission : liste de [titre, [lignes]].
+static func details(faction: String, m: int) -> Array:
+	var d: Dictionary = MISSIONS[m]
+	var fd: Dictionary = GameData.FACTIONS[faction]
+	var enemy: String = GameData.FACTIONS[enemy_of(faction, m)]["name"]
+	var ally := ally_of(faction, m)
+	var out: Array = []
+	# Objectifs
+	var obj: Array = []
+	for o in d["objectives"]:
+		match o["type"]:
+			"build":
+				var parts: PackedStringArray = []
+				for id in o["ids"]:
+					parts.append("%s ×%d" % [GameData.BUILDINGS[id]["name"], int(o["ids"][id])])
+				obj.append("Construire : " + ", ".join(parts))
+			"harvest":
+				obj.append("Récolter %d Solaris au total" % int(o["amount"]))
+			"train":
+				obj.append("Produire %d unités de combat" % int(o["count"]))
+			"survive":
+				obj.append("Survivre %s" % _mins(float(o["time"])))
+			"escort":
+				var cv: Dictionary = d["convoy"]
+				obj.append("Escorter le convoi (%d camions) jusqu'au point de livraison : %d doivent arriver" % [int(cv["count"]), int(cv["need"])])
+			"outposts":
+				obj.append("Détruire les %d avant-postes ennemis" % int(d.get("outposts", 3)))
+			"hold":
+				var z: Dictionary = d["zone"]
+				obj.append("Tenir la zone centrale avec %d unités pendant %s" % [int(z["units"]), _mins(float(z["time"]))])
+			"destroy_all":
+				obj.append("Détruire toutes les unités et structures de %s" % enemy)
+			"protect_ally":
+				obj.append("Ne pas laisser tomber la base alliée (défaite sinon)")
+	obj.append("Défaite : perdre toute votre base et vos unités")
+	out.append(["OBJECTIFS", obj])
+	# Situation
+	var sit: Array = []
+	sit.append("Carte générée aléatoirement, %d × %d cases" % [int(d["size"]), int(d["size"])])
+	sit.append("Départ : %d Solaris, %d minerai, un engin de chantier à déployer" % [int(d["credits"]), int(d["ore"])])
+	var su: Array = d.get("start_units", [])
+	if not su.is_empty():
+		var names: PackedStringArray = []
+		for id in resolve_units(faction, su):
+			names.append(String(GameData.UNITS[id]["name"]))
+		sit.append("Escorte de départ : " + ", ".join(names))
+	sit.append("Adversaire : %s" % enemy)
+	if ally != "":
+		sit.append("Allié : %s (IA, démarre aussi avec un engin de chantier)" % GameData.FACTIONS[ally]["name"])
+	if d.has("convoy"):
+		sit.append("%d embuscades ennemies sur la route du convoi" % int(d["convoy"]["ambushes"]))
+	if d.has("outposts"):
+		sit.append("Chaque avant-poste est gardé par des tourelles et des patrouilles")
+	out.append(["SITUATION", sit])
+	# Ennemi
+	var ai: Dictionary = d["ai"]
+	var foe: Array = []
+	foe.append("Premier assaut après environ %s" % _mins(float(ai["grace"])))
+	foe.append("Vagues de %d unités, répit d'environ %s entre deux" % [int(ai["wave"]), _mins(float(ai["pause"]))])
+	foe.append("Armée maximale : %d unités" % int(ai["max_army"]))
+	var sl := float(ai["slowdown"])
+	foe.append("Rythme de construction : " + ("très lent" if sl >= 2.0 else "lent" if sl >= 1.6 else "soutenu" if sl >= 1.3 else "rapide"))
+	out.append(["ENNEMI", foe])
+	# Technologie
+	var tech: Array = []
+	var nb: PackedStringArray = []
+	for id in GameData.buildings_for(faction):
+		var bd: Dictionary = GameData.BUILDINGS[id]
+		if int(bd.get("unlock", 0)) == m and m > 0:
+			nb.append(String(bd["name"]))
+	if m > 0:
+		tech.append("Nouveaux bâtiments : " + (", ".join(nb) if not nb.is_empty() else "aucun"))
+	else:
+		tech.append("Bâtiments : Centrale, Raffinerie, Fonderie, Usine, Tourelle")
+	var un: PackedStringArray = []
+	for id in fd["units"]:
+		un.append("%s (Usine niv. %d)" % [GameData.UNITS[id]["name"], int(GameData.UNITS[id].get("level", 1))])
+	tech.append("Unités : " + ", ".join(un))
+	tech.append("Les unités plus puissantes demandent d'améliorer l'Usine")
+	out.append(["TECHNOLOGIE", tech])
+	return out
+
+
 ## Unités de départ : "@i" = i-ième unité de combat de la faction jouée.
 static func resolve_units(faction: String, ids: Array) -> Array:
 	var out: Array = []
