@@ -44,7 +44,8 @@ func setup(p_game) -> void:
 func is_mouse_over_ui() -> bool:
 	var m := get_viewport().get_mouse_position()
 	return sidebar.get_global_rect().has_point(m) or topbar.get_global_rect().has_point(m) \
-			or (info_panel != null and info_panel.visible and info_panel.get_global_rect().has_point(m))
+			or (info_panel != null and info_panel.visible
+			and (info_panel.get_global_transform() * Rect2(Vector2.ZERO, info_panel.size)).has_point(m))
 
 
 ## Notification qui monte et s'efface.
@@ -445,6 +446,7 @@ class InfoPanel extends GlassPanel:
 	const WEAPON := {"autocannon": "Autocanon", "cannon": "Canon", "rocket": "Roquettes",
 			"sonic": "Onde sonique", "acid": "Acide", "control": "Contrôle mental"}
 	const COL2 := 430.0
+	const PANEL_SCALE := 0.78
 
 	var game
 	var btn: GameUI.NeonButton
@@ -462,6 +464,9 @@ class InfoPanel extends GlassPanel:
 		offset_right = 16.0 + 800.0
 		offset_top = -296.0
 		offset_bottom = -16.0
+		# Cartouche compact : réduit vers son coin bas-gauche pour dégager la zone de jeu
+		pivot_offset = Vector2(0, 280)
+		scale = Vector2(PANEL_SCALE, PANEL_SCALE)
 		btn = GameUI.NeonButton.new("AMÉLIORER")
 		btn.accent = GameData.GOLD
 		btn.glyph = "credit"
