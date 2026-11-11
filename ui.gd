@@ -731,9 +731,11 @@ class InfoPanel extends GlassPanel:
 		elif b.power == 0 and b.id != "mur" and b.id != "mur_acier":
 			rows.append(["Consomme", "0 énergie"])
 		rows.append(["Vision", "%d cases" % b.vision])
+		if b.offline:
+			rows.append(["État", "HORS TENSION"])
 		var y := 152.0
 		for r in rows:
-			_row(34, y, r[0], r[1])
+			_row(34, y, r[0], r[1], GameData.RED if r[0] == "État" else UiStyle.TEXT)
 			y += 22.0
 		if mine and not d.get("no_upgrade", false):
 			UiStyle.section(self, Vector2(COL2, 128), 340, "NIVEAU SUIVANT" if b.level < GameData.MAX_LEVEL else "ÉVOLUTION", UiStyle.GOLD)

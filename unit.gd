@@ -574,6 +574,11 @@ func _work(delta: float) -> void:
 			_seek(delta)
 		"harvest":
 			_harvest(delta)
+		"return":
+			if path.is_empty() and cargo > 0.0:
+				_retry -= delta
+				if _retry <= 0.0:
+					_start_return()
 		"flee":
 			_flee_timer -= delta
 			if _flee_timer <= 0.0 and path.is_empty():
@@ -641,6 +646,16 @@ func _start_return() -> void:
 
 
 func _unload() -> void:
+	var dock = game.find_dock(cargo_kind, position, team)
+	if cargo > 0.0 and dock != null and dock.offline:
+		# Raffinerie / fonderie hors tension : impossible d'encaisser, on attend le retour du courant
+		state = "return"
+		path = PackedVector2Array()
+		_retry = 1.0
+		if team == 0 and game.game_time - game._full_warn > 6.0:
+			game._full_warn = game.game_time
+			game.popup(position, "Hors tension", GameData.RED)
+		return
 	if cargo > 0.0:
 		game.deposit(cargo_kind, cargo, position, team)
 	cargo = 0.0

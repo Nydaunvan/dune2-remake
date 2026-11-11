@@ -554,12 +554,15 @@ func find_dock(kind: String, from: Vector2i, team := 0) -> Building:
 	var want := "raffinerie" if kind == "spice" else "fonderie"
 	var best: Building = null
 	var best_d := INF
-	for b in buildings:
-		if b.id == want and b.team == team:
-			var d := Vector2(from).distance_to(b.center_cell())
-			if d < best_d:
-				best_d = d
-				best = b
+	for pass_online in [true, false]:
+		for b in buildings:
+			if b.id == want and b.team == team and not (pass_online and b.offline):
+				var d := Vector2(from).distance_to(b.center_cell())
+				if d < best_d:
+					best_d = d
+					best = b
+		if best != null:
+			break
 	return best
 
 
@@ -781,7 +784,7 @@ func _update_fog() -> void:
 			_reveal(u.position, u.vision)
 	for b in buildings:
 		if side_of(b.team) == 0 and b.alive:
-			_reveal(b.world_center(), b.vision)
+			_reveal(b.world_center(), GameData.BUILDING_VISION if (b.offline and b.id == "radar") else b.vision)
 	var data := PackedByteArray()
 	data.resize(map_w * map_h)
 	for i in data.size():
@@ -1418,8 +1421,9 @@ func income_bonus(kind: String, team := 0) -> float:
 
 ## Effets des bâtiments spéciaux, toutes les 0,5 s : revenus passifs et soins.
 func _building_effects(dt: float) -> void:
+	_update_power_state()
 	for b in buildings:
-		if not b.alive:
+		if not b.alive or b.offline:
 			continue
 		var d := GameData.def(b.id)
 		if d.has("income"):
@@ -1439,6 +1443,30 @@ func _building_effects(dt: float) -> void:
 				credits = mini(credits + whole, maxi(storage_cap("spice"), credits))
 			elif ais.has(t):
 				ais[t].add_income("spice", whole)
+
+
+## Bâtiments qui s'arrêtent quand l'énergie ne couvre plus la consommation de leur camp.
+const NEEDS_POWER := ["raffinerie", "fonderie", "radar", "reparation", "marche", "tourelle", "batterie",
+		"tour_sonique", "bunker", "tour_acide", "aerodrome"]
+var _power_was_ok := {}
+
+
+func _update_power_state() -> void:
+	for t in team_factions.keys():
+		var ok := power_ok(t)
+		for b in buildings:
+			if b.team == t and b.alive:
+				var off: bool = not ok and NEEDS_POWER.has(b.id)
+				if off != b.offline:
+					b.offline = off
+					b.queue_redraw()
+		if t == 0 and ok != bool(_power_was_ok.get(0, true)) and ui != null:
+			if ok:
+				ui.toast("Énergie rétablie : les installations redémarrent", GameData.GREEN)
+			else:
+				ui.toast("PANNE D'ÉNERGIE : récolte, radar, soins et défenses à l'arrêt — construisez une centrale", GameData.RED)
+				sfx.play_ui("alert")
+		_power_was_ok[t] = ok
 
 
 func upgrade_cost(b: Building) -> int:
@@ -1580,7 +1608,7 @@ func find_repair_site(team: int, pos: Vector2) -> Building:
 	var best: Building = null
 	var best_d := INF
 	for b in buildings:
-		if b.team != team or not b.alive or (b.id != "usine" and b.id != "reparation"):
+		if b.team != team or not b.alive or b.offline or (b.id != "usine" and b.id != "reparation"):
 			continue
 		var d := b.world_center().distance_to(pos) - (60.0 if b.id == "reparation" else 0.0)
 		if d < best_d:

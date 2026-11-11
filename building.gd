@@ -272,7 +272,7 @@ func _draw_hp(s: Vector2) -> void:
 	for i in level - 1:
 		draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), GameData.GOLD)
 		draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), Color.BLACK, false, 1.0)
-	if offline and weapon != "":
+	if offline:
 		UiStyle.text(self, Vector2(2, s.y * 0.5), "HORS TENSION", 11, GameData.RED, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
 	if selected:
 		draw_rect(Rect2(Vector2(-2, -2), s + Vector2(4, 4)), GameData.GREEN, false, 2.5)
