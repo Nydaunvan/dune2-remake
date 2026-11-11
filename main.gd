@@ -1214,6 +1214,33 @@ func power_used(team := 0) -> int:
 	return total
 
 
+## Énergie disponible : production - consommation - bâtiments consommateurs déjà en file.
+func power_free(team := 0) -> int:
+	var free := power_produced(team) - power_used(team)
+	if team == 0:
+		for it in production["building"]:
+			var p: int = int(GameData.def(it["id"]).get("power", 0))
+			if p < 0:
+				free += p
+	return free
+
+
+## Raison pour laquelle un bâtiment ne peut pas être lancé faute d'énergie ("" si possible).
+func power_block(id: String, team := 0) -> String:
+	var need: int = -int(GameData.def(id).get("power", 0)) if GameData.BUILDINGS.has(id) else 0
+	if need <= 0:
+		return ""
+	var free := power_free(team)
+	if free >= need:
+		return ""
+	return "Énergie insuffisante (%d de plus requis) : construisez ou améliorez une centrale" % (need - free)
+
+
+## Vrai si la production d'énergie couvre la consommation.
+func power_ok(team := 0) -> bool:
+	return power_produced(team) >= power_used(team)
+
+
 ## Élément en cours de production s'il s'agit de `id`, sinon {}.
 func production_for(id: String) -> Dictionary:
 	var q: Array = production["unit" if GameData.UNITS.has(id) else "building"]
@@ -1347,6 +1374,11 @@ func on_item_clicked(id: String, button: int) -> void:
 		return
 	if not can_afford(id):
 		ui.toast("Minerai insuffisant" if cat == "building" else "Solaris insuffisants", GameData.RED)
+		return
+	var pwr := power_block(id) if cat == "building" else ""
+	if pwr != "":
+		ui.toast(pwr, GameData.RED)
+		sfx.play_ui("error")
 		return
 	var cost := item_cost(id)
 	_add_money(id, -cost)

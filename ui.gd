@@ -706,6 +706,8 @@ class BuildIcon extends Control:
 
 		var c := Vector2(size.x * 0.5, 50.0 - hover_t * 2.0)
 		_draw_icon(c, avail)
+		if avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
+			UiStyle.text(self, Vector2(12, 24), "ÉNERGIE", 11, GameData.RED, true)
 		var queued: int = game.queued_count(id)
 		if queued > 0:
 			var tag := Rect2(size.x - 44.0, 12.0, 32.0, 20.0)

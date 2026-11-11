@@ -16,6 +16,7 @@ var trim := Color("e0a040") # couleur de faction
 
 # Combat
 var game
+var offline := false # défense hors tension (énergie insuffisante)
 var outpost := -1 # indice d'avant-poste de mission (-1 : aucun)
 var team := 0
 var alive := true
@@ -123,6 +124,13 @@ func take_damage(raw: float, wpn: String, attacker = null) -> void:
 
 func _physics_process(delta: float) -> void:
 	if not alive or weapon == "":
+		return
+	# Sans énergie suffisante, les défenses sont hors tension
+	var ok: bool = game.power_ok(team)
+	if ok == offline:
+		offline = not ok
+		queue_redraw()
+	if offline:
 		return
 	cooldown = maxf(0.0, cooldown - delta)
 	_scan -= delta
@@ -237,6 +245,8 @@ func _draw_hp(s: Vector2) -> void:
 	for i in level - 1:
 		draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), GameData.GOLD)
 		draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), Color.BLACK, false, 1.0)
+	if offline and weapon != "":
+		UiStyle.text(self, Vector2(2, s.y * 0.5), "HORS TENSION", 11, GameData.RED, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
 	if selected:
 		draw_rect(Rect2(Vector2(-2, -2), s + Vector2(4, 4)), GameData.GREEN, false, 2.5)
 	if hp < max_hp:

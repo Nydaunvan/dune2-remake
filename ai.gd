@@ -144,6 +144,9 @@ func _think_build() -> void:
 	if want == "":
 		_try_upgrade()
 		return
+	# Jamais de bâtiment sans l'énergie nécessaire : on construit d'abord une centrale
+	if GameData.BUILDINGS.has(want) and game.power_produced(team) - game.power_used(team) < -int(GameData.BUILDINGS[want]["power"]):
+		want = "centrale"
 	if not _available(want) or ore < _cost(want):
 		return
 	ore -= _cost(want)
