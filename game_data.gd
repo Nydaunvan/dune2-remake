@@ -112,6 +112,9 @@ const UNIT_TECH := {
 	"guepe": {"speed": 1.15, "dps": 1.25}, "frelon": {"dps": 1.3, "hp": 1.15},
 	"pelican": {"hp": 1.3, "speed": 1.15},
 }
+## Vitesse des véhicules : multiplicateur global (sol / air).
+const SPEED_MULT := 0.62
+const AIR_SPEED_MULT := 0.72
 const CHANTIER_COST := 800 # base de calcul pour l'amélioration du Chantier
 
 # Bâtiment de départ (non constructible par le joueur)
@@ -376,6 +379,13 @@ static func hits_air(weapon: String) -> bool:
 static func mult(weapon: String, armor: String) -> float:
 	var row: Dictionary = MULT.get(weapon, {})
 	return float(row.get(armor, 1.0))
+
+
+## Coût en Solaris d'un bâtiment (en plus du minerai) ; 0 pour une unité.
+static func sol_cost(id: String) -> int:
+	if UNITS.has(id) or not BUILDINGS.has(id):
+		return 0
+	return int(round(float(BUILDINGS[id]["cost"]) * 0.5 / 5.0)) * 5
 
 
 static func tech_cost(id: String) -> int:

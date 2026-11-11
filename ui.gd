@@ -856,10 +856,26 @@ class BuildIcon extends Control:
 			elif not rich:
 				cc = GameData.RED
 			var label := str(game.item_cost(id))
-			var w := UiStyle.text_width(label, 14)
-			var x0 := (size.x - w - 18.0) * 0.5
-			UiStyle.glyph(self, "credit" if is_unit else "ore", Vector2(x0 + 6, 118), 11.0, cc)
-			UiStyle.text(self, Vector2(x0 + 18, 123), label, 14, cc)
+			if is_unit:
+				var w := UiStyle.text_width(label, 14)
+				var x0 := (size.x - w - 18.0) * 0.5
+				UiStyle.glyph(self, "credit", Vector2(x0 + 6, 118), 11.0, cc)
+				UiStyle.text(self, Vector2(x0 + 18, 123), label, 14, cc)
+			else:
+				# Bâtiment : minerai + Solaris, chacun en rouge s'il manque
+				var sol := GameData.sol_cost(id)
+				var c_ore := cc if (not avail or game.ore >= game.item_cost(id)) else GameData.RED
+				var c_sol := GameData.GOLD if game.credits >= sol else GameData.RED
+				if not avail:
+					c_sol = cc
+				var w1 := UiStyle.text_width(label, 13)
+				var w2 := UiStyle.text_width(str(sol), 13)
+				var x1 := (size.x - (w1 + w2 + 42.0)) * 0.5
+				UiStyle.glyph(self, "ore", Vector2(x1 + 6, 118), 10.0, c_ore)
+				UiStyle.text(self, Vector2(x1 + 17, 123), label, 13, c_ore)
+				var x2 := x1 + 17.0 + w1 + 8.0
+				UiStyle.glyph(self, "credit", Vector2(x2 + 6, 118), 10.0, c_sol)
+				UiStyle.text(self, Vector2(x2 + 17, 123), str(sol), 13, c_sol)
 
 	## Bâtiments débloqués : on affiche le modèle 3D cuit (ou un bloc simple sans affichage).
 	func _draw_baked_icon(c: Vector2, avail: bool) -> void:

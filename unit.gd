@@ -80,7 +80,7 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	role = d.get("role", "combat")
 	air = d.get("air", false)
 	slots = int(d.get("slots", 0))
-	speed = d.get("speed", 100.0)
+	speed = float(d.get("speed", 100.0)) * (GameData.AIR_SPEED_MULT if d.get("air", false) else GameData.SPEED_MULT)
 	max_hp = float(d.get("hp", 200))
 	hp = max_hp
 	base_max_hp = max_hp

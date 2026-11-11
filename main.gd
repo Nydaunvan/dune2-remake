@@ -1474,6 +1474,7 @@ func demolish_building(b: Building) -> void:
 		return
 	var refund := int(round(float(GameData.base_cost(b.id)) * 0.4))
 	ore += refund
+	credits += int(round(GameData.sol_cost(b.id) * 0.4))
 	b.alive = false
 	b.repairing = false
 	Fx.explosion(self, b.world_center(), 1.4)
@@ -1637,11 +1638,15 @@ func item_cost(id: String) -> int:
 
 
 func cost_label(id: String) -> String:
-	return ("%d $" if GameData.UNITS.has(id) else "%d min.") % item_cost(id)
+	if GameData.UNITS.has(id):
+		return "%d $" % item_cost(id)
+	return "%d min. + %d $" % [item_cost(id), GameData.sol_cost(id)]
 
 
 func can_afford(id: String) -> bool:
-	return (credits if GameData.UNITS.has(id) else ore) >= item_cost(id)
+	if GameData.UNITS.has(id):
+		return credits >= item_cost(id)
+	return ore >= item_cost(id) and credits >= GameData.sol_cost(id)
 
 
 func _add_money(id: String, amount: int) -> void:
@@ -1661,6 +1666,7 @@ func on_item_clicked(id: String, button: int) -> void:
 		for i in range(q.size() - 1, -1, -1):
 			if q[i]["id"] == id:
 				_add_money(id, int(q[i]["paid"]))
+				credits += int(q[i].get("paid_sol", 0))
 				q.remove_at(i)
 				if i == 0 and placing_id == id:
 					placing_id = ""
@@ -1689,7 +1695,10 @@ func on_item_clicked(id: String, button: int) -> void:
 		ui.toast("File d'attente pleine (%d) — améliorez %s" % [q.size(), "le Chantier" if cat == "building" else "l'Usine"], GameData.AMBER)
 		return
 	if not can_afford(id):
-		ui.toast("Minerai insuffisant" if cat == "building" else "Solaris insuffisants", GameData.RED)
+		var lack := "Solaris insuffisants"
+		if cat == "building" and ore < item_cost(id):
+			lack = "Minerai insuffisant" if credits >= GameData.sol_cost(id) else "Minerai et Solaris insuffisants"
+		ui.toast(lack, GameData.RED)
 		return
 	var pwr := power_block(id) if cat == "building" else ""
 	if pwr != "":
@@ -1697,11 +1706,13 @@ func on_item_clicked(id: String, button: int) -> void:
 		sfx.play_ui("error")
 		return
 	var cost := item_cost(id)
+	var sol := GameData.sol_cost(id)
 	_add_money(id, -cost)
+	credits -= sol if cat == "building" else 0
 	var t := float(d["time"])
 	if cat == "building":
 		t *= float(fdata["build_time_mult"])
-	q.append({"id": id, "progress": 0.0, "time": t, "ready": false, "paid": cost})
+	q.append({"id": id, "progress": 0.0, "time": t, "ready": false, "paid": cost, "paid_sol": sol if cat == "building" else 0})
 
 
 func _update_production(delta: float) -> void:
