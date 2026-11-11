@@ -7,6 +7,8 @@ var id := ""
 var role := "combat" # combat | harvester | miner | mcv | convoy
 const AIR_LIFT := 22.0
 var air := false     # unité volante : ignore le terrain, ombre au sol
+var repair_acc := 0.0
+var repair_site = null
 var carried := false # transportée (cachée, suit son transport)
 var cargo_units: Array = []
 var slots := 0
@@ -126,6 +128,7 @@ func follow(new_path: PackedVector2Array) -> void:
 
 
 func stop() -> void:
+	repair_site = null
 	load_target = null
 	target = null
 	forced = false
@@ -317,6 +320,43 @@ func devour() -> void:
 	queue_free()
 
 
+# --- Réparation -----------------------------------------------------------------
+
+## Rentre à l'atelier (Usine ou Centre de réparation) pour être soigné contre des Solaris.
+func order_repair(site) -> void:
+	if site == null:
+		return
+	repair_site = site
+	target = null
+	forced = false
+	amove_goal = Vector2i(-1, -1)
+	load_target = null
+	if air:
+		follow(PackedVector2Array([position, site.world_center()]))
+	else:
+		follow(game.path_to(position, game.dock_cell(site, game.world_to_cell(position))))
+	state = "repair"
+	if _work_fx != null:
+		_work_fx.emitting = false
+
+
+func _repair(delta: float) -> void:
+	if state != "repair":
+		return
+	if not _valid(repair_site):
+		state = "seek" if is_worker() else "idle"
+		return
+	if not path.is_empty() and position.distance_to(repair_site.world_center()) > 90.0:
+		return
+	path = PackedVector2Array()
+	if not game.repair_unit_tick(self, delta):
+		state = "seek" if is_worker() else "idle"
+		_seek_started = false
+		repair_site = null
+		if hp >= max_hp - 0.5 and team == 0:
+			game.popup(position, "Réparé", GameData.GREEN)
+
+
 # --- Transport aérien ---------------------------------------------------------
 
 ## Ordre : va chercher cette unité terrestre alliée et l'embarque.
@@ -414,6 +454,7 @@ func _physics_process(delta: float) -> void:
 	_work(delta)
 	_combat(delta)
 	_transport(delta)
+	_repair(delta)
 	_move(delta)
 	_dust.emitting = not air and not path.is_empty() and game.is_sand_at(position)
 	for c in cargo_units:

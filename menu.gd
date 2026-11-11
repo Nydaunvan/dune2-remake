@@ -8,6 +8,7 @@ var _hint: Label
 
 
 func _ready() -> void:
+	theme = UiStyle.theme()
 	RenderingServer.set_default_clear_color(Color("0c0610"))
 	Fx.setup_display(self, true)
 	var snd := Sfx.new()

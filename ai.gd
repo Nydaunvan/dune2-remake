@@ -32,7 +32,23 @@ var wave_ended := 0.0
 var _think_t := 3.0
 
 
+## Adoucissement global : l'IA doit laisser le temps de s'organiser.
+const EASE_SLOW := 1.3     # construit et produit plus lentement
+const EASE_GRACE := 1.4    # premier assaut plus tardif
+const EASE_PAUSE := 1.3    # plus de répit entre les vagues
+const EASE_ARMY := 0.8     # armée plus petite
+const EASE_WAVE := 0.75    # vagues plus petites
+const EASE_MONEY := 0.8    # réserves de départ réduites
+
+
 func setup(p_game, p_faction: String, p_team := 1) -> void:
+	slowdown *= EASE_SLOW
+	wave_grace *= EASE_GRACE
+	wave_pause *= EASE_PAUSE
+	max_army = int(max_army * EASE_ARMY)
+	wave_size = int(wave_size * EASE_WAVE)
+	credits = int(credits * EASE_MONEY)
+	ore = int(ore * EASE_MONEY)
 	game = p_game
 	team = p_team
 	deploy_at = 3.0 + randf() * 4.0
@@ -42,13 +58,13 @@ func setup(p_game, p_faction: String, p_team := 1) -> void:
 
 ## Réglages de mission (campagne).
 func configure(p: Dictionary) -> void:
-	slowdown = float(p.get("slowdown", slowdown))
-	wave_grace = float(p.get("grace", wave_grace))
-	wave_pause = float(p.get("pause", wave_pause))
-	max_army = int(p.get("max_army", max_army))
-	wave_size = int(p.get("wave", wave_size))
-	credits = int(p.get("credits", credits))
-	ore = int(p.get("ore", ore))
+	slowdown = float(p.get("slowdown", slowdown / EASE_SLOW)) * EASE_SLOW
+	wave_grace = float(p.get("grace", wave_grace / EASE_GRACE)) * EASE_GRACE
+	wave_pause = float(p.get("pause", wave_pause / EASE_PAUSE)) * EASE_PAUSE
+	max_army = int(int(p.get("max_army", int(max_army / EASE_ARMY))) * EASE_ARMY)
+	wave_size = maxi(int(int(p.get("wave", int(wave_size / EASE_WAVE))) * EASE_WAVE), 3)
+	credits = int(int(p.get("credits", int(credits / EASE_MONEY))) * EASE_MONEY)
+	ore = int(int(p.get("ore", int(ore / EASE_MONEY))) * EASE_MONEY)
 
 
 func add_income(kind: String, amount: int) -> void:
@@ -263,7 +279,7 @@ func _think_army() -> void:
 				and idle.size() >= wave_size:
 			assaulting = true
 			wave_started = game.game_time
-			wave_size = mini(wave_size + 2, 16)
+			wave_size = mini(wave_size + 1, 12)
 		else:
 			return
 	elif game.game_time - wave_started > 150.0 and idle.size() >= army.size():

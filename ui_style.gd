@@ -11,8 +11,46 @@ const PANEL_HI := Color(0.13, 0.08, 0.2)
 const TEXT := Color("f4e6c8")
 const TEXT_DIM := Color(0.78, 0.68, 0.58, 0.75)
 
+static var _theme: Theme
 static var _title: FontVariation
 static var _body: FontVariation
+
+
+## Thème commun : infobulles, barres de défilement et boutons dans le style de l'interface.
+static func theme() -> Theme:
+	if _theme != null:
+		return _theme
+	_theme = Theme.new()
+	_theme.default_font = body_font()
+	_theme.default_font_size = 15
+	var tip := StyleBoxFlat.new()
+	tip.bg_color = Color(0.04, 0.02, 0.09, 0.96)
+	tip.set_border_width_all(2)
+	tip.border_color = GOLD_DIM
+	tip.set_corner_radius_all(6)
+	tip.set_content_margin_all(10)
+	tip.anti_aliasing = true
+	tip.shadow_color = Color(0, 0, 0, 0.5)
+	tip.shadow_size = 8
+	_theme.set_stylebox("panel", "TooltipPanel", tip)
+	_theme.set_color("font_color", "TooltipLabel", TEXT)
+	_theme.set_color("font_outline_color", "TooltipLabel", Color(0, 0, 0, 0.8))
+	_theme.set_constant("outline_size", "TooltipLabel", 3)
+	_theme.set_font_size("font_size", "TooltipLabel", 14)
+	var track := StyleBoxFlat.new()
+	track.bg_color = Color(1, 1, 1, 0.05)
+	track.set_corner_radius_all(4)
+	var grab := StyleBoxFlat.new()
+	grab.bg_color = GOLD_DIM
+	grab.set_corner_radius_all(4)
+	grab.anti_aliasing = true
+	var grab_hi := grab.duplicate()
+	grab_hi.bg_color = GOLD
+	_theme.set_stylebox("scroll", "VScrollBar", track)
+	_theme.set_stylebox("grabber", "VScrollBar", grab)
+	_theme.set_stylebox("grabber_highlight", "VScrollBar", grab_hi)
+	_theme.set_stylebox("grabber_pressed", "VScrollBar", grab_hi)
+	return _theme
 
 
 ## Police des titres : capitales épaisses et espacées.

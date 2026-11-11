@@ -21,6 +21,7 @@ var outpost := -1 # indice d'avant-poste de mission (-1 : aucun)
 var team := 0
 var alive := true
 var hp := 500.0
+var repairing := false
 var up_left := 0.0  # amélioration en cours : secondes restantes
 var up_total := 0.0
 var max_hp := 500.0
@@ -253,6 +254,8 @@ func _draw_hp(s: Vector2) -> void:
 		UiStyle.text(self, Vector2(2, s.y * 0.5), "HORS TENSION", 11, GameData.RED, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
 	if selected:
 		draw_rect(Rect2(Vector2(-2, -2), s + Vector2(4, 4)), GameData.GREEN, false, 2.5)
+	if repairing:
+		UiStyle.text(self, Vector2(2, s.y * 0.5 + 16.0), "RÉPARATION", 11, GameData.GREEN, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
 	if up_left > 0.0:
 		var uw := s.x - 8.0
 		draw_rect(Rect2(4, -16, uw, 4), Color(0, 0, 0, 0.65))

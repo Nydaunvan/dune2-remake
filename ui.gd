@@ -31,6 +31,7 @@ func setup(p_game) -> void:
 	root = Control.new()
 	root.set_anchors_preset(Control.PRESET_FULL_RECT)
 	root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.theme = UiStyle.theme()
 	add_child(root)
 	_build_topbar()
 	_build_objective()
@@ -401,6 +402,7 @@ class InfoPanel extends GlassPanel:
 
 	var game
 	var btn: GameUI.NeonButton
+	var rbtn: GameUI.NeonButton
 	var _focus = null
 
 	func _init(p_game) -> void:
@@ -410,19 +412,30 @@ class InfoPanel extends GlassPanel:
 		anchor_bottom = 1.0
 		offset_left = 16.0
 		offset_right = 16.0 + 800.0
-		offset_top = -262.0
+		offset_top = -296.0
 		offset_bottom = -16.0
 		btn = GameUI.NeonButton.new("AMÉLIORER")
 		btn.accent = GameData.GOLD
 		btn.glyph = "credit"
-		btn.position = Vector2(COL2, 190)
-		btn.size = Vector2(330, 40)
+		btn.position = Vector2(COL2, 244)
+		btn.size = Vector2(330, 36)
 		btn.pressed.connect(func() -> void:
 			if _focus is Building:
 				game.upgrade_building(_focus)
 			elif _focus is Unit:
 				game.upgrade_unit(_focus))
 		add_child(btn)
+		rbtn = GameUI.NeonButton.new("RÉPARER")
+		rbtn.accent = GameData.GREEN
+		rbtn.glyph = "credit"
+		rbtn.position = Vector2(34, 244)
+		rbtn.size = Vector2(360, 36)
+		rbtn.pressed.connect(func() -> void:
+			if _focus is Building:
+				game.toggle_repair(_focus)
+			elif _focus is Unit:
+				game.repair_unit(_focus))
+		add_child(rbtn)
 		visible = false
 
 	func _ok(e) -> bool:
@@ -449,7 +462,7 @@ class InfoPanel extends GlassPanel:
 		btn.visible = is_b or is_u
 		if is_b:
 			var b: Building = _focus
-			btn.position = Vector2(COL2, 190)
+			btn.position = Vector2(COL2, 244)
 			var why: String = game.upgrade_block(b, game.ore)
 			btn.enabled = why == ""
 			if b.up_left > 0.0:
@@ -462,7 +475,7 @@ class InfoPanel extends GlassPanel:
 			btn.tooltip_text = why
 		elif is_u:
 			var u: Unit = _focus
-			btn.position = Vector2(COL2, 208)
+			btn.position = Vector2(COL2, 244)
 			var why2: String = game.unit_upgrade_block(u)
 			btn.enabled = why2 == ""
 			if u.tech_left > 0.0:
@@ -473,6 +486,22 @@ class InfoPanel extends GlassPanel:
 				btn.text = "MODERNISER — %d SOL. · %d S" % [GameData.tech_cost(u.id), int(GameData.tech_time(u.id))]
 			btn.glyph = "credit"
 			btn.tooltip_text = why2
+		var can_rep: bool = (_focus is Building or _focus is Unit) and _focus.team == 0 \
+				and not (_focus is Unit and (_focus.role == "convoy"))
+		rbtn.visible = can_rep
+		if can_rep:
+			if _focus is Building:
+				var rb: Building = _focus
+				rbtn.enabled = game.repair_block(rb) == "" and (rb.repairing or rb.hp < rb.max_hp - 0.5)
+				rbtn.text = "ARRÊTER LA RÉPARATION" if rb.repairing else "RÉPARER — %d MIN." % game.repair_cost_full(rb)
+				rbtn.glyph = "ore"
+				rbtn.tooltip_text = game.repair_block(rb)
+			else:
+				var ru: Unit = _focus
+				rbtn.enabled = game.unit_repair_block(ru) == ""
+				rbtn.text = "RÉPARATION EN COURS" if ru.state == "repair" else "RÉPARER — %d SOL." % game.unit_repair_cost(ru)
+				rbtn.glyph = "credit"
+				rbtn.tooltip_text = game.unit_repair_block(ru)
 		queue_redraw()
 
 	func _row(x: float, y: float, label: String, value: String, vcol := UiStyle.TEXT) -> void:
@@ -639,7 +668,7 @@ class InfoPanel extends GlassPanel:
 					yy += 20.0
 				var why: String = game.upgrade_block(b, game.ore)
 				if why != "":
-					UiStyle.text(self, Vector2(COL2, 236), why, 13, GameData.RED)
+					UiStyle.text(self, Vector2(COL2, 230), why, 13, GameData.RED)
 			else:
 				UiStyle.text(self, Vector2(COL2, 154), "Niveau maximum atteint", 15, UiStyle.GOLD)
 
@@ -814,16 +843,19 @@ class BuildIcon extends Control:
 	func _draw_baked_icon(c: Vector2, avail: bool) -> void:
 		var key := "%s|%s" % [id, game.faction_id]
 		var is_unit := GameData.UNITS.has(id)
-		var tex = game.bank.frame(key, 0.45) if is_unit else game.bank.frame(key)
+		var ang := 0.45 if is_unit else 0.0
+		var tex = game.bank.frame(key, ang)
 		if tex == null:
 			return
-		var sz: Vector2 = game.bank.draw_size(key)
-		var k := minf(2.2, minf(76.0 / sz.x, 62.0 / sz.y))
-		if is_unit:
-			k = 1.6
-		var col := Color.WHITE if avail else Color(0.45, 0.45, 0.5, 0.8)
-		var cc := c + (Vector2(0, -6) if GameData.def(id).get("air", false) else Vector2.ZERO)
-		draw_texture_rect(tex, Rect2(cc - sz * k / 2.0, sz * k), false, col)
+		var src: Rect2 = game.bank.used_rect(key, ang)
+		if src.size.x < 2.0 or src.size.y < 2.0:
+			src = Rect2(Vector2.ZERO, tex.get_size())
+		# On cadre sur la partie réellement dessinée du modèle, pour qu'elle remplisse l'icône
+		var k := minf(minf(92.0 / src.size.x, 66.0 / src.size.y), 2.4)
+		var dsz := src.size * k
+		var col := Color.WHITE if avail else Color(0.5, 0.5, 0.56, 0.85)
+		var cc := c + Vector2(0, 2)
+		draw_texture_rect_region(tex, Rect2(cc - dsz / 2.0, dsz), src, col)
 
 	func _draw_icon(c: Vector2, avail: bool) -> void:
 		var fill := Color("2a3350") if avail else Color("201c2c")

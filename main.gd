@@ -3,7 +3,7 @@ extends Node2D
 ## production, placement de bâtiments et vers géants. Interface : ui.gd.
 
 const TILE := 32
-const MINIMAP_RES := 128
+const MINIMAP_RES := 192
 const SIDEBAR_EXTRA := 390.0 # la caméra peut défiler sous le panneau latéral
 const CAM_SPEED := 800.0
 const EDGE_SCROLL := true
@@ -93,6 +93,7 @@ var selected: Array[Unit] = []
 var buildings: Array[Building] = []
 var occupied := {} # Vector2i -> true (cases prises par un bâtiment)
 
+var _rep_acc := 0.0
 var tier := 0 # missions de campagne terminées : débloque les bâtiments
 var _inc_acc := {0: 0.0, 1: 0.0, 2: 0.0}
 var credits := 1000 # Solaris (épice raffinée) : payent les unités
@@ -946,6 +947,7 @@ func _process(delta: float) -> void:
 			_check_end()
 	_update_production(delta)
 	_tick_upgrades(delta)
+	_tick_repairs(delta)
 	_update_worm(delta)
 	if FOG:
 		_fog_t -= delta
@@ -1454,6 +1456,122 @@ func upgrade_unit(u: Unit) -> bool:
 	sfx.play_ui("click")
 	ui.toast("%s : modernisation en cours (%d s)" % [GameData.def(u.id)["name"], int(u.tech_total)], GameData.AMBER)
 	return true
+
+
+# --- Réparations ----------------------------------------------------------------
+
+## Coût (minerai) d'une réparation complète d'un bâtiment : la moitié de son prix.
+func repair_cost_full(b: Building) -> int:
+	return int(round(float(GameData.base_cost(b.id)) * 0.5 * (b.max_hp - b.hp) / b.max_hp))
+
+
+func repair_block(b: Building) -> String:
+	if b.team != 0:
+		return "Non réparable"
+	if b.hp >= b.max_hp - 0.5:
+		return "Intégrité complète"
+	if b.repairing:
+		return ""
+	if ore < 10:
+		return "Minerai insuffisant"
+	return ""
+
+
+func toggle_repair(b: Building) -> void:
+	var why := repair_block(b)
+	if why != "":
+		ui.toast(why, GameData.RED)
+		sfx.play_ui("error")
+		return
+	b.repairing = not b.repairing
+	sfx.play_ui("click")
+	ui.toast("Réparation en cours : %s" % GameData.def(b.id)["name"] if b.repairing else "Réparation interrompue", GameData.AMBER)
+	b.queue_redraw()
+
+
+## Coût (Solaris) d'une réparation complète d'une unité : 40 % de son prix.
+func unit_repair_cost(u: Unit) -> int:
+	return int(round(float(GameData.def(u.id).get("cost", 300)) * 0.4 * (u.max_hp - u.hp) / u.max_hp))
+
+
+## Bâtiment de réparation le plus proche : Centre de réparation, sinon Usine.
+func find_repair_site(team: int, pos: Vector2) -> Building:
+	var best: Building = null
+	var best_d := INF
+	for b in buildings:
+		if b.team != team or not b.alive or (b.id != "usine" and b.id != "reparation"):
+			continue
+		var d := b.world_center().distance_to(pos) - (60.0 if b.id == "reparation" else 0.0)
+		if d < best_d:
+			best_d = d
+			best = b
+	return best
+
+
+func unit_repair_block(u: Unit) -> String:
+	if u.team != 0:
+		return "Non réparable"
+	if u.hp >= u.max_hp - 0.5:
+		return "Intégrité complète"
+	if u.state == "repair":
+		return "Réparation en cours"
+	if find_repair_site(0, u.position) == null:
+		return "Il faut une Usine ou un Centre de réparation"
+	if credits < 10:
+		return "Solaris insuffisants"
+	return ""
+
+
+func repair_unit(u: Unit) -> bool:
+	var why := unit_repair_block(u)
+	if why != "":
+		ui.toast(why, GameData.RED)
+		sfx.play_ui("error")
+		return false
+	u.order_repair(find_repair_site(0, u.position))
+	sfx.play_ui("click")
+	ui.toast("%s : retour à l'atelier" % GameData.def(u.id)["name"], GameData.AMBER)
+	return true
+
+
+## Soin d'une unité à l'atelier ; renvoie false quand c'est terminé ou impossible.
+func repair_unit_tick(u: Unit, dt: float) -> bool:
+	var amount := minf(u.max_hp / 12.0 * dt, u.max_hp - u.hp)
+	var cost := amount * float(GameData.def(u.id).get("cost", 300)) * 0.4 / u.max_hp
+	u.repair_acc += cost
+	var whole := int(u.repair_acc)
+	if whole > 0:
+		if credits < whole:
+			ui.toast("Réparation interrompue : Solaris insuffisants", GameData.RED)
+			return false
+		credits -= whole
+		u.repair_acc -= whole
+	u.hp += amount
+	u.queue_redraw()
+	return u.hp < u.max_hp - 0.5
+
+
+func _tick_repairs(dt: float) -> void:
+	for b in buildings:
+		if not b.alive or not b.repairing:
+			continue
+		var amount := minf(b.max_hp / 20.0 * dt, b.max_hp - b.hp)
+		_rep_acc += amount * float(GameData.base_cost(b.id)) * 0.5 / b.max_hp
+		var whole := int(_rep_acc)
+		if whole > 0:
+			if ore < whole:
+				b.repairing = false
+				ui.toast("Réparation interrompue : minerai insuffisant", GameData.RED)
+				continue
+			ore -= whole
+			_rep_acc -= whole
+		b.hp += amount
+		b.queue_redraw()
+		if b.hp >= b.max_hp - 0.5:
+			b.hp = b.max_hp
+			b.repairing = false
+			sfx.play_ui("ready", -4.0)
+			ui.toast("%s réparé" % GameData.def(b.id)["name"], GameData.GREEN)
 
 
 ## Fait avancer les améliorations de bâtiments et les modernisations d'unités.

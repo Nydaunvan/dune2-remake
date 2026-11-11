@@ -20,6 +20,7 @@ var ready_all := false
 var total := 0
 var done := 0
 var _tex := {}   # clé -> Array[Texture2D]
+var _used := {}  # clé -> Array[Rect2] zone opaque de chaque image
 var _size := {}  # clé -> taille de dessin dans le monde (Vector2)
 var _vp: SubViewport
 var _cam: Camera3D
@@ -67,6 +68,14 @@ func frame(key: String, angle := 0.0):
 	return arr[i]
 
 
+## Zone réellement dessinée (pixels de texture) d'une image : sert à cadrer les icônes.
+func used_rect(key: String, angle := 0.0) -> Rect2:
+	var arr: Array = _used.get(key, [])
+	if arr.is_empty():
+		return Rect2()
+	return arr[frame_index(key, angle)]
+
+
 func frame_index(key: String, angle: float) -> int:
 	var arr: Array = _tex.get(key, [])
 	if arr.size() <= 1:
@@ -83,6 +92,7 @@ func _make_viewport() -> void:
 	_vp.own_world_3d = true
 	_vp.transparent_bg = true
 	_vp.msaa_3d = Viewport.MSAA_4X
+	_vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
 	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
 	_vp.size = Vector2i(256, 256)
 	add_child(_vp)
@@ -140,6 +150,7 @@ func _bake(job: Dictionary) -> void:
 	var model := Models.build(job["id"], job["accent"])
 	_holder.add_child(model)
 	var out: Array = []
+	var rects: Array = []
 	for i in int(job["angles"]):
 		# Angle 2D (sens horaire à l'écran) -> rotation autour de Y : signe inversé
 		model.rotation.y = -TAU * i / float(job["angles"])
@@ -147,8 +158,11 @@ func _bake(job: Dictionary) -> void:
 		await RenderingServer.frame_post_draw
 		await RenderingServer.frame_post_draw
 		var img := _vp.get_texture().get_image()
+		rects.append(Rect2(img.get_used_rect()))
+		img.generate_mipmaps()
 		out.append(ImageTexture.create_from_image(img))
 	_holder.remove_child(model)
 	model.queue_free()
 	_tex[job["key"]] = out
+	_used[job["key"]] = rects
 	_size[job["key"]] = Vector2(frame_px.x, view_h / cos(TILT))
