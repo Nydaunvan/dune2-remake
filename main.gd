@@ -1071,6 +1071,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				placing_id = ""
 				command_mode = ""
 				_clear_focus()
+			KEY_O:
+				ui.toggle_objectives()
 			KEY_P:
 				open_pause_menu()
 			KEY_F6:

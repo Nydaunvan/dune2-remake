@@ -83,26 +83,39 @@ func toast(text: String, color := GameData.CREAM) -> void:
 
 # --- Construction de l'interface ---------------------------------------------
 
+var objective_panel: ObjectivePanel
+
+
 func _build_objective() -> void:
-	if game.mission.is_empty():
-		return
-	var p := ObjectivePanel.new(game)
-	p.position = Vector2(6, 100)
-	p.size = Vector2(430, 76)
-	root.add_child(p)
+	objective_panel = ObjectivePanel.new(game)
+	objective_panel.position = Vector2(6, 100)
+	objective_panel.size = Vector2(430, 76)
+	root.add_child(objective_panel)
+
+
+func toggle_objectives() -> void:
+	objective_panel.visible = not objective_panel.visible
+	if objective_panel.visible:
+		objective_panel.pulse = 1.0
 
 
 func _build_topbar() -> void:
 	topbar = HudBar.new()
 	topbar.game = game
 	topbar.position = Vector2(6, 6)
-	topbar.size = Vector2(1250, 84)
+	topbar.size = Vector2(1384, 84)
 	root.add_child(topbar)
 	var menu_btn := NeonButton.new("MENU")
-	menu_btn.position = Vector2(1118, 22)
+	menu_btn.position = Vector2(1252, 22)
 	menu_btn.size = Vector2(112, 42)
 	menu_btn.pressed.connect(game.open_pause_menu)
 	topbar.add_child(menu_btn)
+	var obj_btn := NeonButton.new("OBJECTIFS")
+	obj_btn.accent = GameData.AMBER
+	obj_btn.position = Vector2(1124, 22)
+	obj_btn.size = Vector2(118, 42)
+	obj_btn.pressed.connect(toggle_objectives)
+	topbar.add_child(obj_btn)
 
 
 func _build_sidebar() -> void:
@@ -219,7 +232,7 @@ func _process(_delta: float) -> void:
 	elif game.command_mode == "attack":
 		info_label.text = "Cliquez : les unités avancent en attaquant tout sur leur route."
 	else:
-		info_label.text = "File : bâtiments %d/%d — unités %d/%d\nClic droit : ordre / annuler une icône\nÉchap pause — F6 sauvegarde rapide — F7 chargement — M son" \
+		info_label.text = "File : bâtiments %d/%d — unités %d/%d\nClic droit : ordre / annuler une icône\nÉchap pause — O objectifs — M son" \
 				% [game.production["building"].size(), game.queue_max("building"),
 				game.production["unit"].size(), game.queue_max("unit")]
 
@@ -283,6 +296,18 @@ func show_end(victory: bool, reason := "") -> void:
 
 class ObjectivePanel extends GlassPanel:
 	var game
+	var pulse := 0.0
+
+	## Objectifs affichés : ceux de la mission, ou la victoire par destruction en escarmouche.
+	func _items() -> Array:
+		if not game.mission.is_empty():
+			return game.objectives_status()
+		var n := 0
+		for b in game.buildings:
+			if b.alive and game.hostile(b.team, 0):
+				n += 1
+		var foe_alive: bool = game._side_alive(1)
+		return [{"text": "Détruire la base adverse : %d structure(s)" % n, "frac": 0.0 if foe_alive else 1.0, "done": not foe_alive}]
 
 	func _init(p_game) -> void:
 		super(8.0, 4.0, p_game.fdata["color"], p_game.fdata["accent"], 14.0)
@@ -290,16 +315,21 @@ class ObjectivePanel extends GlassPanel:
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	func _process(_delta: float) -> void:
-		var n: int = game.objectives_status().size()
+		var n: int = _items().size()
 		size = Vector2(450, 44 + 40 * n)
+		pulse = move_toward(pulse, 0.0, _delta * 1.5)
 		queue_redraw()
 
 	func _draw() -> void:
 		var m: Dictionary = game.mission
-		UiStyle.text(self, Vector2(20, 26), "MISSION %d — %s" % [GameSession.mission + 1, String(m["title"]).to_upper()],
-				13, UiStyle.GOLD, true)
+		var head := "ESCARMOUCHE — OBJECTIF"
+		if not m.is_empty():
+			head = "MISSION %d — %s" % [GameSession.mission + 1, String(m["title"]).to_upper()]
+		if pulse > 0.0:
+			draw_rect(Rect2(Vector2.ZERO, size), Color(1.0, 0.8, 0.3, 0.18 * pulse))
+		UiStyle.text(self, Vector2(20, 26), head, 13, UiStyle.GOLD, true)
 		var y := 54.0
-		for o in game.objectives_status():
+		for o in _items():
 			var done: bool = o["done"]
 			var c := Vector2(26, y - 5.0)
 			var col := GameData.GREEN if done else UiStyle.GOLD
