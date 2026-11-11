@@ -164,7 +164,7 @@ func _try_upgrade() -> void:
 				continue
 			if game.upgrade_block(b, ore) == "" and ore >= game.upgrade_cost(b) + 400:
 				ore -= game.upgrade_cost(b)
-				b.upgrade()
+				game.begin_upgrade(b)
 				return
 
 

@@ -21,6 +21,8 @@ var outpost := -1 # indice d'avant-poste de mission (-1 : aucun)
 var team := 0
 var alive := true
 var hp := 500.0
+var up_left := 0.0  # amélioration en cours : secondes restantes
+var up_total := 0.0
 var max_hp := 500.0
 var armor := "building"
 var weapon := ""
@@ -251,6 +253,10 @@ func _draw_hp(s: Vector2) -> void:
 		UiStyle.text(self, Vector2(2, s.y * 0.5), "HORS TENSION", 11, GameData.RED, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
 	if selected:
 		draw_rect(Rect2(Vector2(-2, -2), s + Vector2(4, 4)), GameData.GREEN, false, 2.5)
+	if up_left > 0.0:
+		var uw := s.x - 8.0
+		draw_rect(Rect2(4, -16, uw, 4), Color(0, 0, 0, 0.65))
+		draw_rect(Rect2(4, -16, uw * (1.0 - up_left / maxf(up_total, 0.1)), 4), GameData.AMBER_HDR)
 	if hp < max_hp:
 		var w := s.x - 8.0
 		draw_rect(Rect2(4, -9, w, 5), Color(0, 0, 0, 0.65))

@@ -89,6 +89,21 @@ const UPGRADES := {
 	"usine": "Débloque de nouvelles unités, +2 places en file, production +25 % plus rapide, +25 % PV",
 	"tourelle": "+25 % de dégâts, +25 % PV",
 }
+# Modernisation d'une unité (une fois, à l'Usine niveau 2) : bonus propres à chaque type.
+# Clés : hp/dps/speed/cap/rate = multiplicateurs, range/vision = cases en plus.
+const UNIT_TECH := {
+	"recolteur": {"cap": 1.3, "rate": 1.2, "speed": 1.1},
+	"mineur": {"cap": 1.3, "rate": 1.2, "hp": 1.2},
+	"sentinelle": {"speed": 1.25, "vision": 3, "hp": 1.15},
+	"egide": {"hp": 1.3, "dps": 1.15},
+	"resonateur": {"range": 2, "dps": 1.2},
+	"belier": {"hp": 1.2, "dps": 1.25},
+	"brute": {"hp": 1.35, "dps": 1.1},
+	"salve": {"range": 2, "dps": 1.15, "vision": 2},
+	"faucon": {"speed": 1.2, "dps": 1.25, "vision": 2},
+	"vipere": {"dps": 1.3, "hp": 1.15},
+	"mirage": {"range": 2, "hp": 1.25, "dps": 1.2},
+}
 const CHANTIER_COST := 800 # base de calcul pour l'amélioration du Chantier
 
 # Bâtiment de départ (non constructible par le joueur)
@@ -288,6 +303,29 @@ static func def(id: String) -> Dictionary:
 static func mult(weapon: String, armor: String) -> float:
 	var row: Dictionary = MULT.get(weapon, {})
 	return float(row.get(armor, 1.0))
+
+
+static func tech_cost(id: String) -> int:
+	return int(round(float(UNITS[id]["cost"]) * 0.7))
+
+
+static func tech_time(id: String) -> float:
+	return 10.0 + float(UNITS[id]["cost"]) / 45.0
+
+
+## Texte des bonus de modernisation d'une unité.
+static func tech_text(id: String) -> String:
+	var t: Dictionary = UNIT_TECH.get(id, {})
+	var parts: PackedStringArray = []
+	var labels := {"hp": "PV", "dps": "dégâts", "speed": "vitesse", "cap": "capacité", "rate": "rendement"}
+	for k in ["hp", "dps", "speed", "cap", "rate"]:
+		if t.has(k):
+			parts.append("+%d %% %s" % [int(round((float(t[k]) - 1.0) * 100.0)), labels[k]])
+	if t.has("range"):
+		parts.append("+%d portée" % int(t["range"]))
+	if t.has("vision"):
+		parts.append("+%d vision" % int(t["vision"]))
+	return ", ".join(parts)
 
 
 ## Bâtiments constructibles par une faction (communs + propres), débloqués ou non.

@@ -31,12 +31,24 @@ func _process(_d: float) -> bool:
 		main.on_item_clicked("centrale", MOUSE_BUTTON_RIGHT)
 		print("après annulation : %d, minerai=%d" % [main.production["building"].size(), main.ore])
 		var c := _chantier()
-		print("amélioration chantier : %s (coût %d) -> niveau %d, max file %d" % [
-				str(main.upgrade_building(c)), main.upgrade_cost(c), c.level, main.queue_max("building")])
-		main.upgrade_building(c)
+		var ok1: bool = main.upgrade_building(c)
+		print("amélioration lancée: %s, niveau avant fin=%d, reste %.0f s, 2e clic bloqué: [%s]" % [str(ok1), c.level, c.up_left, main.upgrade_block(c, 9999)])
+		main._tick_upgrades(9999.0)
+		print("après délai: niveau %d, max file %d" % [c.level, main.queue_max("building")])
+		main.upgrade_building(c); main._tick_upgrades(9999.0)
 		print("niveau 3 : max file %d, hp %d/%d" % [main.queue_max("building"), int(c.hp), int(c.max_hp)])
 		print("raffinerie niv2 possible ? %s" % main.upgrade_block(_find("raffinerie"), 5000))
 		_find("raffinerie").upgrade()
+		var uu = main.units.filter(func(x): return x.team == 0 and x.id == "recolteur")
+		if not uu.is_empty():
+			var hv = uu[0]
+			main.credits = 2000
+			print("sans usine niv.2: [%s]" % main.unit_upgrade_block(hv))
+			main._place_building("usine", Vector2i(main.start_cell) + Vector2i(-8, 6), 0)
+			_find("usine").upgrade()
+			print("modernisation récolteur: %s cap %d -> " % [str(main.upgrade_unit(hv)), int(hv.cargo_cap)], "")
+			main._tick_upgrades(9999.0)
+			print("  tech=%d cap=%d rate=%d" % [hv.tech, int(hv.cargo_cap), int(hv.harvest_rate)])
 		print("bonus Solaris : x%.2f" % main.income_bonus("spice", 0))
 		for u in main.units:
 			if u.team == 0 and u.role == "combat":

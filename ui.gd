@@ -418,8 +418,10 @@ class InfoPanel extends GlassPanel:
 		btn.position = Vector2(COL2, 190)
 		btn.size = Vector2(330, 40)
 		btn.pressed.connect(func() -> void:
-			if game.selected_building != null:
-				game.upgrade_building(game.selected_building))
+			if _focus is Building:
+				game.upgrade_building(_focus)
+			elif _focus is Unit:
+				game.upgrade_unit(_focus))
 		add_child(btn)
 		visible = false
 
@@ -442,14 +444,35 @@ class InfoPanel extends GlassPanel:
 			return
 		_focus = _find_focus()
 		visible = _focus != null
-		btn.visible = _focus is Building and _focus.team == 0 and not GameData.def(_focus.id).get("no_upgrade", false)
-		if btn.visible:
+		var is_b: bool = _focus is Building and _focus.team == 0 and not GameData.def(_focus.id).get("no_upgrade", false)
+		var is_u: bool = _focus is Unit and _focus.team == 0 and GameData.UNIT_TECH.has(_focus.id)
+		btn.visible = is_b or is_u
+		if is_b:
 			var b: Building = _focus
+			btn.position = Vector2(COL2, 190)
 			var why: String = game.upgrade_block(b, game.ore)
 			btn.enabled = why == ""
-			btn.text = "NIVEAU MAXIMUM" if b.level >= GameData.MAX_LEVEL else "AMÉLIORER — %d MIN." % game.upgrade_cost(b)
+			if b.up_left > 0.0:
+				btn.text = "AMÉLIORATION — %d S" % int(ceil(b.up_left))
+			elif b.level >= GameData.MAX_LEVEL:
+				btn.text = "NIVEAU MAXIMUM"
+			else:
+				btn.text = "AMÉLIORER — %d MIN. · %d S" % [game.upgrade_cost(b), int(game.upgrade_time(b))]
 			btn.glyph = "ore"
 			btn.tooltip_text = why
+		elif is_u:
+			var u: Unit = _focus
+			btn.position = Vector2(COL2, 208)
+			var why2: String = game.unit_upgrade_block(u)
+			btn.enabled = why2 == ""
+			if u.tech_left > 0.0:
+				btn.text = "MODERNISATION — %d S" % int(ceil(u.tech_left))
+			elif u.tech > 0:
+				btn.text = "MODERNISÉE"
+			else:
+				btn.text = "MODERNISER — %d SOL. · %d S" % [GameData.tech_cost(u.id), int(GameData.tech_time(u.id))]
+			btn.glyph = "credit"
+			btn.tooltip_text = why2
 		queue_redraw()
 
 	func _row(x: float, y: float, label: String, value: String, vcol := UiStyle.TEXT) -> void:
@@ -501,6 +524,11 @@ class InfoPanel extends GlassPanel:
 		UiStyle.text(self, Vector2(COL2, 176), "ATTAQUER : avance en tirant", 14, UiStyle.TEXT)
 		UiStyle.text(self, Vector2(COL2, 198), "ARRÊT : annule les ordres", 14, UiStyle.TEXT)
 
+	func _tech_line(u: Unit) -> String:
+		if not GameData.UNIT_TECH.has(u.id):
+			return ""
+		return ("Modernisée : " if u.tech > 0 else "Modernisation : ") + GameData.tech_text(u.id)
+
 	func _draw_unit(u: Unit) -> void:
 		var d := GameData.def(u.id)
 		var mine: bool = u.team == 0
@@ -541,17 +569,18 @@ class InfoPanel extends GlassPanel:
 				nxt = "Prochain rang : %d éliminations" % GameData.RANKS[u.rank + 1]["kills"]
 			else:
 				nxt = "Rang maximum"
-			UiStyle.text(self, Vector2(COL2, 154), "%d éliminations" % u.kills, 15, UiStyle.GOLD)
-			UiStyle.text(self, Vector2(COL2, 176), nxt, 14, UiStyle.TEXT)
-			UiStyle.text(self, Vector2(COL2, 198), "Chaque rang : +15 % dégâts et PV", 13, UiStyle.TEXT_DIM)
+			UiStyle.text(self, Vector2(COL2, 154), "%d éliminations — %s" % [u.kills, nxt.trim_prefix("Prochain rang : ")], 14, UiStyle.GOLD)
 			if u.weapon == "control":
-				UiStyle.text(self, Vector2(COL2, 220), "Contrôle un char ennemi 15 s (toutes les 20 s)", 13, GameData.CYAN)
+				UiStyle.text(self, Vector2(COL2, 176), "Contrôle un char ennemi 15 s (toutes les 20 s)", 13, GameData.CYAN)
 			elif u.weapon == "sonic":
-				UiStyle.text(self, Vector2(COL2, 220), "Dégâts de zone, touche aussi les alliés", 13, GameData.AMBER)
+				UiStyle.text(self, Vector2(COL2, 176), "Dégâts de zone, touche aussi les alliés", 13, GameData.AMBER)
+			else:
+				UiStyle.text(self, Vector2(COL2, 176), "Chaque rang : +15 % dégâts et PV", 13, UiStyle.TEXT_DIM)
+			UiStyle.text(self, Vector2(COL2, 198), _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
 		else:
 			UiStyle.text(self, Vector2(COL2, 154), "Récolte automatiquement et rapporte", 14, UiStyle.TEXT)
 			UiStyle.text(self, Vector2(COL2, 176), "à la Raffinerie" if u.cargo_kind == "spice" else "à la Fonderie", 14, UiStyle.TEXT)
-			UiStyle.text(self, Vector2(COL2, 198), "Fuit sur la roche si un ver approche", 13, UiStyle.TEXT_DIM)
+			UiStyle.text(self, Vector2(COL2, 198), _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
 
 	func _draw_building(b: Building) -> void:
 		var d := GameData.def(b.id)

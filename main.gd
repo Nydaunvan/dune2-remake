@@ -940,6 +940,7 @@ func _process(delta: float) -> void:
 			_building_effects(0.5)
 			_check_end()
 	_update_production(delta)
+	_tick_upgrades(delta)
 	_update_worm(delta)
 	if FOG:
 		_fog_t -= delta
@@ -1347,10 +1348,17 @@ func upgrade_cost(b: Building) -> int:
 	return int(round(GameData.base_cost(b.id) * GameData.UPGRADE_COST * b.level))
 
 
+## Durée de l'amélioration au niveau suivant (s).
+func upgrade_time(b: Building) -> float:
+	return float(GameData.def(b.id).get("time", 14.0)) * 2.0 * b.level
+
+
 ## Raison pour laquelle on ne peut pas améliorer le bâtiment ("" si c'est possible).
 func upgrade_block(b: Building, money: int) -> String:
 	if GameData.def(b.id).get("no_upgrade", false):
 		return "Non améliorable"
+	if b.up_left > 0.0:
+		return "Amélioration en cours"
 	if b.level >= GameData.MAX_LEVEL:
 		return "Niveau maximum atteint"
 	if b.id != "chantier" and b.level + 1 >= 3 and best_level("chantier", b.team) < 2:
@@ -1358,6 +1366,13 @@ func upgrade_block(b: Building, money: int) -> String:
 	if money < upgrade_cost(b):
 		return "Minerai insuffisant"
 	return ""
+
+
+## Lance le chronomètre d'amélioration (le coût est déjà payé).
+func begin_upgrade(b: Building) -> void:
+	b.up_total = upgrade_time(b)
+	b.up_left = b.up_total
+	b.queue_redraw()
 
 
 func upgrade_building(b: Building) -> bool:
@@ -1369,10 +1384,64 @@ func upgrade_building(b: Building) -> bool:
 		sfx.play_ui("error")
 		return false
 	ore -= upgrade_cost(b)
-	b.upgrade()
-	sfx.play_ui("upgrade")
-	ui.toast("%s — niveau %d" % [GameData.def(b.id)["name"], b.level], GameData.GOLD)
+	begin_upgrade(b)
+	sfx.play_ui("click")
+	ui.toast("%s : amélioration en cours (%d s)" % [GameData.def(b.id)["name"], int(b.up_total)], GameData.AMBER)
 	return true
+
+
+func unit_upgrade_block(u: Unit) -> String:
+	if u.team != 0 or not GameData.UNIT_TECH.has(u.id):
+		return "Non modernisable"
+	if u.tech > 0:
+		return "Déjà modernisée"
+	if u.tech_left > 0.0:
+		return "Modernisation en cours"
+	if best_level("usine", u.team) < 2:
+		return "Usine niveau 2 requise"
+	if credits < GameData.tech_cost(u.id):
+		return "Solaris insuffisants"
+	return ""
+
+
+func upgrade_unit(u: Unit) -> bool:
+	var why := unit_upgrade_block(u)
+	if why != "":
+		ui.toast(why, GameData.RED)
+		sfx.play_ui("error")
+		return false
+	credits -= GameData.tech_cost(u.id)
+	u.tech_total = GameData.tech_time(u.id)
+	u.tech_left = u.tech_total
+	u.queue_redraw()
+	sfx.play_ui("click")
+	ui.toast("%s : modernisation en cours (%d s)" % [GameData.def(u.id)["name"], int(u.tech_total)], GameData.AMBER)
+	return true
+
+
+## Fait avancer les améliorations de bâtiments et les modernisations d'unités.
+func _tick_upgrades(delta: float) -> void:
+	for b in buildings:
+		if b.alive and b.up_left > 0.0:
+			b.up_left -= delta * (1.0 if power_ok(b.team) else 0.5)
+			if b.up_left <= 0.0:
+				b.up_left = 0.0
+				b.upgrade()
+				if b.team == 0:
+					sfx.play_ui("upgrade")
+					ui.toast("%s — niveau %d" % [GameData.def(b.id)["name"], b.level], GameData.GOLD)
+			else:
+				b.queue_redraw()
+	for u in units:
+		if u.alive and u.tech_left > 0.0:
+			u.tech_left -= delta
+			if u.tech_left <= 0.0:
+				u.apply_tech()
+				if u.team == 0:
+					sfx.play_ui("upgrade")
+					popup(u.position, "▲ Modernisée", GameData.GOLD)
+			else:
+				u.queue_redraw()
 
 
 ## Coût réel (bonus de faction inclus). Unités : Solaris. Bâtiments : minerai.

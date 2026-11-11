@@ -34,6 +34,9 @@ var _orig_color := Color.WHITE
 var _scan_t := 0.0
 var kills := 0
 var rank := 0
+var tech := 0        # modernisation faite (0/1)
+var tech_left := 0.0 # modernisation en cours : secondes restantes
+var tech_total := 0.0
 var base_max_hp := 100.0
 var vision := 7
 var seen := true # visible actuellement par le joueur (brouillard de guerre)
@@ -203,6 +206,25 @@ func take_damage(raw: float, wpn: String, attacker = null) -> void:
 				flee()
 		elif weapon != "" and not forced and (state == "idle" or state == "amove" or (state == "attack" and not _valid(target))):
 			_set_target(attacker, false)
+
+
+## Applique les bonus de modernisation propres à ce type d'unité.
+func apply_tech() -> void:
+	tech = 1
+	tech_left = 0.0
+	var t: Dictionary = GameData.UNIT_TECH.get(id, {})
+	var old := max_hp
+	base_max_hp *= float(t.get("hp", 1.0))
+	max_hp = base_max_hp * (1.0 + GameData.RANK_HP * rank)
+	hp += max_hp - old
+	dps *= float(t.get("dps", 1.0))
+	speed *= float(t.get("speed", 1.0))
+	w_range += float(t.get("range", 0)) * 32.0
+	vision += int(t.get("vision", 0))
+	cargo_cap *= float(t.get("cap", 1.0))
+	harvest_rate *= float(t.get("rate", 1.0))
+	Fx.burst(game, position, GameData.GOLD, 16, 1.0)
+	queue_redraw()
 
 
 ## Éliminations -> rang (Recrue, Vétéran, Élite) : +15 % de dégâts et de PV par rang.
@@ -545,6 +567,11 @@ func _draw_overlay() -> void:
 		var w := 26.0
 		draw_rect(Rect2(-w / 2.0, -22, w, 4), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(-w / 2.0, -22, w * hp / max_hp, 4), GameData.GREEN if game.side_of(team) == 0 else GameData.RED)
+	if tech_left > 0.0:
+		draw_rect(Rect2(-13, -27, 26, 3), Color(0, 0, 0, 0.6))
+		draw_rect(Rect2(-13, -27, 26.0 * (1.0 - tech_left / maxf(tech_total, 0.1)), 3), GameData.AMBER_HDR)
+	if tech > 0:
+		draw_circle(Vector2(15, -22), 2.5, GameData.GOLD)
 	for i in rank:
 		var o := Vector2(-13 + i * 7, -29)
 		draw_polyline(PackedVector2Array([o + Vector2(-3, 2), o + Vector2(0, -1), o + Vector2(3, 2)]), GameData.GOLD, 2.0)
