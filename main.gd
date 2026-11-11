@@ -122,13 +122,33 @@ func _ready() -> void:
 		mission = Campaign.MISSIONS[GameSession.mission]
 		credits = int(mission["credits"])
 		ore = int(mission["ore"])
+	# Écran de chargement (la partie est en pause tant que tout n'est pas prêt)
+	if DisplayServer.get_name() != "headless":
+		loading = LoadingScreen.new(fdata["color"])
+		add_child(loading)
+		get_tree().paused = true
+	await _load_step(0.0, "Préparation des camps…")
 	_setup_factions()
+	# Les modèles 3D sont cuits en parallèle de la génération de la carte
+	if loading != null:
+		bank = SpriteBank.new()
+		bank.process_mode = Node.PROCESS_MODE_ALWAYS
+		add_child(bank)
+		var facs: Array = []
+		for t in team_factions.values():
+			if t not in facs:
+				facs.append(t)
+		bank.setup(self, facs)
+	await _load_step(0.05, "Tracé de la carte…")
 	_generate_layout()
 	_setup_noise()
+	await _load_step(0.15, "Modelage du relief…")
 	_generate_terrain()
 	_init_resources()
 	_build_grid()
-	_build_terrain()
+	await _load_step(0.3, "Dépôts d'épice et de minerai…")
+	await _build_terrain()
+	await _load_step(0.9, "Radar et brouillard de guerre…")
 	_build_minimap()
 	camera.position = start_cell * TILE
 	camera.zoom = Vector2(1.3, 1.3)
@@ -136,18 +156,10 @@ func _ready() -> void:
 	_clamp_camera()
 	if FOG:
 		_setup_fog()
+	await _load_step(0.95, "Installation des camps…")
 	_setup_sides()
-	if DisplayServer.get_name() != "headless":
-		bank = SpriteBank.new()
-		add_child(bank)
-		var facs: Array = []
-		for t in team_factions.values():
-			if t not in facs:
-				facs.append(t)
-		bank.setup(self, facs)
 	sfx = Sfx.new()
 	add_child(sfx)
-	sfx.start_music()
 	markers = MissionMarkers.new(self)
 	add_child(markers)
 	ui = GameUI.new()
@@ -155,10 +167,43 @@ func _ready() -> void:
 	ui.setup(self)
 	if not mission.is_empty():
 		_setup_mission()
+	_load_terrain = 1.0
+	if loading != null:
+		while not bank.ready_all:
+			loading.set_progress(_overall(), "Préparation des modèles 3D…")
+			await get_tree().process_frame
+		await sfx.warm_up(func(f: float, n: String) -> void:
+			loading.set_progress(0.97 + 0.03 * f, "Génération des sons…")
+			await get_tree().process_frame)
+		loading.queue_free()
+		loading = null
+		get_tree().paused = false
+	sfx.start_music()
+	if not mission.is_empty():
 		ui.toast("Mission %d — %s" % [GameSession.mission + 1, mission["title"]], fdata["accent"])
 	elif ai != null:
 		ui.toast("%s — face à la %s" % [fdata["name"], ai.fdata["name"]], fdata["accent"])
 	ui.toast("Sélectionnez l'engin de chantier, placez-le puis DÉPLOYER", GameData.GOLD)
+
+
+var loading: LoadingScreen
+var _load_terrain := 0.0
+
+
+func _overall() -> float:
+	var bf := 1.0
+	if bank != null and bank.total > 0:
+		bf = float(bank.done) / float(bank.total)
+	return 0.45 * _load_terrain + 0.55 * bf
+
+
+## Avance l'écran de chargement et laisse une image s'afficher.
+func _load_step(frac: float, text: String) -> void:
+	_load_terrain = frac
+	if loading == null:
+		return
+	loading.set_progress(_overall(), text)
+	await get_tree().process_frame
 
 
 # --- Camps, carte procédurale ------------------------------------------------
@@ -386,6 +431,8 @@ func _build_terrain() -> void:
 		for x in fw:
 			var p := (Vector2(x, y) + Vector2(0.5, 0.5)) / field_scale
 			field_img.set_pixel(x, y, Color(_height(p), _spice(p), _ore(p), 1.0))
+		if y % 24 == 0:
+			await _load_step(0.3 + 0.6 * float(y) / fh, "Génération du terrain…")
 	field_tex = ImageTexture.create_from_image(field_img)
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://shaders/terrain.gdshader")
@@ -1500,7 +1547,7 @@ func _setup_mission() -> void:
 		# Embuscades : groupes ennemis immobiles le long de la route
 		var amb := int(mission["convoy"].get("ambushes", 0))
 		for k in amb:
-			var f := float(k + 1) / float(amb + 1)
+			var f := lerpf(0.4, 0.85, float(k) / maxf(amb - 1, 1.0))
 			var pos := start_cell.lerp(Vector2(dest), f) + Vector2(rng.randf_range(-4, 4), rng.randf_range(-4, 4))
 			for g in 3:
 				var u := _spawn_unit(foe_ids[g % foe_ids.size()], _find_free_cell(Vector2i(pos) + Vector2i(g - 1, 0)), 1)

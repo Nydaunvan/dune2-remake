@@ -20,6 +20,8 @@ func _initialize() -> void:
 
 
 func _process(_d: float) -> bool:
+	if OS.has_environment("SHOT_AFTERLOAD") and node.get("loading") != null:
+		return false # on attend la fin du chargement
 	f += 1
 	if f == 8 and OS.has_environment("SHOT_MCV"):
 		for u in node.units:

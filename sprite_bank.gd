@@ -17,6 +17,8 @@ signal finished
 
 var game
 var ready_all := false
+var total := 0
+var done := 0
 var _tex := {}   # clé -> Array[Texture2D]
 var _size := {}  # clé -> taille de dessin dans le monde (Vector2)
 var _vp: SubViewport
@@ -115,7 +117,10 @@ func _make_viewport() -> void:
 
 func _bake_all() -> void:
 	for job in _jobs:
+		total += int(job["angles"])
+	for job in _jobs:
 		await _bake(job)
+		done += int(job["angles"])
 	ready_all = true
 	finished.emit()
 

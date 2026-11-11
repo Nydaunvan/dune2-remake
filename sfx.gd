@@ -48,6 +48,18 @@ func start_music() -> void:
 	_music.play()
 
 
+## Génère tous les sons à l'avance (écran de chargement) : un son par image.
+func warm_up(step: Callable) -> void:
+	if not enabled:
+		return
+	var names := ["autocannon", "cannon", "rocket", "sonic", "acid", "control", "hit", "boom", "boom_big",
+			"worm", "click", "ack", "place", "coin", "ready", "unit_ready", "upgrade", "rank", "alert",
+			"error", "victory", "defeat", "music"]
+	for i in names.size():
+		stream_of(names[i])
+		await step.call(float(i + 1) / names.size(), names[i])
+
+
 func toggle_mute() -> bool:
 	muted = not muted
 	AudioServer.set_bus_mute(0, muted)
