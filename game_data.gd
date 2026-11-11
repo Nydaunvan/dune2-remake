@@ -38,7 +38,7 @@ const FACTIONS := {
 	"vael": {
 		"name": "Cartel Vael",
 		"tagline": "Ruse et commerce",
-		"desc": "Épice +20 % de Solaris par récolte.\nUnités rapides et fragiles, tactiques de harcèlement.",
+		"desc": "Épice +20 % de Solaris par récolte.\nUnités rapides et fragiles, harcèlement.",
 		"color": Color("3ddc97"), "accent": Color("ffe08a"),
 		"build_time_mult": 1.0, "unit_cost_mult": 1.0, "spice_mult": 1.2, "ore_mult": 1.0,
 		"units": ["faucon", "vipere", "mirage"],
@@ -161,7 +161,7 @@ const UNITS := {
 		"hp": 400, "dps": 34, "speed": 105.0, "range": 6,
 	},
 	"mirage": {
-		"name": "Mirage", "role": "combat", "desc": "Déviateur : prend le contrôle d'un char ennemi (15 s, toutes les 20 s)",
+		"name": "Mirage", "role": "combat", "desc": "Prend le contrôle d'un char ennemi",
 		"armor": "light", "weapon": "control",
 		"cost": 480, "time": 9.0, "requires": ["usine"], "from": "usine",
 		"hp": 260, "dps": 22, "speed": 85.0, "range": 6,

@@ -30,6 +30,8 @@ var special_t := 0.0
 var _orig_team := 0
 var _orig_color := Color.WHITE
 var _scan_t := 0.0
+var _frame_idx := -1
+var _sprite_ready := false
 var _repath := 0.0
 
 var cargo := 0.0
@@ -243,9 +245,21 @@ func devour() -> void:
 
 # --- Boucle -------------------------------------------------------------------
 
+func _sprite_key() -> String:
+	return "%s|%s" % [id, game.faction_id_of(team)]
+
+
 func _process(_delta: float) -> void:
 	if selected:
 		queue_redraw() # anneau de sélection pulsé
+	var bank: SpriteBank = game.bank
+	if bank != null:
+		# Les modèles 3D sont cuits une image par angle : on redessine quand l'angle change
+		var idx := bank.frame_index(_sprite_key(), rotation)
+		if idx != _frame_idx or (not _sprite_ready and bank.has(_sprite_key())):
+			_frame_idx = idx
+			_sprite_ready = bank.has(_sprite_key())
+			queue_redraw()
 
 
 func _physics_process(delta: float) -> void:
@@ -441,9 +455,30 @@ func _unload() -> void:
 
 # --- Dessin -------------------------------------------------------------------
 
+func _draw_sprite() -> bool:
+	var bank: SpriteBank = game.bank
+	if bank == null:
+		return false
+	var key := _sprite_key()
+	var tex = bank.frame(key, rotation)
+	if tex == null:
+		return false
+	var sz := bank.draw_size(key)
+	# Ombre portée douce (bas-gauche), puis le modèle sans la rotation du nœud
+	draw_set_transform(Vector2(-5, 6), 0.0, Vector2(1.0, 0.55))
+	draw_circle(Vector2.ZERO, radius * 1.25, Color(0.1, 0.03, 0.12, 0.28))
+	draw_set_transform(Vector2.ZERO, -rotation, Vector2.ONE)
+	draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
+	return true
+
+
 func _draw() -> void:
 	var body := faction_color.darkened(0.25)
 	var hi := faction_color.lightened(0.2)
+	if _draw_sprite():
+		_draw_overlay()
+		return
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	match role:
 		"harvester":
 			draw_rect(Rect2(-17, -12, 34, 24), body.darkened(0.2))
@@ -465,6 +500,10 @@ func _draw() -> void:
 			draw_rect(Rect2(-11, -9, 22, 18), Color.BLACK, false, 1.5)
 			draw_circle(Vector2.ZERO, 5.5, hi)
 			draw_line(Vector2.ZERO, Vector2(16, 0), Color.BLACK, 4.0, true)
+	_draw_overlay()
+
+
+func _draw_overlay() -> void:
 	draw_set_transform(Vector2.ZERO, -rotation, Vector2.ONE) # barre de vie toujours horizontale
 	if hp < max_hp:
 		var w := 26.0

@@ -1,0 +1,30 @@
+extends SceneTree
+## Capture d'écran (nécessite un affichage, ex. xvfb-run) :
+## xvfb-run -a -s "-screen 0 1600x900x24" godot --rendering-driver opengl3 --rendering-method gl_compatibility --path . --script tools/shot.gd
+## Variables : SHOT_SCENE (main|menu), SHOT_FRAMES, SHOT_OUT, FACTION, SHOT_FOCUS=x,y (cases)
+var f := 0
+var node
+var frames := 90
+
+
+func _initialize() -> void:
+	GameSession.faction = OS.get_environment("FACTION") if OS.has_environment("FACTION") else "solis"
+	var sc := OS.get_environment("SHOT_SCENE") if OS.has_environment("SHOT_SCENE") else "main"
+	if OS.has_environment("SHOT_FRAMES"):
+		frames = int(OS.get_environment("SHOT_FRAMES"))
+	node = load("res://%s.tscn" % sc).instantiate()
+	root.add_child(node)
+
+
+func _process(_d: float) -> bool:
+	f += 1
+	if f == 3 and OS.has_environment("SHOT_FOCUS"):
+		var p := OS.get_environment("SHOT_FOCUS").split(",")
+		node.camera.zoom = Vector2(float(OS.get_environment("SHOT_ZOOM")), float(OS.get_environment("SHOT_ZOOM"))) if OS.has_environment("SHOT_ZOOM") else node.camera.zoom
+		node.center_camera(Vector2(float(p[0]), float(p[1])) * 32.0)
+	if f == frames:
+		var out := OS.get_environment("SHOT_OUT") if OS.has_environment("SHOT_OUT") else "/tmp/shots/shot.png"
+		root.get_texture().get_image().save_png(out)
+		print("saved ", out)
+		return true
+	return false

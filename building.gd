@@ -27,6 +27,7 @@ var w_range := 0.0 # px
 var cooldown := 0.0
 var aim := 0.0
 var _scan := 0.0
+var _sprite_ok := false
 var _target
 
 
@@ -54,6 +55,14 @@ func init_combat(p_game, p_team: int) -> void:
 	w_range = float(d.get("range", 0)) * tile
 	if weapon == "":
 		set_physics_process(false)
+
+
+func _process(_delta: float) -> void:
+	# Redessine une fois les modèles 3D cuits
+	if game != null and game.bank != null and game.bank.has("%s|%s" % [id, game.faction_id_of(team)]):
+		_sprite_ok = true
+		queue_redraw()
+		set_process(false)
 
 
 func world_center() -> Vector2:
@@ -103,6 +112,29 @@ func _physics_process(delta: float) -> void:
 		game.fire(self, _target, weapon, dps * float(wd["cd"]), world_center() + Vector2.from_angle(aim) * 22.0)
 
 
+func _draw_sprite(s: Vector2) -> bool:
+	var bank: SpriteBank = game.bank if game != null else null
+	if bank == null:
+		return false
+	var fid: String = game.faction_id_of(team)
+	var key := "%s|%s" % [id, fid]
+	var tex = bank.frame(key)
+	if tex == null:
+		return false
+	var sz := bank.draw_size(key)
+	var c := s / 2.0
+	# Ombre portée (bas-gauche)
+	draw_rect(Rect2(Vector2(-10, 8), s - Vector2(4, 4)), Color(0.1, 0.03, 0.12, 0.25))
+	draw_texture_rect(tex, Rect2(c - sz / 2.0, sz), false)
+	if weapon != "":
+		var hk := "tourelle_tete|%s" % fid
+		var ht = bank.frame(hk, aim)
+		if ht != null:
+			var hs := bank.draw_size(hk)
+			draw_texture_rect(ht, Rect2(c - hs / 2.0, hs), false)
+	return true
+
+
 func _valid(t) -> bool:
 	return t != null and is_instance_valid(t) and t.alive
 
@@ -121,6 +153,9 @@ func center_cell() -> Vector2:
 
 func _draw() -> void:
 	var s := Vector2(cell_size * tile)
+	if _draw_sprite(s):
+		_draw_hp(s)
+		return
 	# Ombre portée vers le bas-gauche
 	draw_rect(Rect2(Vector2(-14, 8), s), SHADOW)
 	var body := Rect2(Vector2(3, 3), s - Vector2(6, 6))
@@ -164,6 +199,10 @@ func _draw() -> void:
 			draw_arc(s / 2.0, 22.0, 0.0, TAU, 32, trim, 3.0, true)
 			draw_circle(s / 2.0, 9.0, DARK)
 			draw_rect(Rect2(6, s.y - 18, 34, 10), trim.darkened(0.2))
+	_draw_hp(s)
+
+
+func _draw_hp(s: Vector2) -> void:
 	if hp < max_hp:
 		var w := s.x - 8.0
 		draw_rect(Rect2(4, -9, w, 5), Color(0, 0, 0, 0.65))

@@ -55,6 +55,7 @@ var field_img: Image
 var field_tex: ImageTexture
 var ui: GameUI
 var ai: SkirmishAI
+var bank: SpriteBank # modèles 3D cuits en sprites (absent sans affichage)
 var enemy_faction := ""
 var over := false
 var _alert_cd := -100.0
@@ -104,6 +105,13 @@ func _ready() -> void:
 	_spawn_base_units(START, 0)
 	if GameSession.mode == "skirmish":
 		_setup_enemy()
+	if DisplayServer.get_name() != "headless":
+		bank = SpriteBank.new()
+		add_child(bank)
+		var facs: Array = [faction_id]
+		if enemy_faction != "":
+			facs.append(enemy_faction)
+		bank.setup(self, facs)
 	ui = GameUI.new()
 	add_child(ui)
 	ui.setup(self)
@@ -469,6 +477,10 @@ func on_unit_lost(u: Unit) -> void:
 
 func fdata_of(team: int) -> Dictionary:
 	return fdata if team == 0 else ai.fdata
+
+
+func faction_id_of(team: int) -> String:
+	return faction_id if team == 0 else enemy_faction
 
 
 func faction_color(team: int) -> Color:
