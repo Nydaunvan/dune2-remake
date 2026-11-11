@@ -12,7 +12,8 @@ uniform vec4 accent_b : source_color = vec4(1.0, 0.18, 0.65, 1.0);
 uniform float border_w = 2.0;
 uniform float glow = 1.0;
 uniform float blur = 3.0;
-uniform float tint = 0.62;
+uniform float tint = 0.4;
+uniform float fill_alpha = 0.42; // opacité du fond (le jeu reste visible à travers)
 
 float sd_box(vec2 p, vec2 b, float r) {
 	vec2 q = abs(p) - b + vec2(r);
@@ -52,7 +53,7 @@ void fragment() {
 	col = mix(col, bc * (1.0 + 0.6 * glow + 1.2 * corner), edge);
 	col = mix(bc, col, inside);
 
-	float a = inside * mix(0.88, 1.0, edge);
+	float a = inside * mix(fill_alpha, 1.0, edge);
 	a = max(a, outer * 0.35 * glow);
 	COLOR = vec4(col, a);
 }

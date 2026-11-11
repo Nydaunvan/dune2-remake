@@ -97,7 +97,9 @@ static func closed(pts: PackedVector2Array) -> PackedVector2Array:
 ## Cadre complet : fond, filet principal, lueur et petites équerres dorées aux coins.
 static func frame(ci: CanvasItem, r: Rect2, cut: float, line: Color, fill: Color = PANEL, glow := 0.0, lit := 0.0) -> void:
 	var pts := chamfer(r, cut)
-	ci.draw_colored_polygon(pts, fill.lerp(PANEL_HI, lit))
+	var fc := fill.lerp(PANEL_HI, lit)
+	fc.a *= 0.5 # fond translucide
+	ci.draw_colored_polygon(pts, fc)
 	if glow > 0.0:
 		ci.draw_polyline(closed(pts), Color(line.r, line.g, line.b, 0.18 * glow), 7.0, true)
 		ci.draw_polyline(closed(pts), Color(line.r, line.g, line.b, 0.3 * glow), 4.0, true)

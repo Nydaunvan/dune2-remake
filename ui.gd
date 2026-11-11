@@ -58,7 +58,7 @@ func toast(text: String, color := GameData.CREAM) -> void:
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	l.add_theme_constant_override("outline_size", 6)
 	var sb := StyleBoxFlat.new()
-	sb.bg_color = Color(0.04, 0.02, 0.09, 0.82)
+	sb.bg_color = Color(0.04, 0.02, 0.09, 0.5)
 	sb.border_width_left = 4
 	sb.border_width_right = 4
 	sb.border_color = UiStyle.GOLD
