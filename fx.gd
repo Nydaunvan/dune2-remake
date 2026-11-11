@@ -59,13 +59,32 @@ static func burst(parent: Node, pos: Vector2, color: Color, amount := 30, size :
 	p.finished.connect(p.queue_free)
 
 
+## Petit impact d'arme : quelques particules discrètes et brèves, pour que la cible reste lisible.
+static func impact(parent: Node, pos: Vector2, color: Color, amount := 3, size := 0.22) -> void:
+	var c := Color(minf(color.r, 1.2), minf(color.g, 1.2), minf(color.b, 1.2))
+	var p := make_dust(c, amount, 0.35, size)
+	p.one_shot = true
+	p.explosiveness = 1.0
+	p.initial_velocity_min = 14.0
+	p.initial_velocity_max = 40.0
+	p.show_behind_parent = false
+	p.position = pos
+	var ramp := Gradient.new()
+	ramp.colors = PackedColorArray([Color(c.r, c.g, c.b, 0.4), Color(c.r, c.g, c.b, 0.0)])
+	ramp.offsets = PackedFloat32Array([0.0, 1.0])
+	p.color_ramp = ramp
+	parent.add_child(p)
+	p.emitting = true
+	p.finished.connect(p.queue_free)
+
+
 ## Explosion : flamme HDR + fumée.
 static func explosion(parent: Node, pos: Vector2, size := 1.0) -> void:
 	var snd = parent.get("sfx")
 	if snd != null:
 		snd.play("boom_big" if size >= 2.0 else ("boom" if size >= 1.0 else "hit"), pos, -2.0)
-	burst(parent, pos, Color(2.0, 1.0, 0.3), int(24 * size), size * 1.2)
-	burst(parent, pos, Color(0.28, 0.24, 0.24), int(16 * size), size * 1.9)
+	burst(parent, pos, Color(1.5, 0.8, 0.3), int(14 * size), size * 0.9)
+	burst(parent, pos, Color(0.28, 0.24, 0.24), int(8 * size), size * 1.3)
 
 
 ## MSAA 2D + (option) rendu HDR avec bloom, pour toute scène.

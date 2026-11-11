@@ -862,7 +862,7 @@ func fire(shooter, target, weapon: String, damage: float, from: Vector2, control
 	var p := Projectile.new()
 	p.setup(self, weapon, shooter.team, from, target, damage, shooter, control)
 	add_child(p)
-	Fx.burst(self, from, GameData.WEAPONS[weapon]["color"], 4, 0.35)
+	Fx.impact(self, from, GameData.WEAPONS[weapon]["color"], 2, 0.16)
 	sfx.play(weapon, from, -4.0)
 
 
@@ -1155,7 +1155,7 @@ func order_context(world_pos: Vector2) -> void:
 		return
 	for u in selected:
 		u.order_attack(e)
-	Fx.burst(self, e.world_center(), GameData.RED, 6, 0.5)
+	Fx.impact(self, e.world_center(), GameData.RED, 3, 0.25)
 
 
 ## Unité terrestre alliée sous le curseur (pour l'embarquement).

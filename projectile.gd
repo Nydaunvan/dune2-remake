@@ -61,13 +61,13 @@ func _hit() -> void:
 			target.take_damage(damage, weapon, shooter)
 	match weapon:
 		"rocket":
-			Fx.explosion(game, position, 0.9)
+			Fx.impact(game, position, Color(1.2, 0.6, 0.3), 5, 0.4)
 		"sonic":
-			Fx.burst(game, position, Color(0.5, 1.6, 2.2), 20, 1.3)
+			Fx.impact(game, position, Color(0.5, 1.2, 1.6), 5, 0.4)
 		"acid":
-			Fx.burst(game, position, Color(0.5, 2.0, 0.6), 12, 0.8)
+			Fx.impact(game, position, Color(0.5, 1.4, 0.6), 3, 0.28)
 		_:
-			Fx.burst(game, position, color, 8, 0.45)
+			Fx.impact(game, position, color, 2, 0.18)
 	queue_free()
 
 
@@ -91,7 +91,7 @@ func _splash(radius: float) -> void:
 
 func _draw() -> void:
 	var l: float = GameData.WEAPONS[weapon]["len"]
-	var halo := Color(color.r, color.g, color.b, 0.25)
+	var halo := Color(color.r, color.g, color.b, 0.12)
 	match weapon:
 		"sonic":
 			draw_arc(Vector2.ZERO, 6.0, -1.0, 1.0, 10, color, 3.0, true)

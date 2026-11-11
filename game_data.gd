@@ -50,12 +50,12 @@ const FACTIONS := {
 
 # Armes : cd = cadence (s), splash = rayon des dégâts de zone (px)
 const WEAPONS := {
-	"autocannon": {"cd": 0.35, "speed": 900.0, "color": Color(2.0, 1.7, 0.6), "splash": 0.0, "len": 10.0},
-	"cannon": {"cd": 1.1, "speed": 650.0, "color": Color(2.0, 1.2, 0.4), "splash": 0.0, "len": 14.0},
-	"rocket": {"cd": 2.0, "speed": 420.0, "color": Color(2.0, 0.7, 0.3), "splash": 56.0, "len": 18.0},
-	"sonic": {"cd": 1.6, "speed": 500.0, "color": Color(0.6, 1.6, 2.2), "splash": 64.0, "len": 12.0},
-	"acid": {"cd": 1.2, "speed": 560.0, "color": Color(0.5, 2.0, 0.6), "splash": 0.0, "len": 12.0},
-	"control": {"cd": 1.4, "speed": 700.0, "color": Color(1.8, 0.5, 2.0), "splash": 0.0, "len": 12.0},
+	"autocannon": {"cd": 0.35, "speed": 900.0, "color": Color(1.4, 1.2, 0.5), "splash": 0.0, "len": 10.0},
+	"cannon": {"cd": 1.1, "speed": 650.0, "color": Color(1.4, 0.9, 0.35), "splash": 0.0, "len": 14.0},
+	"rocket": {"cd": 2.0, "speed": 420.0, "color": Color(1.4, 0.55, 0.28), "splash": 56.0, "len": 18.0},
+	"sonic": {"cd": 1.6, "speed": 500.0, "color": Color(0.5, 1.2, 1.6), "splash": 64.0, "len": 12.0},
+	"acid": {"cd": 1.2, "speed": 560.0, "color": Color(0.4, 1.4, 0.5), "splash": 0.0, "len": 12.0},
+	"control": {"cd": 1.4, "speed": 700.0, "color": Color(1.3, 0.4, 1.5), "splash": 0.0, "len": 12.0},
 }
 
 # Multiplicateur de dégâts : arme -> blindage
