@@ -8,11 +8,12 @@ var mat := ShaderMaterial.new()
 
 
 func _init(margin := 0.0, radius := 20.0,
-		accent_a := Color("00d9ff"), accent_b := Color("ff2fa6")) -> void:
+		accent_a := Color("00d9ff"), accent_b := Color("ff2fa6"), cut := 0.0) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mat.shader = load("res://shaders/ui_glass.gdshader")
 	mat.set_shader_parameter("margin", margin)
 	mat.set_shader_parameter("radius", radius)
+	mat.set_shader_parameter("cut", cut)
 	mat.set_shader_parameter("accent_a", accent_a)
 	mat.set_shader_parameter("accent_b", accent_b)
 	bg.color = Color.WHITE

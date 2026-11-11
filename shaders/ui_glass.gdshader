@@ -5,6 +5,7 @@ shader_type canvas_item;
 uniform sampler2D screen_tex : hint_screen_texture, filter_linear_mipmap;
 uniform vec2 rect_size = vec2(300.0, 300.0);
 uniform float radius = 20.0;
+uniform float cut = 0.0;          // coins haut-gauche et bas-droit coupés
 uniform float margin = 0.0;       // marge réservée au halo extérieur
 uniform vec4 accent_a : source_color = vec4(0.0, 0.85, 1.0, 1.0);
 uniform vec4 accent_b : source_color = vec4(1.0, 0.18, 0.65, 1.0);
@@ -20,7 +21,13 @@ float sd_box(vec2 p, vec2 b, float r) {
 
 void fragment() {
 	vec2 p = UV * rect_size - rect_size * 0.5;
-	float d = sd_box(p, rect_size * 0.5 - vec2(margin), radius);
+	vec2 hb = rect_size * 0.5 - vec2(margin);
+	float d = sd_box(p, hb, radius);
+	if (cut > 0.0) {
+		float s_tl = (p.x + hb.x) + (p.y + hb.y);
+		float s_br = (hb.x - p.x) + (hb.y - p.y);
+		d = max(d, max((cut - s_tl) * 0.7071, (cut - s_br) * 0.7071));
+	}
 	float inside = 1.0 - smoothstep(-1.0, 1.0, d);
 
 	vec3 blurred = textureLod(screen_tex, SCREEN_UV, blur).rgb;
@@ -38,7 +45,11 @@ void fragment() {
 	float outer = exp(-max(d, 0.0) * 0.22) * step(0.0, d);
 
 	col += bc * inner * 0.22 * glow;
-	col = mix(col, bc * (1.0 + 0.6 * glow), edge);
+	vec2 q = hb - abs(p);
+	float corner = (1.0 - smoothstep(18.0, 34.0, q.x)) * (1.0 - smoothstep(18.0, 34.0, q.y));
+	float hex = step(0.5, fract(UV.x * rect_size.x / 28.0 + floor(UV.y * rect_size.y / 24.0) * 0.5)) * 0.012;
+	col += hex;
+	col = mix(col, bc * (1.0 + 0.6 * glow + 1.2 * corner), edge);
 	col = mix(bc, col, inside);
 
 	float a = inside * mix(0.88, 1.0, edge);
