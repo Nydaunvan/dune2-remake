@@ -1398,7 +1398,36 @@ func is_available(id: String) -> bool:
 
 
 ## Niveau d'Usine manquant pour produire cette unité ("" si suffisant).
+## Nombre maximal de récolteurs / mineurs selon le niveau du Chantier (0 : pas de limite).
+func worker_cap(id: String, team := 0) -> int:
+	var lvl := best_level("chantier", team)
+	if id == "recolteur":
+		return 1 + lvl + (1 if lvl >= 3 else 0)   # 2, 3, 5
+	if id == "mineur":
+		return lvl   # 1, 2, 3
+	return 0
+
+
+func worker_block(id: String, team := 0) -> String:
+	var cap := worker_cap(id, team)
+	if cap <= 0:
+		return ""
+	var n := 0
+	for u in units:
+		if u.team == team and u.id == id and u.alive:
+			n += 1
+	if team == 0:
+		for it in production["unit"]:
+			if it["id"] == id:
+				n += 1
+	if n >= cap:
+		return "Limite %d (Chantier)" % cap
+	return ""
+
+
 func unit_level_block(id: String, team := 0) -> String:
+	if worker_block(id, team) != "":
+		return worker_block(id, team)
 	var need: int = int(GameData.def(id).get("level", 1))
 	if GameData.UNITS.has(id) and best_level("usine", team) < need:
 		return "Usine niveau %d" % need
@@ -1928,6 +1957,9 @@ func on_item_clicked(id: String, button: int) -> void:
 			ui.toast("%s : améliorez le Chantier au niveau %d" % [d["name"], chantier_needed(id)], GameData.AMBER)
 		else:
 			ui.toast("%s : débloqué après la mission %d de la campagne" % [d["name"], int(d.get("unlock", 0))], GameData.AMBER)
+		return
+	if worker_block(id) != "":
+		ui.toast("%s : %d maximum avec ce niveau de Chantier — améliorez le Chantier pour en avoir plus" % [d["name"], worker_cap(id)], GameData.AMBER)
 		return
 	if unit_level_block(id) != "":
 		ui.toast("%s : améliorez l'Usine au niveau %d" % [d["name"], int(d["level"])], GameData.AMBER)

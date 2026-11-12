@@ -175,6 +175,7 @@ func _p_economy() -> String:
 	return _h("Les ressources") + """• [b]Solaris[/b] : obtenus en livrant l'épice à une Raffinerie. Servent à produire les unités.
 • [b]Minerai[/b] : livré à une Fonderie. Sert à construire et améliorer les bâtiments.
 • Le récolteur et le mineur travaillent automatiquement : ils cherchent la ressource, la récoltent (un nuage de poussière les entoure) puis rentrent à la raffinerie / fonderie la plus proche.
+• Le nombre d'engins est limité par le niveau du Chantier : récolteurs 2 / 3 / 5 et mineurs 1 / 2 / 3 aux niveaux 1 / 2 / 3.
 • Le stockage est limité ; construisez des [b]Silos d'épice[/b] et améliorez Raffineries et Fonderies pour l'agrandir.
 """ + _h("L'énergie") + """Chaque bâtiment produit (Centrale, Réacteur) ou consomme de l'énergie ; la valeur est indiquée sur son icône et dans son encart. Améliorer un bâtiment peut augmenter sa consommation.
 En cas de [color=#ff7777][b]manque d'énergie[/b][/color] : les Raffineries n'encaissent plus les récoltes, les Fonderies, le Radar, le Centre de réparation, l'Aérodrome et les défenses s'éteignent (« HORS TENSION »). Reconstruisez une Centrale ou un Réacteur sans attendre.
