@@ -240,9 +240,9 @@ const CAMPAIGNS := {
 			"id": "marche", "title": "Le marché noir", "enemy": "conclave", "size": 96, "credits": 2000, "ore": 2200,
 			"start_units": ["@0", "@1"], "worm_rate": 2.0,
 			"objectives": [{"type": "harvest", "amount": 6000}, {"type": "ore", "amount": 3000},
-					{"type": "build", "label": "les entrepôts", "ids": {"silo": 3}}],
+					{"type": "build", "label": "les entrepôts", "ids": {"silo": 2, "silo_minerai": 2}}],
 			"ai": {"slowdown": 1.9, "grace": 420.0, "pause": 70.0, "max_army": 10, "wave": 5, "credits": 1500, "ore": 1800},
-			"obj": "Récoltez 6000 Solaris et 3000 minerai, bâtissez 3 silos",
+			"obj": "Récoltez 6000 Solaris et 3000 minerai, bâtissez 2 silos d'épice et 2 silos de minerai",
 			"brief": "Le Cartel ouvre son plus gros marché clandestin : il faut de l'épice, du minerai et des silos pour tout entreposer. Les vers sont nerveux, les récolteurs doivent l'être aussi. {ENEMY} n'y verra que du feu.",
 		},
 		{

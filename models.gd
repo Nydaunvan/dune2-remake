@@ -62,6 +62,7 @@ static func build(id: String, accent: Color) -> Node3D:
 		"mur": _mur(r, accent, false)
 		"mur_acier": _mur(r, accent, true)
 		"silo": _silo(r, accent)
+		"silo_minerai": _silo_minerai(r, accent)
 		"radar": _radar(r, accent)
 		"radar_tete": _radar_tete(r, accent)
 		"reparation": _reparation(r, accent)
@@ -518,6 +519,16 @@ static func _silo(r: Node3D, acc: Color) -> void:
 		_cyl(r, 1.0, 11.5, 7, Vector3(x, 33, 0), METAL, 8)
 		_cyl(r, 11.5, 11.5, 1.6, Vector3(x, 20, 0), acc, 8, Vector3.ZERO, 0.9)
 	_box(r, Vector3(14, 4, 30), Vector3(0, 6, 0), DARK)
+
+
+## Silo de minerai : trémie carrée à bande bleue, distincte des cuves du silo d'épice.
+static func _silo_minerai(r: Node3D, acc: Color) -> void:
+	_slab(r, 64, 64, acc)
+	_box(r, Vector3(34, 20, 34), Vector3(0, 14, 0), LIGHT)
+	_box(r, Vector3(36, 3, 36), Vector3(0, 25, 0), METAL)
+	_cyl(r, 16, 5, 12, Vector3(0, 33, 0), METAL, 4, Vector3(0, PI / 4.0, 0))
+	_box(r, Vector3(35, 2.4, 35), Vector3(0, 18, 0), Color(0.3, 0.6, 1.0), Vector3.ZERO, 1.2)
+	_box(r, Vector3(14, 8, 6), Vector3(0, 6, 18), DARK)
 
 
 static func _radar(r: Node3D, acc: Color) -> void:

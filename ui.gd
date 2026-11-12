@@ -894,7 +894,10 @@ class InfoPanel extends GlassPanel:
 				rows.append(["Portée", "%d cases" % int(b.w_range / 32.0)])
 			"silo":
 				rows.append(["Solaris", "+10 % par silo (3 max.)"])
-				rows.append(["Stockage", "+2000 Solaris et minerai"])
+				rows.append(["Stockage", "+2000 Solaris"])
+			"silo_minerai":
+				rows.append(["Minerai", "+10 % par silo (3 max.)"])
+				rows.append(["Stockage", "+2000 minerai"])
 			"reparation":
 				rows.append(["Soins", "%d PV/s" % int(d["heal"])])
 				rows.append(["Rayon", "%d cases" % int(d["heal_range"])])

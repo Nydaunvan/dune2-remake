@@ -150,7 +150,7 @@ const UNIT_TECH := {
 }
 ## Stockage : capacité de base, puis bonus par bâtiment [Solaris, minerai].
 const STORAGE_BASE := 3000
-const STORAGE := {"raffinerie": [1500, 0], "fonderie": [0, 1500], "silo": [2000, 2000]}
+const STORAGE := {"raffinerie": [1500, 0], "fonderie": [0, 1500], "silo": [2000, 0], "silo_minerai": [0, 2000]}
 
 ## Vitesse des véhicules : multiplicateur global (sol / air).
 const SPEED_MULT := 0.62
@@ -197,7 +197,13 @@ const BUILDINGS := {
 	"silo": {
 		"name": "Silo d'épice", "cost": 300, "time": 9.0, "size": Vector2i(2, 2), "power": -10,
 		"requires": ["raffinerie"], "hp": 700, "armor": "building", "unlock": 1, "no_upgrade": true,
-		"spice_bonus": 0.10, "desc": "+2000 de stockage (Solaris et minerai), +10 % de Solaris par récolte (3 silos max.)",
+		"spice_bonus": 0.10, "desc": "+2000 de stockage de Solaris, +10 % de Solaris par récolte (3 silos max.)",
+		"max": 3,
+	},
+	"silo_minerai": {
+		"name": "Silo de minerai", "cost": 300, "time": 9.0, "size": Vector2i(2, 2), "power": -10,
+		"requires": ["fonderie"], "hp": 700, "armor": "building", "unlock": 1, "no_upgrade": true,
+		"ore_bonus": 0.10, "desc": "+2000 de stockage de minerai, +10 % de minerai par récolte (3 silos max.)",
 		"max": 3,
 	},
 	"radar": {

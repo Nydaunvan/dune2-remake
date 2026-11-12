@@ -643,7 +643,7 @@ func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void
 			gain = maxi(room, 0)
 			if game_time - _full_warn > 6.0:
 				_full_warn = game_time
-				ui.toast("Stockage de %s plein : construisez un Silo" % ("Solaris" if kind == "spice" else "minerai"), GameData.RED)
+				ui.toast("Stockage de %s plein : construisez un %s" % ["Solaris" if kind == "spice" else "minerai", "Silo d'épice" if kind == "spice" else "Silo de minerai"], GameData.RED)
 	if team == 0:
 		if kind == "spice":
 			credits += gain
@@ -1730,6 +1730,8 @@ func income_bonus(kind: String, team := 0) -> float:
 	var bonus := 1.0 + 0.12 * (best_level("raffinerie" if kind == "spice" else "fonderie", team) - 1)
 	if kind == "spice":
 		bonus += 0.10 * minf(float(count_buildings("silo", team)), 3.0)
+	else:
+		bonus += 0.10 * minf(float(count_buildings("silo_minerai", team)), 3.0)
 	return bonus
 
 

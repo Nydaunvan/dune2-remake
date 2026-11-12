@@ -303,8 +303,10 @@ func _next_building() -> String:
 	var tower_goal := mini(1 + int(skill * 3.0 + t / 360.0), 7)
 	if defs < tower_goal:
 		return tower
-	if skill >= 0.5 and _count("silo") < 2 and _storage_pressure():
+	if skill >= 0.5 and _count("silo") < 2 and credits > 0.8 * game.storage_cap("spice", team):
 		return "silo"
+	if skill >= 0.5 and _count("silo_minerai") < 2 and ore > 0.8 * game.storage_cap("ore", team):
+		return "silo_minerai"
 	if skill >= 0.55 and t > 540.0 and _count("aerodrome") < 1:
 		return "aerodrome"
 	if skill >= 0.6 and t > 700.0 and _count("reparation") < 1:
@@ -420,7 +422,7 @@ func _place(id: String) -> bool:
 				var s: float
 				if armed:
 					s = center.distance_to(toward) * 0.5 + center.distance_to(base)
-				elif id == "radar" or id == "silo":
+				elif id == "radar" or id == "silo" or id == "silo_minerai":
 					s = center.distance_to(base) - center.distance_to(toward) * 0.2
 				else:
 					s = center.distance_to(base)
