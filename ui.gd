@@ -50,6 +50,8 @@ func is_mouse_over_ui() -> bool:
 
 ## Notification qui monte et s'efface.
 func toast(text: String, color := GameData.CREAM) -> void:
+	if event_log != null:
+		event_log.add(text, color)
 	var l := Label.new()
 	l.text = text
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -85,6 +87,7 @@ func toast(text: String, color := GameData.CREAM) -> void:
 # --- Construction de l'interface ---------------------------------------------
 
 var objective_panel: ObjectivePanel
+var event_log: EventLog
 
 
 func _build_objective() -> void:
@@ -144,18 +147,11 @@ func _build_sidebar() -> void:
 	radar.size = Vector2(300, 300)
 	sidebar.add_child(radar)
 
-	# Commandes (2 x 2)
-	var bw := (SIDEBAR_W - 48.0 - 8.0) / 2.0
-	for i in COMMANDS.size():
-		var cmd: Array = COMMANDS[i]
-		var b := NeonButton.new(cmd[1])
-		b.glyph = cmd[0]
-		b.enabled = cmd[2]
-		b.tooltip_text = "" if cmd[2] else "Disponible dans un prochain jalon"
-		b.position = Vector2(24 + (i % 2) * (bw + 8.0), 364 + (i / 2) * 44)
-		b.size = Vector2(bw, 38)
-		b.pressed.connect(game.on_command.bind(cmd[0]))
-		sidebar.add_child(b)
+	# Journal des événements (remplace les anciens boutons de commande, désormais dans l'encart d'unité)
+	event_log = EventLog.new()
+	event_log.position = Vector2(24, 362)
+	event_log.size = Vector2(SIDEBAR_W - 48.0, 88)
+	sidebar.add_child(event_log)
 
 	# Onglets
 	var tabs := [["building", "BÂTIMENTS", GameData.CYAN], ["unit", "UNITÉS", GameData.MAGENTA]]
@@ -294,6 +290,42 @@ func show_end(victory: bool, reason := "") -> void:
 
 
 # --- Objectif de mission ------------------------------------------------------
+
+class EventLog extends Control:
+	## Derniers messages du jeu (les notifications à l'écran disparaissent vite).
+	const MAX := 4
+	var lines: Array = [] # [texte, couleur, instant]
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func add(text: String, color: Color) -> void:
+		if not lines.is_empty() and lines[0][0] == text:
+			return
+		lines.push_front([text, color, Time.get_ticks_msec() / 1000.0])
+		while lines.size() > MAX:
+			lines.pop_back()
+		queue_redraw()
+
+	func _process(_d: float) -> void:
+		queue_redraw()
+
+	func _draw() -> void:
+		UiStyle.section(self, Vector2(0, 14), size.x, "JOURNAL", UiStyle.GOLD)
+		var now := Time.get_ticks_msec() / 1000.0
+		var y := 36.0
+		for l in lines:
+			var age := now - float(l[2])
+			var c: Color = l[1]
+			c.a = clampf(1.0 - age / 90.0, 0.35, 1.0)
+			var t := String(l[0])
+			while t.length() > 8 and UiStyle.text_width(t, 13, false) > size.x - 4.0:
+				t = t.substr(0, t.length() - 2)
+			UiStyle.text(self, Vector2(0, y), t, 13, c)
+			y += 17.0
+		if lines.is_empty():
+			UiStyle.text(self, Vector2(0, y), "Aucun événement", 13, UiStyle.TEXT_DIM)
+
 
 class ObjectivePanel extends GlassPanel:
 	var game
@@ -452,6 +484,7 @@ class InfoPanel extends GlassPanel:
 	var btn: GameUI.NeonButton
 	var rbtn: GameUI.NeonButton
 	var dbtn: GameUI.NeonButton
+	var cmd_btns: Array = []
 	var _confirm_t := 0.0
 	var _focus = null
 
@@ -503,6 +536,18 @@ class InfoPanel extends GlassPanel:
 					_confirm_t = 3.0
 					game.ui.toast("Cliquez à nouveau sur DÉMOLIR pour confirmer", GameData.AMBER))
 		add_child(dbtn)
+		# Commandes d'unité : Arrêt / Déplacer / Attaquer / Déployer (ou Décharger)
+		for i in COMMANDS.size():
+			var cmd: Array = COMMANDS[i]
+			var cb := GameUI.NeonButton.new(cmd[1])
+			cb.position = Vector2(398.0 + i * 98.0, 22)
+			cb.size = Vector2(92, 36)
+			cb.pressed.connect(func() -> void:
+				var c: String = cb.get_meta("cmd")
+				game.on_command(c))
+			cb.set_meta("cmd", cmd[0])
+			add_child(cb)
+			cmd_btns.append(cb)
 		visible = false
 
 	func _ok(e) -> bool:
@@ -553,6 +598,7 @@ class InfoPanel extends GlassPanel:
 				btn.text = "MODERNISER — %d SOL. · %d S" % [GameData.tech_cost(u.id), int(GameData.tech_time(u.id))]
 			btn.glyph = "credit"
 			btn.tooltip_text = why2
+		_update_commands()
 		var can_rep: bool = (_focus is Building or _focus is Unit) and _focus.team == 0 \
 				and not (_focus is Unit and (_focus.role == "convoy"))
 		rbtn.visible = can_rep
@@ -574,6 +620,35 @@ class InfoPanel extends GlassPanel:
 				rbtn.glyph = "credit"
 				rbtn.tooltip_text = game.unit_repair_block(ru)
 		queue_redraw()
+
+	## Les commandes ne s'affichent que pour des unités à soi.
+	func _update_commands() -> void:
+		var show := false
+		if _focus is Unit and _focus.team == 0:
+			show = true
+		elif _focus is String:
+			show = true
+		var has_mcv := false
+		var has_loaded := false
+		for u in game.selected:
+			if u.role == "mcv":
+				has_mcv = true
+			if u.role == "transport" and not u.cargo_units.is_empty():
+				has_loaded = true
+		for cb in cmd_btns:
+			cb.visible = show
+		if show:
+			var last: GameUI.NeonButton = cmd_btns[3]
+			if has_loaded and not has_mcv:
+				last.text = "DÉCHARGER"
+				last.set_meta("cmd", "unload")
+				last.enabled = true
+			else:
+				last.text = "DÉPLOYER"
+				last.set_meta("cmd", "deploy")
+				last.enabled = has_mcv
+			cmd_btns[1].active = game.command_mode == "move"
+			cmd_btns[2].active = game.command_mode == "attack"
 
 	func _row(x: float, y: float, label: String, value: String, vcol := UiStyle.TEXT) -> void:
 		UiStyle.text(self, Vector2(x, y), label.to_upper(), 11, UiStyle.TEXT_DIM, true)
