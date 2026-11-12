@@ -301,6 +301,12 @@ func _open_campaign() -> void:
 		hb.add_child(arrow)
 		if dir < 0:
 			hb.add_child(back)
+	var rst := GameUI.NeonButton.new("RÉINITIALISER")
+	rst.accent = GameData.AMBER
+	rst.custom_minimum_size = Vector2(210, 56)
+	rst.enabled = done > 0
+	rst.pressed.connect(_confirm_reset)
+	hb.add_child(rst)
 	vb.add_child(hb)
 
 
@@ -359,6 +365,44 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 		get_tree().change_scene_to_file("res://main.tscn"))
 	v.add_child(go)
 	return pc
+
+
+## Demande confirmation avant d'effacer la progression de la campagne de la faction choisie.
+func _confirm_reset() -> void:
+	var fd: Dictionary = GameData.FACTIONS[selected]
+	var ov := ColorRect.new()
+	ov.color = Color(0.03, 0.015, 0.06, 0.94)
+	ov.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ov.mouse_filter = Control.MOUSE_FILTER_STOP
+	_overlay.add_child(ov)
+	var cc := CenterContainer.new()
+	cc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	ov.add_child(cc)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 22)
+	cc.add_child(vb)
+	vb.add_child(_label("RÉINITIALISER LA CAMPAGNE ?", 40, GameData.AMBER, true))
+	var txt := _left("La progression de la campagne %s sera effacée : les missions terminées seront de nouveau verrouillées" % fd["name"]
+			+ " (sauf la première). Cette action est définitive.", 17, Color(1, 1, 1, 0.85))
+	txt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	txt.custom_minimum_size = Vector2(760, 0)
+	vb.add_child(txt)
+	var hb := HBoxContainer.new()
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_theme_constant_override("separation", 24)
+	vb.add_child(hb)
+	var no := GameUI.NeonButton.new("ANNULER")
+	no.custom_minimum_size = Vector2(240, 56)
+	no.pressed.connect(func() -> void: ov.queue_free())
+	hb.add_child(no)
+	var yes := GameUI.NeonButton.new("RÉINITIALISER")
+	yes.accent = GameData.RED
+	yes.custom_minimum_size = Vector2(240, 56)
+	yes.pressed.connect(func() -> void:
+		Campaign.reset(selected)
+		_open_campaign())
+	hb.add_child(yes)
 
 
 func _open_details(i: int) -> void:

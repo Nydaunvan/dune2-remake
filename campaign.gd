@@ -637,3 +637,11 @@ static func mark_cleared(faction: String, m: int) -> void:
 	if m + 1 > cur:
 		cf.set_value("progress", faction, m + 1)
 		cf.save(SAVE_PATH)
+
+
+## Remet la progression d'une campagne à zéro (les missions se reverrouillent).
+static func reset(faction: String) -> void:
+	var cf := ConfigFile.new()
+	cf.load(SAVE_PATH)
+	cf.set_value("progress", faction, 0)
+	cf.save(SAVE_PATH)
