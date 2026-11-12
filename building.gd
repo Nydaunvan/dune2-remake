@@ -139,8 +139,8 @@ func _physics_process(delta: float) -> void:
 	if ok == offline:
 		offline = not ok
 		queue_redraw()
-	if offline:
-		return
+	if offline or up_left > 0.0:
+		return # hors tension ou en travaux
 	cooldown = maxf(0.0, cooldown - delta)
 	_scan -= delta
 	if not _valid(_target) or world_center().distance_to(_target.world_center()) - float(_target.radius_px()) > w_range + 40.0:

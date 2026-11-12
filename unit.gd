@@ -727,7 +727,7 @@ func _start_return() -> void:
 
 func _unload() -> void:
 	var dock = game.find_dock(cargo_kind, position, team)
-	if cargo > 0.0 and dock != null and dock.offline:
+	if cargo > 0.0 and dock != null and (dock.offline or dock.up_left > 0.0):
 		# Raffinerie / fonderie hors tension : impossible d'encaisser, on attend le retour du courant
 		state = "return"
 		path = PackedVector2Array()

@@ -105,13 +105,13 @@ func _progress(delta: float) -> void:
 	var factor := (1.0 if game.power_produced(team) >= game.power_used(team) else 0.5) / slowdown
 	var ufactor: float = factor * game.unit_speed_bonus(team)
 	if not build_q.is_empty():
-		if not build_q["ready"]:
+		if not build_q["ready"] and not game.producer_busy("building", "", team):
 			build_q["progress"] += delta * factor / build_q["time"]
 			if build_q["progress"] >= 1.0:
 				build_q["ready"] = true
 		if build_q["ready"] and _place(build_q["id"]):
 			build_q = {}
-	if not unit_q.is_empty():
+	if not unit_q.is_empty() and not game.producer_busy("unit", unit_q["id"], team):
 		unit_q["progress"] += delta * ufactor / unit_q["time"]
 		if unit_q["progress"] >= 1.0:
 			game.spawn_for(unit_q["id"], team)

@@ -566,16 +566,34 @@ func find_dock(kind: String, from: Vector2i, team := 0) -> Building:
 	var want := "raffinerie" if kind == "spice" else "fonderie"
 	var best: Building = null
 	var best_d := INF
-	for pass_online in [true, false]:
+	# 1) en état de marche, 2) hors tension mais pas en travaux, 3) n'importe laquelle (on attend)
+	for pass_i in 3:
 		for b in buildings:
-			if b.id == want and b.team == team and not (pass_online and b.offline):
-				var d := Vector2(from).distance_to(b.center_cell())
-				if d < best_d:
-					best_d = d
-					best = b
+			if b.id != want or b.team != team:
+				continue
+			if pass_i == 0 and (b.offline or b.up_left > 0.0):
+				continue
+			if pass_i == 1 and b.up_left > 0.0:
+				continue
+			var d := Vector2(from).distance_to(b.center_cell())
+			if d < best_d:
+				best_d = d
+				best = b
 		if best != null:
 			break
 	return best
+
+
+## Toutes les usines de ce type (ou tous les chantiers) sont en cours d'amélioration : production à l'arrêt.
+func producer_busy(cat: String, unit_id: String, team := 0) -> bool:
+	var want := "chantier" if cat == "building" else String(GameData.def(unit_id).get("from", "usine"))
+	var found := false
+	for b in buildings:
+		if b.team == team and b.alive and b.id == want:
+			found = true
+			if b.up_left <= 0.0:
+				return false
+	return found
 
 
 ## Case libre contre le bâtiment, la plus proche de `from`.
@@ -1541,7 +1559,7 @@ func income_bonus(kind: String, team := 0) -> float:
 func _building_effects(dt: float) -> void:
 	_update_power_state()
 	for b in buildings:
-		if not b.alive or b.offline:
+		if not b.alive or b.offline or b.up_left > 0.0:
 			continue
 		var d := GameData.def(b.id)
 		if d.has("income"):
@@ -1726,7 +1744,7 @@ func find_repair_site(team: int, pos: Vector2) -> Building:
 	var best: Building = null
 	var best_d := INF
 	for b in buildings:
-		if b.team != team or not b.alive or b.offline or (b.id != "usine" and b.id != "reparation"):
+		if b.team != team or not b.alive or b.offline or b.up_left > 0.0 or (b.id != "usine" and b.id != "reparation"):
 			continue
 		var d := b.world_center().distance_to(pos) - (60.0 if b.id == "reparation" else 0.0)
 		if d < best_d:
@@ -1999,6 +2017,8 @@ func _update_production(delta: float) -> void:
 		if q.is_empty() or q[0]["ready"]:
 			continue
 		var p: Dictionary = q[0]
+		if producer_busy(cat, p["id"]):
+			continue # le bâtiment producteur est en travaux
 		var f := factor * (unit_speed_bonus() if cat == "unit" else 1.0)
 		p["progress"] += delta * f / p["time"]
 		if p["progress"] >= 1.0:
