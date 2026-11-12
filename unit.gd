@@ -488,8 +488,8 @@ func _sprite_key() -> String:
 
 
 func _process(_delta: float) -> void:
-	if selected:
-		queue_redraw() # anneau de sélection pulsé
+	if selected or (air and alive and Models.rotors(id).size() > 0):
+		queue_redraw() # anneau de sélection pulsé / pales en rotation
 	var bank: SpriteBank = game.bank
 	if bank != null:
 		# Les modèles 3D sont cuits une image par angle : on redessine quand l'angle change
@@ -808,12 +808,42 @@ func _draw_sprite() -> bool:
 		draw_dashed_line(Vector2(0, 0).rotated(unrot), Vector2(0, -AIR_LIFT + 8.0).rotated(unrot), Color(1, 1, 1, 0.12), 1.0, 3.0)
 		draw_set_transform(Vector2(0, -AIR_LIFT).rotated(unrot), model_rot, Vector2.ONE)
 		draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
+		_draw_rotors(unrot)
 		return true
 	draw_set_transform(Vector2(-5, 6).rotated(unrot), unrot, Vector2(1.0, 0.55))
 	draw_circle(Vector2.ZERO, radius * 1.25, Color(0.1, 0.03, 0.12, 0.28))
 	draw_set_transform(Vector2.ZERO, model_rot, Vector2.ONE)
 	draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
 	return true
+
+
+## Pales tournantes des hélicoptères et transports : dessinées chaque image par-dessus le sprite.
+func _draw_rotors(unrot: float) -> void:
+	var rs := Models.rotors(id)
+	if rs.is_empty():
+		return
+	draw_set_transform(Vector2(0, -AIR_LIFT).rotated(unrot), unrot, Vector2.ONE)
+	var t := Time.get_ticks_msec() / 1000.0 + float(get_instance_id() % 97)
+	for ro in rs:
+		var hub: Vector3 = ro["hub"]
+		var r: float = ro["r"]
+		var ang: float = t * float(ro["w"])
+		var c := Models.project(hub, rotation)
+		if ro["h"]:
+			draw_circle(c, r, Color(0.9, 0.92, 1.0, 0.10))
+		for b in int(ro["n"]):
+			var a := ang + TAU * b / float(ro["n"])
+			var tip: Vector2
+			var tail: Vector2
+			if ro["h"]:
+				tip = c + Vector2.from_angle(a) * r
+				tail = c - Vector2.from_angle(a) * r * (1.0 if int(ro["n"]) % 2 == 0 else 0.0)
+			else:
+				var d := Vector3(cos(a) * r, sin(a) * r, 0.0)
+				tip = Models.project(hub + d, rotation)
+				tail = Models.project(hub - d, rotation)
+			draw_line(tail, tip, Color(0.88, 0.9, 0.96, 0.92), 2.4 if ro["h"] else 1.6, true)
+		draw_circle(c, 2.2, Color(0.15, 0.16, 0.2))
 
 
 func _draw() -> void:

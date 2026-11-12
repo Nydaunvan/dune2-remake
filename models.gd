@@ -99,6 +99,25 @@ static func muzzle_offset(id: String, rot: float, idx := 0) -> Vector2:
 	return Vector2(m.x, m.z).rotated(rot) + Vector2(0.0, -m.y * tan(deg_to_rad(30.0)))
 
 
+## Rotors animés (dessinés par l'unité, pas cuits dans le sprite) : moyeu (x, y, z du modèle),
+## rayon, nombre de pales, vitesse (rad/s), plan horizontal (rotor principal) ou vertical (rotor de queue).
+static func rotors(id: String) -> Array:
+	match id:
+		"faucheur":
+			return [{"hub": Vector3(-1, 21.5, 0), "r": 23.0, "n": 2, "w": 34.0, "h": true},
+					{"hub": Vector3(-34, 16, 3.5), "r": 6.5, "n": 2, "w": 48.0, "h": false}]
+		"nacelle", "pelican", "mule":
+			var k := 1.0 if id == "nacelle" else (0.9 if id == "pelican" else 1.3)
+			return [{"hub": Vector3(2, 16, -22 * k), "r": 8.5 * k, "n": 3, "w": 30.0, "h": true},
+					{"hub": Vector3(2, 16, 22 * k), "r": 8.5 * k, "n": 3, "w": -30.0, "h": true}]
+	return []
+
+
+## Position à l'écran (relative au centre du modèle) d'un point du modèle pour un cap donné.
+static func project(p: Vector3, rot: float) -> Vector2:
+	return Vector2(p.x, p.z).rotated(rot) + Vector2(0.0, -p.y * tan(deg_to_rad(30.0)))
+
+
 static func muzzle_count(id: String) -> int:
 	return (MUZZLES[id] as Array).size() if MUZZLES.has(id) else 1
 
@@ -587,8 +606,6 @@ static func _copter(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
 	_box(r, Vector3(26, 2.4, 2.6), Vector3(-22, 13, 0), METAL)                              # queue
 	_box(r, Vector3(1.5, 8, 5), Vector3(-34, 16, 0), acc, Vector3.ZERO, 0.6)
 	_cyl(r, 1.6, 1.6, 4, Vector3(-1, 19, 0), DARK, 6)
-	for a in 2:
-		_box(r, Vector3(46, 0.7, 2.4), Vector3(-1, 21.5, 0), LIGHT, Vector3(0, a * PI / 2.0 + 0.5, 0))
 	for s in [-1.0, 1.0]:
 		_box(r, Vector3(10, 3, 3), Vector3(2, 9, 9 * s), DARK)                              # nacelles roquettes
 		_cyl(r, 1.2, 1.2, 9, Vector3(8, 9, 9 * s), METAL, 6, Vector3(0, 0, PI / 2.0))
@@ -617,7 +634,6 @@ static func _carrier(r: Node3D, body: Color, hi: Color, acc: Color, k: float) ->
 	_box(r, Vector3(14 * k, 1.5, 44 * k), Vector3(1, 12, 0), hi)                           # ailes
 	for z in [-1.0, 1.0]:
 		_cyl(r, 5 * k, 5 * k, 3, Vector3(2, 14, 22 * k * z), DARK, 10)                      # rotors
-		_cyl(r, 8 * k, 8 * k, 0.6, Vector3(2, 16, 22 * k * z), LIGHT, 10)
 	_box(r, Vector3(1.4, 7, 7), Vector3(-19 * k, 17, 0), acc, Vector3.ZERO, 0.6)
 	_box(r, Vector3(24 * k, 1.0, 1.2), Vector3(-4, 7, 7 * k), acc, Vector3.ZERO, 0.8)
 
