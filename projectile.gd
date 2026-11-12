@@ -42,6 +42,10 @@ func _physics_process(delta: float) -> void:
 	var to := aim - position
 	var step := speed * delta
 	if to.length() <= step + 4.0 or life <= 0.0:
+		# Le projectile atteint sa cible pendant cette image : on le place dessus avant l'impact.
+		# (Sinon, à faible fréquence d'images, le tir « touchait » de trop loin et ne faisait aucun dégât.)
+		if life > 0.0:
+			position = aim
 		_hit()
 		return
 	rotation = to.angle()

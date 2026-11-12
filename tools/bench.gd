@@ -10,6 +10,9 @@ var built := {0: {}, 1: {}}
 var first_wave := {0: -1.0, 1: -1.0}
 var peak := {0: 0, 1: 0}
 var samples: Array = []
+var lost := {0: 0, 1: 0}
+var eco := {}
+var alive_ids := {}
 func _env(k: String, d: String) -> String:
 	return OS.get_environment(k) if OS.has_environment(k) else d
 func _initialize() -> void:
@@ -45,6 +48,17 @@ func _process(_d: float) -> bool:
 		if not seen.has(k) and u.team <= 1:
 			seen[k] = true
 			built[u.team][u.id] = int(built[u.team].get(u.id, 0)) + 1
+	var now_ids := {}
+	for u in main.units:
+		if u.alive and u.team <= 1 and u.role == "combat":
+			now_ids[u.get_instance_id()] = u.team
+	for k in alive_ids:
+		if not now_ids.has(k):
+			lost[alive_ids[k]] += 1
+	alive_ids = now_ids
+	for mark in [300, 600, 900]:
+		if main.game_time >= mark and not eco.has(mark):
+			eco[mark] = [[main.ais[0].earned_spice, main.ais[0].earned_ore, lost[0]], [main.ais[1].earned_spice, main.ais[1].earned_ore, lost[1]]]
 	for t in [0, 1]:
 		var n := 0
 		for u in main.units:
@@ -89,6 +103,6 @@ func _process(_d: float) -> bool:
 				bl[b.team][b.id] = int(bl[b.team].get(b.id, 0)) + 1
 		print("BENCH ", JSON.stringify({"a": GameSession.faction, "b": main.team_factions[1], "seed": _env("SEED", "1"), "win": win, "t": int(main.game_time),
 				"score": [int(s0), int(s1)], "built": [built[0], built[1]], "bld": bl, "wave": [int(first_wave[0]), int(first_wave[1])],
-				"peak": [peak[0], peak[1]], "res": [[main.ais[0].credits, main.ais[0].ore], [main.ais[1].credits, main.ais[1].ore]], "samples": samples}))
+				"peak": [peak[0], peak[1]], "res": [[main.ais[0].credits, main.ais[0].ore], [main.ais[1].credits, main.ais[1].ore]], "samples": samples, "eco": eco, "lost": [lost[0], lost[1]]}))
 		return true
 	return false

@@ -54,6 +54,8 @@ var _raid_t := 0.0
 var air_wave: Array = []
 var air_ended := 0.0
 var _hp_seen := {}      # PV de nos bâtiments à la dernière analyse (détecte une attaque)
+var earned_spice := 0   # revenus cumulés (statistiques du banc d'essai)
+var earned_ore := 0
 var _alert_until := 0.0
 var _save_since := -1.0 # début de la mise de côté pour une amélioration
 var _w_hp := {}         # PV des ouvriers à la dernière analyse (détecte une attaque)
@@ -107,6 +109,10 @@ func configure(p: Dictionary) -> void:
 
 
 func add_income(kind: String, amount: int) -> void:
+	if kind == "spice":
+		earned_spice += amount
+	else:
+		earned_ore += amount
 	if kind == "spice":
 		credits = mini(credits + amount, maxi(game.storage_cap("spice", team), credits))
 	else:
@@ -788,6 +794,14 @@ func _think_army() -> void:
 			_retreat(now)
 
 
+## Bâtiment allié en service qui soigne les unités (atelier de réparation), ou null.
+func _heal_site():
+	for b in game.buildings:
+		if b.team == team and b.alive and not b.offline and GameData.def(b.id).has("heal"):
+			return b
+	return null
+
+
 ## Micro-gestion : focalisation des tirs, repli des blessés, secours des ouvriers attaqués.
 func _think_tactics() -> void:
 	if skill < 0.45:
@@ -795,8 +809,17 @@ func _think_tactics() -> void:
 	var foes := _foe_units().filter(func(u) -> bool: return u.weapon != "")
 	var army := _army()
 	var home_cell: Vector2i = Vector2i(home.round())
-	# 1. Les blessés se replient (et ne rejoignent pas une vague avant d'être réparés)
+	# 1. Les blessés se replient (et ne rejoignent pas une vague avant d'être réparés) — seulement si
+	#    le camp peut les soigner (atelier de réparation, régénération) : sinon ils se battent jusqu'au bout
+	var heal_site = _heal_site()
+	var can_heal: bool = heal_site != null or float(fdata.get("regen", 0.0)) > 0.0
+	if heal_site != null:
+		home_cell = game.dock_cell(heal_site, home_cell)
 	for u in army:
+		if u.has_meta("ai_hurt") and not can_heal:
+			u.remove_meta("ai_hurt")
+		if not can_heal:
+			continue
 		var frac: float = u.hp / maxf(u.max_hp, 1.0)
 		if u.has_meta("ai_hurt"):
 			if frac > 0.6:

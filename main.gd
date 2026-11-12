@@ -1215,7 +1215,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, shoo
 	var best = null
 	var best_s := INF
 	for u in units:
-		if not hostile(u.team, team) or not u.alive or u.carried or (team == 0 and not u.seen):
+		if not hostile(u.team, team) or not u.alive or u.carried or (team == 0 and not ais.has(0) and not u.seen):
 			continue
 		if u.air and shooter_id != "" and not GameData.can_hit_air(shooter_id):
 			continue
@@ -1228,7 +1228,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, shoo
 			best = u
 	if not units_only:
 		for b in buildings:
-			if not hostile(b.team, team) or not b.alive or (team == 0 and not b.seen):
+			if not hostile(b.team, team) or not b.alive or (team == 0 and not ais.has(0) and not b.seen):
 				continue
 			var d := b.world_center().distance_to(pos) - b.radius_px()
 			if d > max_d:

@@ -783,7 +783,7 @@ const UNITS := {
 		"name": "Bélier", "role": "combat", "desc": "Buggy d'assaut bon marché",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 290, "time": 6.0, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 250, "dps": 17, "speed": 120.0, "range": 3,
+		"hp": 280, "dps": 17, "speed": 120.0, "range": 3,
 	},
 	"brute": {
 		"name": "Brute", "role": "combat", "desc": "Char lourd",
@@ -795,14 +795,14 @@ const UNITS := {
 		"aa": true, "name": "Salve", "role": "combat", "desc": "Lance-missiles anti-aérien",
 		"armor": "light", "weapon": "rocket",
 		"cost": 540, "time": 9.0, "level": 2, "requires": ["usine", "radar"], "from": "usine",
-		"hp": 260, "dps": 38, "speed": 80.0, "range": 11, "vision": 9,
+		"hp": 260, "dps": 38, "speed": 80.0, "range": 11, "vision": 9, "vs_ground": 0.55,
 	},
 	# --- Cartel Vael ---
 	"faucon": {
 		"aa": true, "name": "Faucon", "role": "combat", "desc": "Raider rapide, harcèle l'air",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 210, "time": 4.0, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 150, "dps": 15, "speed": 200.0, "range": 4, "vision": 11,
+		"hp": 185, "dps": 16, "speed": 200.0, "range": 4, "vision": 11,
 		"vs_air": 0.7,
 	},
 	"vipere": {
@@ -829,7 +829,7 @@ const UNITS := {
 		"name": "Prisme", "role": "combat", "desc": "Char à éclats cristallins (dégâts de zone)",
 		"armor": "medium", "weapon": "shard",
 		"cost": 500, "time": 8.0, "level": 2, "requires": ["usine"], "from": "usine",
-		"hp": 500, "dps": 28, "speed": 92.0, "range": 6,
+		"hp": 460, "dps": 25, "speed": 92.0, "range": 6,
 	},
 	"obelisque": {
 		"name": "Obélisque", "role": "combat", "desc": "Artillerie de cristal longue portée (sol)",
@@ -861,7 +861,7 @@ const UNITS := {
 	"pisteur": {
 		"name": "Pisteur", "role": "combat", "desc": "Éclaireur ultra-rapide, grande vision",
 		"armor": "light", "weapon": "autocannon", "cost": 160, "time": 3.5, "level": 1,
-		"requires": ["usine"], "from": "usine", "hp": 120, "dps": 9, "speed": 200.0, "range": 4,
+		"requires": ["usine"], "from": "usine", "hp": 145, "dps": 10, "speed": 200.0, "range": 4,
 		"vision": 15,
 	},
 	"brise_mur": {
@@ -922,7 +922,7 @@ const UNITS := {
 	"rodeur": {
 		"name": "Rôdeur", "role": "combat", "desc": "Buggy d'assaut rapide et bon marché",
 		"armor": "light", "weapon": "autocannon", "cost": 170, "time": 3.5, "level": 1,
-		"requires": ["usine"], "from": "usine", "hp": 150, "dps": 10, "speed": 170.0, "range": 3,
+		"requires": ["usine"], "from": "usine", "hp": 165, "dps": 11, "speed": 170.0, "range": 3,
 		"vision": 10,
 	},
 	"demolisseur": {
@@ -983,13 +983,13 @@ const UNITS := {
 	"rat_sable": {
 		"name": "Rat des sables", "role": "combat", "desc": "Raider ultra-rapide, fragile",
 		"armor": "light", "weapon": "autocannon", "cost": 150, "time": 3.5, "level": 1,
-		"requires": ["usine"], "from": "usine", "hp": 130, "dps": 10, "speed": 215.0, "range": 4,
+		"requires": ["usine"], "from": "usine", "hp": 140, "dps": 11, "speed": 215.0, "range": 4,
 		"vision": 12,
 	},
 	"saboteur": {
 		"name": "Saboteur", "role": "combat", "desc": "Sape les structures à l'acide", "armor": "light",
 		"weapon": "acid", "cost": 330, "time": 7.0, "level": 2, "requires": ["usine"], "from": "usine",
-		"hp": 220, "dps": 20, "speed": 130.0, "range": 3, "vision": 8, "vs_ground": 0.6,
+		"hp": 340, "dps": 23, "speed": 130.0, "range": 3, "vision": 8, "vs_ground": 0.6,
 		"vs_building": 1.8,
 	},
 	"scorpion": {
@@ -1042,8 +1042,8 @@ const UNITS := {
 	# --- conclave : extension (v2-conclave) ---
 	"tesson": {
 		"name": "Tesson", "role": "combat", "desc": "Raider cristallin rapide", "armor": "light",
-		"weapon": "shard", "cost": 170, "time": 3.5, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 150, "dps": 11, "speed": 165.0, "range": 4, "vision": 10,
+		"weapon": "shard", "cost": 180, "time": 3.5, "level": 1, "requires": ["usine"], "from": "usine",
+		"hp": 150, "dps": 10, "speed": 165.0, "range": 4, "vision": 10,
 	},
 	"fracasseur": {
 		"name": "Fracasseur", "role": "combat", "desc": "Brise les structures à coups d'éclats",

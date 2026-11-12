@@ -44,11 +44,12 @@ func _spawn(e: Array, team: int, x0: int) -> void:
 	main.team_factions[team] = e[0]
 	var cost: float = float(GameData.UNITS[e[1]]["cost"]) * float(GameData.FACTIONS[e[0]]["unit_cost_mult"])
 	var n := int(round(budget / cost))
-	var c := Vector2i(main.map_w / 2 + x0, main.map_h / 2)
+	var mid := Vector2i(main.start_cell)
+	var c := mid + Vector2i(x0, 0)
 	for i in n:
 		var cell: Vector2i = main._find_free_cell(c + Vector2i(0, (i % 7) - 3) + Vector2i(signi(x0) * (i / 7), 0))
 		var u = main._spawn_unit(e[1], cell, team)
-		u.order_amove(Vector2i(main.map_w / 2, main.map_h / 2))
+		u.order_amove(main._find_free_cell(mid))
 func _val(team: int) -> float:
 	var s := 0.0
 	for u in main.units:
@@ -60,8 +61,8 @@ func _next() -> bool:
 	idx += 1
 	if idx >= pairs.size():
 		return false
-	_spawn(pairs[idx][0], 0, -7)
-	_spawn(pairs[idx][1], 1, 7)
+	_spawn(pairs[idx][0], 0, -6)
+	_spawn(pairs[idx][1], 1, 6)
 	t0 = main.game_time
 	return true
 func _process(_d: float) -> bool:
