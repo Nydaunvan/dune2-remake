@@ -105,6 +105,14 @@ vec3 moon(vec2 p, vec2 c, float r, vec3 lit, vec3 shade, vec3 halo_col, vec2 lig
 	return res;
 }
 
+// Carte de hauteur du désert : grandes dunes allongées, bords arrondis, légèrement asymétriques
+float terrain(vec2 q) {
+	vec2 w = q + 3.2 * vec2(vnoise(q * 0.045), vnoise(q * 0.045 + 7.3)) - 1.6;
+	float n = 0.60 * vnoise(w * vec2(0.060, 0.105)) + 0.28 * vnoise(w * vec2(0.125, 0.21) + 3.1) + 0.12 * vnoise(w * vec2(0.26, 0.42) + 9.7);
+	n = smoothstep(0.10, 0.92, n);
+	return n * n * (3.0 - 2.0 * n) * 5.0;
+}
+
 void fragment() {
 	vec2 uv = UV;
 	float ar = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
@@ -162,55 +170,66 @@ void fragment() {
 	col += vec3(1.0, 0.55, 0.28) * 0.55 * exp(-length(sp) * 4.2);
 	col += vec3(1.0, 0.82, 0.5) * 0.45 * exp(-length(sp) * 12.0);
 
-	// ----- Dunes en couches, de la plus lointaine à la plus proche -----
-	vec3 haze = vec3(0.85, 0.36, 0.30);
-	for (int i = 0; i < 5; i++) {
-		float fi = float(i);
-		float depth = fi / 4.0; // 0 = lointain, 1 = premier plan
-		float x = uv.x * (1.6 + depth * 1.8) * ar + fi * 3.7; // dunes immobiles : seul le vent bouge
-		float base = horizon + 0.035 + depth * 0.40 - 0.02 * fi;
-		float amp = 0.035 + 0.075 * depth;
-		float ridge = base - amp * dune(x, fi * 5.0);
-		float sc = (1.6 + depth * 1.8) * ar;
-		float aa = SCREEN_PIXEL_SIZE.y * 1.6;
-		if (uv.y > ridge - aa) {
-			// éclairage : côté tourné vers le soleil (à droite) éclairé
-			float below = uv.y - ridge;
-			// pente lue en biais (l'ombre de la dune glisse le long de sa face, jamais de bande verticale)
-			// et sur un large pas, pour un dégradé continu d'un bout à l'autre de la dune
-			float xs = x - below * sc * 1.4;
-			float e = 0.06;
-			float slope = (dune(xs + e, fi * 5.0) - dune(xs - e, fi * 5.0)) / (2.0 * e) * amp * sc;
-			float slope_lit = smoothstep(0.0, 1.0, clamp(0.5 + slope * 2.0, 0.0, 1.0));
-			float lit = mix(0.55, slope_lit, exp(-below * (12.0 - 4.0 * depth)));
-			vec3 shade_c = mix(vec3(0.24, 0.07, 0.13), vec3(0.10, 0.035, 0.08), depth);
-			vec3 lit_c = mix(vec3(0.98, 0.54, 0.36), vec3(0.62, 0.27, 0.20), depth);
-			vec3 sand = mix(shade_c, lit_c, lit);
-			// ondulations du sable : rides larges, douces, qui suivent la dune
-			// (les rides glissent très lentement avec le vent)
-			float rip = vnoise(vec2(x * 9.0 + below * 4.0 - t * (0.05 + 0.08 * depth), below * (26.0 + 30.0 * depth)));
-			sand *= 0.92 + 0.14 * rip;
-			sand *= 0.985 + 0.03 * hash(floor(uv * vec2(900.0, 500.0)));
-			// arête éclairée
-			float rim = smoothstep(0.03 + 0.012 * depth, 0.0, below) * slope_lit * 0.75;
-			sand += vec3(1.0, 0.72, 0.45) * rim * (0.5 + 0.4 * (1.0 - depth));
-			// assombrissement vers le bas de l'écran (lisibilité de l'interface)
-			sand *= mix(1.0, 0.45, smoothstep(0.62, 1.0, uv.y));
-			// brume atmosphérique : forte au loin, faible au premier plan
-			float fog = (1.0 - depth) * 0.62 + 0.04;
-			fog *= exp(-below * 9.0) * 0.7 + 0.3;
-			sand = mix(sand, haze * (0.6 + 0.4 * lit), clamp(fog, 0.0, 0.85));
-			// panache de sable soulevé de la crête par le vent, qui file vers la gauche
-			float plume = fbm(vec2(x * 5.0 + t * (0.55 + 0.5 * depth), below * 22.0 - t * 0.04));
-			float plume_m = smoothstep(0.42, 0.8, plume) * exp(-below * (20.0 - 8.0 * depth)) * (0.5 + 0.5 * sin(t * 0.35 + fi * 2.0 + x * 1.7));
-			sand += vec3(1.0, 0.66, 0.42) * plume_m * (0.20 + 0.16 * depth);
-			col = mix(col, sand, smoothstep(ridge - aa, ridge + aa, uv.y));
+	// ----- Désert : vrai champ de dunes, tracé de rayons sur une carte de hauteur -----
+	// Caméra surélevée face à l'horizon ; les dunes proches cachent les lointaines, sans aucune
+	// séparation en couches : ombrage continu, brume de distance et rides de sable.
+	if (uv.y >= horizon - 0.004) {
+		vec3 ro = vec3(0.0, 5.2, t * 0.0); // la scène est immobile : seul le vent anime le sable
+		vec3 rd = normalize(vec3((uv.x - 0.5) * ar * 0.85, -(uv.y - horizon) * 1.45 - 0.004, 1.0));
+		float dist = 1.5;
+		bool hit = false;
+		for (int i = 0; i < 90; i++) {
+			vec3 p = ro + rd * dist;
+			float d = p.y - terrain(p.xz);
+			if (d < 0.01 + 0.0008 * dist) {
+				hit = true;
+				break;
+			}
+			dist += max(d * 0.55, 0.04 + 0.003 * dist);
+			if (dist > 160.0) {
+				break;
+			}
+		}
+		if (hit) {
+			vec3 p = ro + rd * dist;
+			float e = 0.12 + 0.01 * dist;
+			float hc = terrain(p.xz);
+			vec3 n = normalize(vec3(terrain(p.xz - vec2(e, 0.0)) - terrain(p.xz + vec2(e, 0.0)), 2.0 * e,
+					terrain(p.xz - vec2(0.0, e)) - terrain(p.xz + vec2(0.0, e))));
+			// rides de sable : fines, perpendiculaires au vent, qui s'estompent avec la distance
+			float rid_amp = 0.16 * exp(-dist * 0.05);
+			float rid = vnoise(vec2(p.x * 1.6 + p.z * 0.5 + n.x * 4.0, p.z * 7.0));
+			n = normalize(n + vec3(0.0, 0.0, (rid - 0.5) * rid_amp * 2.0));
+			vec3 L = normalize(vec3(0.92, 0.20, 0.30));
+			float lam = clamp(dot(n, L), 0.0, 1.0);
+			float wrap = clamp((dot(n, L) + 0.35) / 1.35, 0.0, 1.0);
+			vec3 shade_c = vec3(0.30, 0.12, 0.19);
+			vec3 mid_c = vec3(0.80, 0.40, 0.27);
+			vec3 lit_c = vec3(1.0, 0.70, 0.42);
+			vec3 sand = mix(shade_c, mid_c, smoothstep(0.0, 0.55, wrap));
+			sand = mix(sand, lit_c, smoothstep(0.45, 1.0, lam));
+			// creux un peu plus sombres et rougeâtres, sommets plus clairs
+			sand *= 0.80 + 0.26 * clamp(hc / 5.0, 0.0, 1.0);
+			// reflet rasant orangé sur les crêtes qui regardent le soleil
+			float rim = pow(clamp(1.0 - dot(n, -rd), 0.0, 1.0), 3.0);
+			sand += vec3(1.0, 0.55, 0.28) * rim * 0.22 * smoothstep(0.1, 0.8, dot(n, L) + 0.4);
+			// grains de sable
+			sand *= 0.975 + 0.05 * hash(floor(uv * vec2(1400.0, 800.0)));
+			// rafales : voiles de sable chassés le long des crêtes par le vent
+			float crest = smoothstep(0.30, 0.75, 1.0 - n.y);
+			float gust = vnoise(vec2(p.x * 0.22 - t * 1.3, p.z * 0.9 + sin(t * 0.3)));
+			sand += vec3(1.0, 0.72, 0.46) * smoothstep(0.55, 0.95, gust) * crest * 0.20 * exp(-dist * 0.02);
+			// brume : se fond dans la teinte exacte de l'horizon
+			vec2 sp0 = vec2((uv.x - 0.70) * ar, 0.0);
+			vec3 hz = vec3(0.943, 0.525, 0.291) + vec3(1.0, 0.55, 0.28) * 0.55 * exp(-length(sp0) * 4.2)
+					+ vec3(1.0, 0.82, 0.5) * 0.45 * exp(-length(sp0) * 12.0);
+			float fogk = 1.0 - exp(-dist * 0.016);
+			sand = mix(sand, hz, clamp(fogk, 0.0, 1.0));
+			// assombrissement doux vers le bas de l'écran (lisibilité de l'interface)
+			sand *= mix(1.0, 0.70, smoothstep(0.66, 1.0, uv.y));
+			col = sand;
 		}
 	}
-
-	// Traînées de sable chassées par le vent sur les crêtes
-	float wind = fbm(vec2(uv.x * 5.0 + t * 0.28, uv.y * 24.0 + sin(t * 0.2) * 0.6)) * smoothstep(0.55, 0.9, uv.y) * smoothstep(1.0, 0.7, uv.y);
-	col += vec3(1.0, 0.7, 0.5) * pow(wind, 3.0) * 0.28;
 
 	// Poussière en suspension : petits grains lumineux emportés par le vent
 	vec2 dp = vec2(p.x * 38.0 - t * 1.4, uv.y * 26.0 - t * 0.12);
