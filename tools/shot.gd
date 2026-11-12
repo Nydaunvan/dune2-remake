@@ -92,6 +92,12 @@ func _process(_d: float) -> bool:
 				u.state = "harvest"
 				u.cargo = minf(u.cargo, 1.0)
 				break
+	if f == 12 and OS.has_environment("SHOT_UPG"):
+		for b in node.buildings:
+			if b.team == 0:
+				b.up_total = 100.0
+				b.up_left = 60.0
+				b.hp = b.max_hp * 0.6
 	if f == 10 and OS.has_environment("SHOT_SELECT"):
 		for b in node.buildings:
 			if b.team == 0 and b.id == OS.get_environment("SHOT_SELECT"):

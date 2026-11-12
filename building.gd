@@ -61,6 +61,10 @@ func setup(p_id: String, p_cell: Vector2i, p_size: Vector2i, p_tile: int,
 func init_combat(p_game, p_team: int) -> void:
 	game = p_game
 	team = p_team
+	if get_node_or_null("Bars") == null:
+		var bars := BarsLayer.new(self)
+		bars.name = "Bars"
+		add_child(bars)
 	var d := GameData.def(id)
 	max_hp = float(d.get("hp", 500))
 	hp = max_hp
@@ -312,24 +316,53 @@ func _draw() -> void:
 
 
 func _draw_hp(s: Vector2) -> void:
-	for i in level - 1:
-		draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), GameData.GOLD)
-		draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), Color.BLACK, false, 1.0)
-	if offline:
-		UiStyle.text(self, Vector2(2, s.y * 0.5), "HORS TENSION", 11, GameData.RED, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
 	if selected:
 		draw_rect(Rect2(Vector2(-2, -2), s + Vector2(4, 4)), GameData.GREEN, false, 2.5)
-	if repairing:
-		UiStyle.text(self, Vector2(2, s.y * 0.5 + 16.0), "RÉPARATION", 11, GameData.GREEN, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
-	if up_left > 0.0:
-		var uw := s.x - 8.0
-		draw_rect(Rect2(4, -16, uw, 4), Color(0, 0, 0, 0.65))
-		draw_rect(Rect2(4, -16, uw * (1.0 - up_left / maxf(up_total, 0.1)), 4), GameData.AMBER_HDR)
-	if hp < max_hp:
-		var w := s.x - 8.0
-		draw_rect(Rect2(4, -9, w, 5), Color(0, 0, 0, 0.65))
-		draw_rect(Rect2(4, -9, w * clampf(hp / max_hp, 0.0, 1.0), 5),
-				GameData.GREEN if game.side_of(team) == 0 else GameData.RED)
+
+
+## Calque des barres (amélioration, PV, niveau, états) : toujours au-dessus du reste,
+## y compris des unités et du brouillard.
+class BarsLayer extends Node2D:
+	var b
+
+	func _init(p_b) -> void:
+		b = p_b
+		z_as_relative = false
+		z_index = 46
+
+	func _process(_d: float) -> void:
+		if b.up_left > 0.0 or _sig() != _last:
+			_last = _sig()
+			queue_redraw()
+
+	var _last := ""
+
+	func _sig() -> String:
+		return "%d|%d|%d|%d|%d" % [int(b.hp), b.level, int(b.offline), int(b.repairing), int(b.hp < b.max_hp)]
+
+	func _draw() -> void:
+		var s := Vector2(b.cell_size * b.tile)
+		if GameData.def(b.id).get("wall", false):
+			if b.hp < b.max_hp:
+				draw_rect(Rect2(4, -9, s.x - 8.0, 5), Color(0, 0, 0, 0.65))
+				draw_rect(Rect2(4, -9, (s.x - 8.0) * clampf(b.hp / b.max_hp, 0.0, 1.0), 5), GameData.GREEN)
+			return
+		for i in b.level - 1:
+			draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), GameData.GOLD)
+			draw_rect(Rect2(8 + i * 11, s.y - 14, 8, 8), Color.BLACK, false, 1.0)
+		if b.offline:
+			UiStyle.text(self, Vector2(2, s.y * 0.5), "HORS TENSION", 11, GameData.RED, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
+		if b.repairing:
+			UiStyle.text(self, Vector2(2, s.y * 0.5 + 16.0), "RÉPARATION", 11, GameData.GREEN, true, HORIZONTAL_ALIGNMENT_CENTER, s.x)
+		if b.up_left > 0.0:
+			var uw := s.x - 8.0
+			draw_rect(Rect2(3, -17, uw + 2.0, 6), Color(0, 0, 0, 0.8))
+			draw_rect(Rect2(4, -16, uw * (1.0 - b.up_left / maxf(b.up_total, 0.1)), 4), GameData.AMBER_HDR)
+		if b.hp < b.max_hp:
+			var w := s.x - 8.0
+			draw_rect(Rect2(4, -9, w, 5), Color(0, 0, 0, 0.65))
+			draw_rect(Rect2(4, -9, w * clampf(b.hp / b.max_hp, 0.0, 1.0), 5),
+					GameData.GREEN if b.game.side_of(b.team) == 0 else GameData.RED)
 
 # --- Sauvegarde -----------------------------------------------------------------
 
