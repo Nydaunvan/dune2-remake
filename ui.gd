@@ -680,6 +680,9 @@ class InfoPanel extends GlassPanel:
 		dbtn.visible = _focus is Building and _focus.team == 0
 		_confirm_t = maxf(0.0, _confirm_t - _delta)
 		dbtn.text = "CONFIRMER ?" if _confirm_t > 0.0 else "DÉMOLIR"
+		if _focus is Building and _confirm_t > 0.0:
+			dbtn.text = "CONFIRMER (+%d / +%d)" % [int(round(float(GameData.base_cost(_focus.id)) * 0.4)),
+					int(round(GameData.sol_cost(_focus.id) * 0.4))]
 		dbtn.accent = GameData.RED if _confirm_t > 0.0 else Color(0.75, 0.35, 0.35)
 		if can_rep:
 			if _focus is Building:

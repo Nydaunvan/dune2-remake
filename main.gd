@@ -1882,12 +1882,13 @@ func demolish_building(b: Building) -> void:
 		return
 	var refund := int(round(float(GameData.base_cost(b.id)) * 0.4))
 	ore += refund
-	credits += int(round(GameData.sol_cost(b.id) * 0.4))
+	var refund_sol := int(round(GameData.sol_cost(b.id) * 0.4))
+	credits += refund_sol
 	b.alive = false
 	b.repairing = false
 	Fx.explosion(self, b.world_center(), 1.4)
 	sfx.play_ui("error", -8.0)
-	ui.toast("%s démoli (+%d minerai)" % [GameData.def(b.id)["name"], refund], GameData.AMBER)
+	ui.toast("%s démoli (+%d minerai, +%d Solaris)" % [GameData.def(b.id)["name"], refund, refund_sol], GameData.AMBER)
 	if selected_building == b:
 		selected_building = null
 	if inspected == b:
