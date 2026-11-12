@@ -1217,7 +1217,7 @@ class BuildIcon extends Control:
 			_draw_baked_icon(c, avail)
 			return
 		if GameData.def(id).get("wall", false):
-			var wc := Color(0.5, 0.52, 0.6) if id == "mur_acier" else (Color(0.55, 0.38, 0.8) if id == "mur_cristal" else Color(0.47, 0.4, 0.34))
+			var wc := GameData.wall_color(id)
 			if not avail:
 				wc = wc.darkened(0.4)
 			for i in 3:

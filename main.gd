@@ -1746,7 +1746,7 @@ func _building_effects(dt: float) -> void:
 			_inc_acc[b.team] = float(_inc_acc.get(b.team, 0.0)) + float(d["income"]) * dt
 		if d.has("ore_income"):
 			_ore_acc[b.team] = float(_ore_acc.get(b.team, 0.0)) + float(d["ore_income"]) * dt
-		if b.id == "mur_cristal" and b.hp < b.max_hp:
+		if (b.id == "mur_cristal" or b.id == "mur_obsidienne") and b.hp < b.max_hp:
 			b.hp = minf(b.max_hp, b.hp + 12.0 * dt) # le cristal se régénère
 		if d.has("aura_regen"):
 			# Aura de réparation : les bâtiments alliés proches regagnent des PV

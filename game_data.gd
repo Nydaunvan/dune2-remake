@@ -34,8 +34,8 @@ const FACTIONS := {
 		"desc": "Unités 5 % moins chères, minerai +10 %.\nBlindés lourds et lents, constructions standard.",
 		"color": Color("e8433a"), "accent": Color("ffb199"),
 		"build_time_mult": 1.0, "unit_cost_mult": 0.95, "spice_mult": 1.0, "ore_mult": 1.1,
-		"units": ["belier", "brute", "salve"],
-		"air": ["faucheur", "marteau", "mule"],
+		"units": ["belier", "brute", "salve", "rodeur", "demolisseur", "titan", "brasier", "obusier", "depanneuse"],
+		"air": ["faucheur", "marteau", "mule", "vautour", "aigle", "forteresse_vol", "cyclone"],
 	},
 	"vael": {
 		"name": "Cartel Vael",
@@ -43,8 +43,8 @@ const FACTIONS := {
 		"desc": "Épice +20 % de Solaris par récolte.\nUnités rapides et fragiles, harcèlement.",
 		"color": Color("3ddc97"), "accent": Color("ffe08a"),
 		"build_time_mult": 1.0, "unit_cost_mult": 1.0, "spice_mult": 1.2, "ore_mult": 1.0,
-		"units": ["faucon", "vipere", "mirage"],
-		"air": ["guepe", "frelon", "pelican"],
+		"units": ["faucon", "vipere", "mirage", "rat_sable", "saboteur", "scorpion", "guerisseur", "harpon", "cracheur"],
+		"air": ["guepe", "frelon", "pelican", "cigale", "milan", "mante", "cobra"],
 	},
 	"conclave": {
 		"name": "Conclave Obsidien",
@@ -52,8 +52,8 @@ const FACTIONS := {
 		"desc": "Minerai +20 %, unités qui se régénèrent.\nÉclats cristallins en zone, constructions un peu plus lentes.",
 		"color": Color("b277ff"), "accent": Color("ead6ff"),
 		"build_time_mult": 1.1, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.2, "regen": 2.0,
-		"units": ["ombre", "prisme", "obelisque"],
-		"air": ["vesper", "eclipse", "passeur"],
+		"units": ["ombre", "prisme", "obelisque", "tesson", "fracasseur", "monolithe", "veilleur", "aiguille", "quartz"],
+		"air": ["vesper", "eclipse", "passeur", "ephemere", "scintille", "stalactite", "aurore"],
 	},
 }
 
@@ -112,6 +112,17 @@ const LEVEL_HP := 0.4
 # sont réduits (taux effectif = seuil * (taux/seuil)^SOAK_EXP). Une grosse armée ne rase plus un bâtiment en un instant.
 const SOAK_FRAC := 0.025
 const SOAK_EXP := 0.65
+
+
+## Teinte d'un mur (dessiné à plat par Building, icône de l'interface).
+static func wall_color(id: String) -> Color:
+	match id:
+		"mur_acier": return Color(0.5, 0.52, 0.6)
+		"mur_cristal": return Color(0.5, 0.34, 0.78)
+		"mur_titane": return Color(0.38, 0.42, 0.5)
+		"mur_epines": return Color(0.36, 0.5, 0.3)
+		"mur_obsidienne": return Color(0.26, 0.2, 0.42)
+	return Color(0.47, 0.4, 0.34)
 
 
 static func building_hp(id: String) -> float:
@@ -180,6 +191,36 @@ const UNIT_TECH := {
 	"foudre": {"hp": 1.2, "dps": 1.2},
 	"orage": {"dps": 1.25, "hp": 1.2},
 	"vigie": {"speed": 1.2, "vision": 3},
+	"rodeur": {"speed": 1.2, "dps": 1.25},
+	"demolisseur": {"hp": 1.25, "dps": 1.2},
+	"titan": {"hp": 1.3, "dps": 1.15},
+	"brasier": {"dps": 1.3, "hp": 1.15},
+	"obusier": {"range": 2, "dps": 1.2},
+	"depanneuse": {"hp": 1.3, "speed": 1.2},
+	"vautour": {"dps": 1.25, "hp": 1.2},
+	"aigle": {"speed": 1.15, "dps": 1.25},
+	"forteresse_vol": {"hp": 1.25, "dps": 1.15},
+	"cyclone": {"hp": 1.2, "dps": 1.2},
+	"rat_sable": {"speed": 1.2, "dps": 1.25},
+	"saboteur": {"hp": 1.2, "dps": 1.25},
+	"scorpion": {"hp": 1.2, "dps": 1.25},
+	"guerisseur": {"hp": 1.3, "speed": 1.2},
+	"harpon": {"range": 2, "dps": 1.2},
+	"cracheur": {"range": 2, "dps": 1.2},
+	"cigale": {"speed": 1.2, "vision": 3},
+	"milan": {"speed": 1.15, "dps": 1.25},
+	"mante": {"dps": 1.25, "hp": 1.2},
+	"cobra": {"hp": 1.25, "dps": 1.2},
+	"tesson": {"speed": 1.2, "dps": 1.25},
+	"fracasseur": {"hp": 1.25, "dps": 1.2},
+	"monolithe": {"hp": 1.3, "dps": 1.15},
+	"veilleur": {"hp": 1.3, "speed": 1.2},
+	"aiguille": {"range": 2, "dps": 1.2},
+	"quartz": {"range": 2, "dps": 1.2},
+	"ephemere": {"speed": 1.2, "vision": 3},
+	"scintille": {"speed": 1.15, "dps": 1.25},
+	"stalactite": {"hp": 1.25, "dps": 1.2},
+	"aurore": {"hp": 1.2, "dps": 1.2},
 }
 ## Stockage : capacité de base, puis bonus par bâtiment [Solaris, minerai].
 const STORAGE_BASE := 3000
@@ -392,6 +433,197 @@ const BUILDINGS := {
 		"requires": ["usine", "radar", "atelier_solis"], "hp": 1800, "tough": 1.3, "armor": "building",
 		"unlock": 4, "no_upgrade": true, "faction": "solis", "weapon": "orbital", "dps": 160,
 		"range": 18, "vision": 12, "desc": "Frappe orbitale à très longue portée, sol seulement (Solis)",
+		"req_level": {"usine": 3}, "max": 1,
+	},
+	# --- kharn : extension (v2-kharn) ---
+	"forge_kharn": {
+		"name": "Forge de guerre", "cost": 650, "time": 13.0, "size": Vector2i(3, 2), "power": -25,
+		"requires": ["usine"], "hp": 1000, "tough": 1.3, "armor": "building", "unlock": 2,
+		"faction": "kharn", "desc": "Débloque les unités avancées Kharn", "req_level": {"usine": 2},
+		"max": 1,
+	},
+	"atelier_kharn": {
+		"name": "Atelier de remise en état", "cost": 480, "time": 11.0, "size": Vector2i(3, 2),
+		"power": -20, "requires": ["usine"], "hp": 1000, "armor": "building", "unlock": 2,
+		"no_upgrade": true, "faction": "kharn", "heal": 20.0, "heal_range": 6.0, "needs_power": true,
+		"desc": "Soigne vite les unités proches (Kharn)", "req_level": {"usine": 2}, "max": 2,
+	},
+	"canon_lourd": {
+		"name": "Canon lourd", "cost": 650, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "forge_kharn"], "hp": 1400, "tough": 1.6, "armor": "building", "unlock": 3,
+		"faction": "kharn", "aa": true, "vs_air": 0.7, "weapon": "cannon", "dps": 48, "range": 7,
+		"vision": 9, "desc": "Tourelle massive aux dégâts élevés (Kharn)", "req_level": {"usine": 2},
+		"max": 5,
+	},
+	"batterie_mortiers": {
+		"name": "Batterie de mortiers", "cost": 720, "time": 13.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "radar"], "hp": 900, "armor": "building", "unlock": 4, "no_upgrade": true,
+		"faction": "kharn", "weapon": "mortar", "dps": 34, "range": 13, "vision": 11,
+		"desc": "Artillerie longue portée, ne touche que le sol (Kharn)", "req_level": {"usine": 3},
+		"max": 3,
+	},
+	"site_missiles": {
+		"name": "Site de missiles", "cost": 560, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "radar"], "hp": 800, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "kharn", "aa": true, "vs_air": 1.6, "weapon": "rocket", "dps": 40, "range": 11,
+		"vision": 11, "desc": "Missiles sol-air redoutables (Kharn)", "req_level": {"usine": 2},
+		"max": 4, "vs_ground": 0.4,
+	},
+	"turbine_kharn": {
+		"name": "Turbine de guerre", "cost": 700, "time": 12.0, "size": Vector2i(2, 2), "power": 300,
+		"requires": ["centrale", "usine"], "hp": 1000, "tough": 1.6, "armor": "building", "unlock": 4,
+		"no_upgrade": true, "faction": "kharn", "desc": "Énergie abondante et solide (Kharn)",
+		"req_level": {"centrale": 2, "usine": 2}, "max": 2,
+	},
+	"fonderie_lourde": {
+		"name": "Fonderie lourde", "cost": 650, "time": 12.0, "size": Vector2i(3, 2), "power": -20,
+		"requires": ["fonderie"], "hp": 900, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "kharn", "ore_income": 4.0, "needs_power": true,
+		"desc": "+4 minerai par seconde (Kharn)", "req_level": {"fonderie": 2}, "max": 2,
+	},
+	"hangar_kharn": {
+		"name": "Hangar blindé", "cost": 750, "time": 12.0, "size": Vector2i(3, 2), "power": -30,
+		"requires": ["aerodrome"], "hp": 1200, "tough": 1.3, "armor": "building", "unlock": 3,
+		"no_upgrade": true, "faction": "kharn", "desc": "Débloque les appareils lourds Kharn",
+		"req_level": {"usine": 2}, "max": 1,
+	},
+	"mur_titane": {
+		"name": "Mur de titane", "cost": 140, "time": 5.0, "size": Vector2i(1, 1), "power": 0,
+		"requires": [], "hp": 2500, "tough": 3.0, "armor": "building", "unlock": 4, "no_upgrade": true,
+		"faction": "kharn", "vision": 3, "wall": true, "desc": "Barrière quasi indestructible (Kharn)",
+	},
+	"marteau_guerre": {
+		"name": "Marteau de guerre", "cost": 1900, "time": 22.0, "size": Vector2i(3, 3), "power": -90,
+		"requires": ["usine", "radar", "forge_kharn"], "hp": 2000, "tough": 1.5, "armor": "building",
+		"unlock": 4, "no_upgrade": true, "faction": "kharn", "weapon": "orbital", "dps": 170,
+		"range": 18, "vision": 12, "desc": "Frappe orbitale dévastatrice, sol seulement (Kharn)",
+		"req_level": {"usine": 3}, "max": 1,
+	},
+	# --- vael : extension (v2-vael) ---
+	"bureau_vael": {
+		"name": "Bureau des contrats", "cost": 600, "time": 12.0, "size": Vector2i(3, 2), "power": -25,
+		"requires": ["usine"], "hp": 850, "armor": "building", "unlock": 2, "faction": "vael",
+		"desc": "Débloque les unités avancées Vael", "req_level": {"usine": 2}, "max": 1,
+	},
+	"apothicaire": {
+		"name": "Apothicaire", "cost": 500, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
+		"requires": ["usine"], "hp": 650, "armor": "building", "unlock": 2, "no_upgrade": true,
+		"faction": "vael", "heal": 20.0, "heal_range": 6.0, "needs_power": true,
+		"desc": "Soigne vite les unités proches (Vael)", "req_level": {"usine": 2}, "max": 2,
+	},
+	"tour_toxine": {
+		"name": "Tour à toxine", "cost": 600, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "bureau_vael"], "hp": 650, "armor": "building", "unlock": 3,
+		"faction": "vael", "aa": true, "vs_air": 0.8, "weapon": "acid", "dps": 44, "range": 7,
+		"vision": 9, "desc": "Acide corrosif, idéale contre les blindés (Vael)",
+		"req_level": {"usine": 2}, "max": 5,
+	},
+	"lanceur_spores": {
+		"name": "Lanceur de spores", "cost": 680, "time": 13.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "radar"], "hp": 600, "armor": "building", "unlock": 4, "no_upgrade": true,
+		"faction": "vael", "weapon": "mortar", "dps": 28, "range": 13, "vision": 11,
+		"desc": "Artillerie longue portée, ne touche que le sol (Vael)", "req_level": {"usine": 3},
+		"max": 3,
+	},
+	"nid_guepes": {
+		"name": "Nid de guêpes", "cost": 480, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
+		"requires": ["usine"], "hp": 550, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "vael", "aa": true, "vs_air": 1.6, "weapon": "autocannon", "dps": 36, "range": 8,
+		"vision": 10, "desc": "Défense anti-aérienne rapide (Vael)", "req_level": {"usine": 2}, "max": 4,
+		"vs_ground": 0.5,
+	},
+	"caravanserail": {
+		"name": "Caravansérail", "cost": 620, "time": 12.0, "size": Vector2i(3, 2), "power": -15,
+		"requires": ["fonderie"], "hp": 700, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "vael", "ore_income": 3.5, "needs_power": true,
+		"desc": "+3,5 minerai par seconde (Vael)", "req_level": {"fonderie": 2}, "max": 2,
+	},
+	"generateur_vael": {
+		"name": "Générateur clandestin", "cost": 750, "time": 12.0, "size": Vector2i(2, 2), "power": 280,
+		"requires": ["centrale", "usine"], "hp": 750, "armor": "building", "unlock": 4,
+		"no_upgrade": true, "faction": "vael", "desc": "Énergie abondante (Vael)",
+		"req_level": {"centrale": 2, "usine": 2}, "max": 2,
+	},
+	"hangar_vael": {
+		"name": "Hangar camouflé", "cost": 700, "time": 12.0, "size": Vector2i(3, 2), "power": -30,
+		"requires": ["aerodrome"], "hp": 850, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "vael", "desc": "Débloque les appareils avancés Vael", "req_level": {"usine": 2},
+		"max": 1,
+	},
+	"mur_epines": {
+		"name": "Mur d'épines", "cost": 100, "time": 4.0, "size": Vector2i(1, 1), "power": 0,
+		"requires": [], "hp": 1600, "tough": 2.4, "armor": "building", "unlock": 4, "no_upgrade": true,
+		"faction": "vael", "vision": 3, "wall": true, "desc": "Barrière renforcée (Vael)",
+	},
+	"pluie_acide": {
+		"name": "Pluie acide", "cost": 1700, "time": 22.0, "size": Vector2i(3, 3), "power": -80,
+		"requires": ["usine", "radar", "bureau_vael"], "hp": 1700, "tough": 1.3, "armor": "building",
+		"unlock": 4, "no_upgrade": true, "faction": "vael", "weapon": "orbital", "dps": 150, "range": 18,
+		"vision": 12, "desc": "Frappe orbitale corrosive, sol seulement (Vael)",
+		"req_level": {"usine": 3}, "max": 1,
+	},
+	# --- conclave : extension (v2-conclave) ---
+	"sanctuaire": {
+		"name": "Sanctuaire", "cost": 620, "time": 12.0, "size": Vector2i(3, 2), "power": -25,
+		"requires": ["usine"], "hp": 950, "tough": 1.2, "armor": "building", "unlock": 2,
+		"faction": "conclave", "desc": "Débloque les unités avancées du Conclave",
+		"req_level": {"usine": 2}, "max": 1,
+	},
+	"source_vive": {
+		"name": "Source vive", "cost": 500, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
+		"requires": ["usine"], "hp": 700, "armor": "building", "unlock": 2, "no_upgrade": true,
+		"faction": "conclave", "heal": 22.0, "heal_range": 6.0, "needs_power": true,
+		"desc": "Soigne vite les unités proches (Conclave)", "req_level": {"usine": 2}, "max": 2,
+	},
+	"tour_geode": {
+		"name": "Tour géode", "cost": 640, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "sanctuaire"], "hp": 900, "tough": 1.4, "armor": "building", "unlock": 3,
+		"faction": "conclave", "aa": true, "vs_air": 0.8, "weapon": "shard", "dps": 46, "range": 7,
+		"vision": 9, "desc": "Tourelle d'éclats à fortes dégâts (Conclave)", "req_level": {"usine": 2},
+		"max": 5,
+	},
+	"tour_aiguille": {
+		"name": "Tour aiguille", "cost": 520, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
+		"requires": ["usine", "radar"], "hp": 650, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "conclave", "aa": true, "vs_air": 1.6, "weapon": "shard", "dps": 38, "range": 10,
+		"vision": 11, "desc": "Défense anti-aérienne de cristal (Conclave)", "req_level": {"usine": 2},
+		"max": 4, "vs_ground": 0.4,
+	},
+	"cairn_cristal": {
+		"name": "Cairn de cristal", "cost": 470, "time": 10.0, "size": Vector2i(2, 2), "power": -15,
+		"requires": ["centrale"], "hp": 650, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "conclave", "aura_regen": 10.0, "aura_range": 7, "needs_power": true,
+		"desc": "Répare les bâtiments alliés proches (Conclave)", "req_level": {"centrale": 2}, "max": 3,
+	},
+	"filon_vivant": {
+		"name": "Filon vivant", "cost": 600, "time": 12.0, "size": Vector2i(3, 2), "power": -15,
+		"requires": ["fonderie"], "hp": 750, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "conclave", "ore_income": 4.0, "needs_power": true,
+		"desc": "+4 minerai par seconde (Conclave)", "req_level": {"fonderie": 2}, "max": 2,
+	},
+	"reliquaire": {
+		"name": "Reliquaire", "cost": 780, "time": 13.0, "size": Vector2i(2, 2), "power": 300,
+		"requires": ["centrale", "usine"], "hp": 850, "tough": 1.4, "armor": "building", "unlock": 4,
+		"no_upgrade": true, "faction": "conclave", "desc": "Énergie abondante (Conclave)",
+		"req_level": {"centrale": 2, "usine": 2}, "max": 2,
+	},
+	"hangar_conclave": {
+		"name": "Hangar de cristal", "cost": 720, "time": 12.0, "size": Vector2i(3, 2), "power": -30,
+		"requires": ["aerodrome"], "hp": 900, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "conclave", "desc": "Débloque les appareils avancés du Conclave",
+		"req_level": {"usine": 2}, "max": 1,
+	},
+	"mur_obsidienne": {
+		"name": "Mur d'obsidienne", "cost": 120, "time": 4.0, "size": Vector2i(1, 1), "power": 0,
+		"requires": [], "hp": 1800, "tough": 2.6, "armor": "building", "unlock": 4, "no_upgrade": true,
+		"faction": "conclave", "vision": 3, "wall": true,
+		"desc": "Barrière régénérante, très résistante (Conclave)",
+	},
+	"nova_cristal": {
+		"name": "Nova de cristal", "cost": 1800, "time": 22.0, "size": Vector2i(3, 3), "power": -80,
+		"requires": ["usine", "radar", "sanctuaire"], "hp": 1800, "tough": 1.3, "armor": "building",
+		"unlock": 4, "no_upgrade": true, "faction": "conclave", "weapon": "orbital", "dps": 160,
+		"range": 18, "vision": 12, "desc": "Frappe orbitale de cristal, sol seulement (Conclave)",
 		"req_level": {"usine": 3}, "max": 1,
 	},
 }
@@ -637,6 +869,186 @@ const UNITS := {
 		"armor": "light", "weapon": "autocannon", "cost": 140, "time": 3.0, "level": 1,
 		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 90, "dps": 6, "speed": 280.0,
 		"range": 4, "vision": 18,
+	},
+	# --- kharn : extension (v2-kharn) ---
+	"rodeur": {
+		"name": "Rôdeur", "role": "combat", "desc": "Buggy d'assaut rapide et bon marché",
+		"armor": "light", "weapon": "autocannon", "cost": 170, "time": 3.5, "level": 1,
+		"requires": ["usine"], "from": "usine", "hp": 150, "dps": 10, "speed": 170.0, "range": 3,
+		"vision": 10,
+	},
+	"demolisseur": {
+		"name": "Démolisseur", "role": "combat", "desc": "Blindé bélier : détruit les bâtiments",
+		"armor": "heavy", "weapon": "cannon", "cost": 400, "time": 8.0, "level": 2,
+		"requires": ["usine"], "from": "usine", "hp": 450, "dps": 26, "speed": 75.0, "range": 3,
+		"vision": 7, "vs_ground": 0.6, "vs_building": 2.0,
+	},
+	"titan": {
+		"name": "Titan", "role": "combat", "desc": "Char super-lourd, quasi indestructible",
+		"armor": "heavy", "weapon": "cannon", "cost": 1150, "time": 15.0, "level": 3,
+		"requires": ["usine", "forge_kharn"], "from": "usine", "hp": 1700, "dps": 55, "speed": 55.0,
+		"range": 7, "vision": 8,
+	},
+	"brasier": {
+		"name": "Brasier", "role": "combat", "desc": "Lance-flammes : fauche l'infanterie légère",
+		"armor": "medium", "weapon": "flame", "cost": 420, "time": 8.0, "level": 2,
+		"requires": ["usine"], "from": "usine", "hp": 420, "dps": 48, "speed": 100.0, "range": 3,
+		"vision": 7,
+	},
+	"obusier": {
+		"name": "Obusier", "role": "combat", "desc": "Artillerie lourde longue portée (sol)",
+		"armor": "light", "weapon": "mortar", "cost": 640, "time": 11.0, "level": 3,
+		"requires": ["usine", "radar", "forge_kharn"], "from": "usine", "hp": 260, "dps": 34,
+		"speed": 55.0, "range": 14, "vision": 9,
+	},
+	"depanneuse": {
+		"name": "Dépanneuse", "role": "combat", "desc": "Répare les unités alliées proches",
+		"armor": "medium", "cost": 360, "time": 7.0, "level": 2, "requires": ["usine", "atelier_kharn"],
+		"from": "usine", "hp": 380, "dps": 0, "speed": 85.0, "range": 0, "vision": 8, "heal": 18.0,
+		"heal_range": 4,
+	},
+	"vautour": {
+		"name": "Vautour", "role": "combat", "desc": "Bombardier léger (sol)", "air": true,
+		"armor": "light", "weapon": "mortar", "cost": 560, "time": 9.0, "level": 2,
+		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 280, "dps": 38, "speed": 130.0,
+		"range": 4, "vision": 9,
+	},
+	"aigle": {
+		"name": "Aigle", "role": "combat", "desc": "Chasseur lourd de supériorité aérienne", "air": true,
+		"aa": true, "armor": "medium", "weapon": "autocannon", "cost": 480, "time": 8.0, "level": 2,
+		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 260, "dps": 26, "speed": 200.0,
+		"range": 5, "vision": 12, "vs_air": 1.3, "vs_ground": 0.5,
+	},
+	"forteresse_vol": {
+		"name": "Forteresse volante", "role": "combat", "desc": "Bombardier lourd (sol)", "air": true,
+		"armor": "heavy", "weapon": "cannon", "cost": 1100, "time": 14.0, "level": 3,
+		"requires": ["usine", "aerodrome", "hangar_kharn"], "from": "aerodrome", "hp": 800, "dps": 60,
+		"speed": 90.0, "range": 5, "vision": 9, "vs_building": 1.2,
+	},
+	"cyclone": {
+		"name": "Cyclone", "role": "combat", "desc": "Hélicoptère de combat à roquettes", "air": true,
+		"aa": true, "armor": "heavy", "weapon": "rocket", "cost": 700, "time": 11.0, "level": 3,
+		"requires": ["usine", "aerodrome", "hangar_kharn"], "from": "aerodrome", "hp": 520, "dps": 44,
+		"speed": 130.0, "range": 7, "vision": 10, "vs_air": 1.0,
+	},
+	# --- vael : extension (v2-vael) ---
+	"rat_sable": {
+		"name": "Rat des sables", "role": "combat", "desc": "Raider ultra-rapide, fragile",
+		"armor": "light", "weapon": "autocannon", "cost": 150, "time": 3.5, "level": 1,
+		"requires": ["usine"], "from": "usine", "hp": 130, "dps": 10, "speed": 215.0, "range": 4,
+		"vision": 12,
+	},
+	"saboteur": {
+		"name": "Saboteur", "role": "combat", "desc": "Sape les structures à l'acide", "armor": "light",
+		"weapon": "acid", "cost": 330, "time": 7.0, "level": 2, "requires": ["usine"], "from": "usine",
+		"hp": 220, "dps": 20, "speed": 130.0, "range": 3, "vision": 8, "vs_ground": 0.6,
+		"vs_building": 1.8,
+	},
+	"scorpion": {
+		"name": "Scorpion", "role": "combat",
+		"desc": "Char à l'acide corrosif, redoutable contre les blindés", "armor": "medium",
+		"weapon": "acid", "cost": 680, "time": 10.0, "level": 3, "requires": ["usine", "bureau_vael"],
+		"from": "usine", "hp": 650, "dps": 40, "speed": 95.0, "range": 6, "vision": 8,
+	},
+	"guerisseur": {
+		"name": "Guérisseur", "role": "combat", "desc": "Soigne les unités alliées proches",
+		"armor": "light", "cost": 350, "time": 7.0, "level": 2, "requires": ["usine", "apothicaire"],
+		"from": "usine", "hp": 230, "dps": 0, "speed": 110.0, "range": 0, "vision": 8, "heal": 16.0,
+		"heal_range": 4,
+	},
+	"harpon": {
+		"name": "Harpon", "role": "combat", "desc": "Lance-missiles anti-aérien", "aa": true,
+		"armor": "light", "weapon": "rocket", "cost": 450, "time": 8.0, "level": 2,
+		"requires": ["usine", "radar"], "from": "usine", "hp": 230, "dps": 38, "speed": 110.0,
+		"range": 11, "vision": 9, "vs_air": 1.5, "vs_ground": 0.35,
+	},
+	"cracheur": {
+		"name": "Cracheur", "role": "combat", "desc": "Mortier à spores, longue portée (sol)",
+		"armor": "light", "weapon": "mortar", "cost": 590, "time": 10.0, "level": 3,
+		"requires": ["usine", "radar", "bureau_vael"], "from": "usine", "hp": 220, "dps": 30,
+		"speed": 65.0, "range": 12, "vision": 9,
+	},
+	"cigale": {
+		"name": "Cigale", "role": "combat", "desc": "Drone d'espionnage", "air": true, "armor": "light",
+		"weapon": "autocannon", "cost": 130, "time": 3.0, "level": 1, "requires": ["usine", "aerodrome"],
+		"from": "aerodrome", "hp": 80, "dps": 6, "speed": 270.0, "range": 4, "vision": 17,
+	},
+	"milan": {
+		"name": "Milan", "role": "combat", "desc": "Chasseur léger de harcèlement", "air": true,
+		"aa": true, "armor": "light", "weapon": "autocannon", "cost": 360, "time": 6.0, "level": 2,
+		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 140, "dps": 22, "speed": 250.0,
+		"range": 5, "vision": 13, "vs_air": 1.3, "vs_ground": 0.5,
+	},
+	"mante": {
+		"name": "Mante", "role": "combat", "desc": "Bombardier acide lourd (sol)", "air": true,
+		"armor": "medium", "weapon": "acid", "cost": 680, "time": 11.0, "level": 3,
+		"requires": ["usine", "aerodrome", "hangar_vael"], "from": "aerodrome", "hp": 300, "dps": 46,
+		"speed": 140.0, "range": 4, "vision": 9, "vs_building": 1.2,
+	},
+	"cobra": {
+		"name": "Cobra", "role": "combat", "desc": "Hélicoptère acide, vise l'air et le sol",
+		"air": true, "aa": true, "armor": "medium", "weapon": "acid", "cost": 620, "time": 10.0,
+		"level": 3, "requires": ["usine", "aerodrome", "hangar_vael"], "from": "aerodrome", "hp": 360,
+		"dps": 36, "speed": 150.0, "range": 6, "vision": 10, "vs_air": 0.9,
+	},
+	# --- conclave : extension (v2-conclave) ---
+	"tesson": {
+		"name": "Tesson", "role": "combat", "desc": "Raider cristallin rapide", "armor": "light",
+		"weapon": "shard", "cost": 170, "time": 3.5, "level": 1, "requires": ["usine"], "from": "usine",
+		"hp": 150, "dps": 11, "speed": 165.0, "range": 4, "vision": 10,
+	},
+	"fracasseur": {
+		"name": "Fracasseur", "role": "combat", "desc": "Brise les structures à coups d'éclats",
+		"armor": "medium", "weapon": "shard", "cost": 380, "time": 8.0, "level": 2,
+		"requires": ["usine"], "from": "usine", "hp": 360, "dps": 24, "speed": 85.0, "range": 4,
+		"vision": 7, "vs_ground": 0.6, "vs_building": 2.0,
+	},
+	"monolithe": {
+		"name": "Monolithe", "role": "combat", "desc": "Char lourd d'obsidienne", "armor": "heavy",
+		"weapon": "shard", "cost": 780, "time": 12.0, "level": 3, "requires": ["usine", "sanctuaire"],
+		"from": "usine", "hp": 1000, "dps": 34, "speed": 62.0, "range": 6, "vision": 8,
+	},
+	"veilleur": {
+		"name": "Veilleur", "role": "combat", "desc": "Soigne les unités alliées proches",
+		"armor": "light", "cost": 370, "time": 7.0, "level": 2, "requires": ["usine", "sanctuaire"],
+		"from": "usine", "hp": 250, "dps": 0, "speed": 95.0, "range": 0, "vision": 8, "heal": 20.0,
+		"heal_range": 4,
+	},
+	"aiguille": {
+		"name": "Aiguille", "role": "combat", "desc": "Tourelle mobile anti-aérienne", "aa": true,
+		"armor": "light", "weapon": "shard", "cost": 460, "time": 8.0, "level": 2,
+		"requires": ["usine", "radar"], "from": "usine", "hp": 240, "dps": 36, "speed": 90.0,
+		"range": 10, "vision": 9, "vs_air": 1.5, "vs_ground": 0.35,
+	},
+	"quartz": {
+		"name": "Quartz", "role": "combat", "desc": "Mortier de cristal longue portée (sol)",
+		"armor": "light", "weapon": "mortar", "cost": 610, "time": 10.0, "level": 3,
+		"requires": ["usine", "radar", "sanctuaire"], "from": "usine", "hp": 230, "dps": 30,
+		"speed": 60.0, "range": 13, "vision": 9,
+	},
+	"ephemere": {
+		"name": "Éphémère", "role": "combat", "desc": "Drone d'observation", "air": true,
+		"armor": "light", "weapon": "shard", "cost": 130, "time": 3.0, "level": 1,
+		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 90, "dps": 6, "speed": 275.0,
+		"range": 4, "vision": 18,
+	},
+	"scintille": {
+		"name": "Scintille", "role": "combat", "desc": "Intercepteur de cristal", "air": true,
+		"aa": true, "armor": "light", "weapon": "shard", "cost": 350, "time": 6.0, "level": 2,
+		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 150, "dps": 22, "speed": 255.0,
+		"range": 5, "vision": 13, "vs_air": 1.4, "vs_ground": 0.4,
+	},
+	"stalactite": {
+		"name": "Stalactite", "role": "combat", "desc": "Bombardier lourd d'obsidienne (sol)",
+		"air": true, "armor": "heavy", "weapon": "shard", "cost": 860, "time": 13.0, "level": 3,
+		"requires": ["usine", "aerodrome", "hangar_conclave"], "from": "aerodrome", "hp": 560, "dps": 52,
+		"speed": 100.0, "range": 4, "vision": 9, "vs_building": 1.2,
+	},
+	"aurore": {
+		"name": "Aurore", "role": "combat", "desc": "Canonnière plasma, vise l'air et le sol",
+		"air": true, "aa": true, "armor": "medium", "weapon": "plasma", "cost": 640, "time": 10.0,
+		"level": 3, "requires": ["usine", "aerodrome", "hangar_conclave"], "from": "aerodrome",
+		"hp": 360, "dps": 38, "speed": 170.0, "range": 6, "vision": 10, "vs_air": 0.9,
 	},
 }
 
