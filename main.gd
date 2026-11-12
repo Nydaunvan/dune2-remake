@@ -108,6 +108,8 @@ var credits := 1000 # Solaris (épice raffinée) : payent les unités
 var ore := 1500     # Minerai : paye les bâtiments
 var game_time := 0.0
 var production := {"building": [], "unit": []} # files d'attente (le premier élément est en cours)
+## Rayon (en cases) de la zone de construction autour d'un Chantier.
+const BUILD_RADIUS := 15.0
 var placing_id := ""
 var command_mode := ""
 
@@ -1247,7 +1249,7 @@ func _left_pressed() -> void:
 			production["building"].pop_front()
 			placing_id = ""
 		else:
-			ui.toast("Emplacement invalide : roche libre, près de la base", GameData.RED)
+			ui.toast("Emplacement invalide : roche libre, dans la zone du Chantier (une seconde base demande un engin de chantier)", GameData.RED)
 	elif command_mode == "move":
 		order_move(get_global_mouse_position())
 		command_mode = ""
@@ -2131,9 +2133,10 @@ func _can_place(id: String, cell: Vector2i, team := 0) -> bool:
 				return false
 			if terrain[c.x][c.y] != T.ROCK or occupied.has(c):
 				return false
+	# Zone de construction : autour d'un Chantier. Une seconde base exige un nouvel engin de chantier.
 	var center := Vector2(cell) + Vector2(size) / 2.0
 	for b in buildings:
-		if b.team == team and center.distance_to(b.center_cell()) <= 9.0:
+		if b.team == team and b.alive and b.id == "chantier" and center.distance_to(b.center_cell()) <= BUILD_RADIUS:
 			return true
 	return false
 
@@ -2583,6 +2586,12 @@ func _draw() -> void:
 				for dy in 3:
 					draw_rect(Rect2(Vector2(dc + Vector2i(dx, dy)) * TILE, Vector2(TILE, TILE)), col_d)
 	if placing_id != "":
+		# Zones de construction des Chantiers
+		for b in buildings:
+			if b.team == 0 and b.alive and b.id == "chantier":
+				var zc := b.center_cell() * TILE
+				draw_circle(zc, BUILD_RADIUS * TILE, Color(0.3, 0.9, 1.0, 0.05))
+				draw_arc(zc, BUILD_RADIUS * TILE, 0.0, TAU, 96, Color(0.4, 0.95, 1.0, 0.6), 3.0, true)
 		var size: Vector2i = GameData.BUILDINGS[placing_id]["size"]
 		var cell := _ghost_cell()
 		var ok := _can_place(placing_id, cell)

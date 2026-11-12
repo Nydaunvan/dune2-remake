@@ -167,6 +167,7 @@ func _p_controls() -> String:
 """ + _h("Interface") + """• [b]Barre du haut[/b] : Solaris, minerai, énergie (produite / consommée), temps de jeu, boutons OBJECTIFS, GUIDE et MENU.
 • [b]Colonne de droite[/b] : radar, journal des événements, onglets BÂTIMENTS / UNITÉS. Clic sur une icône pour la mettre en production ; un bâtiment terminé se pose ensuite sur la carte (clic gauche, clic droit pour annuler).
 • [b]Encart en bas à gauche[/b] : détails de ce que vous sélectionnez (PV, énergie, état, niveau, améliorations). Pour un bâtiment : AMÉLIORER, RÉPARER, DÉMOLIR.
+• [b]Zone de construction[/b] : on ne peut bâtir que dans un rayon d'environ 15 cases autour d'un Chantier (un cercle cyan s'affiche pendant la pose). Pour une seconde base, produisez un [b]Engin de chantier[/b] à l'Usine (niveau 2), emmenez-le sur un sol rocheux dégagé et déployez-le (touche D).
 • Les fenêtres sont translucides pour laisser voir le champ de bataille.
 """
 

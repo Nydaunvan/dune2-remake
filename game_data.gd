@@ -246,8 +246,8 @@ const BUILDINGS := {
 const UNITS := {
 	# --- Engins spéciaux (non constructibles) ---
 	"mcv": {
-		"name": "Engin de chantier", "role": "mcv", "desc": "Se déploie en Chantier", "armor": "heavy",
-		"cost": 0, "time": 1.0, "requires": [], "hp": 800, "speed": 52.0, "vision": 9,
+		"name": "Engin de chantier", "role": "mcv", "desc": "Se déploie en Chantier : une seconde base", "armor": "heavy",
+		"cost": 900, "time": 20.0, "level": 2, "requires": ["usine"], "from": "usine", "hp": 800, "speed": 52.0, "vision": 9,
 	},
 	"convoi": {
 		"name": "Convoi d'épice", "role": "convoy", "desc": "Cargaison à escorter", "armor": "medium",
@@ -447,7 +447,7 @@ static func buildings_for(faction: String) -> Array:
 
 ## Unités constructibles par une faction : communes + propres.
 static func units_for(faction: String) -> Array:
-	var out: Array = ["recolteur", "mineur"]
+	var out: Array = ["recolteur", "mineur", "mcv"]
 	out.append_array(FACTIONS[faction]["units"])
 	out.append_array(FACTIONS[faction]["air"])
 	return out
