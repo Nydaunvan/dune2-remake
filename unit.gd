@@ -61,6 +61,7 @@ var harvest_rate := 100.0
 var state := "idle" # idle | move | amove | attack | seek | harvest | return | flee
 var path := PackedVector2Array()
 var work_cell := Vector2i(-1, -1)
+var _blocked_t := 0.0 # temps passé bloqué derrière un autre véhicule
 var _seek_started := false
 var _retry := 0.0
 var _flee_timer := 0.0
@@ -593,11 +594,40 @@ func _move(delta: float) -> void:
 	# Le véhicule tourne d'abord, puis avance (sensation jeu de stratégie classique)
 	rotation = lerp_angle(rotation, desired, clampf(turn_speed * delta, 0.0, 1.0))
 	if air or absf(angle_difference(rotation, desired)) < 0.12:
-		position = position.move_toward(target, speed * delta)
+		var step_pos := position.move_toward(target, speed * delta)
+		if not air and _blocked_t < 3.0:
+			var blocker = game.unit_blocking(self, step_pos)
+			if blocker != null:
+				_blocked_t += delta
+				if _blocked_t > 0.35:
+					_blocked_t_detour(blocker)
+				return # on n'avance pas sur un autre véhicule : on attend ou on contourne
+		if _blocked_t > 0.0 and _blocked_t < 3.0:
+			_blocked_t = maxf(_blocked_t - delta * 2.0, 0.0)
+		elif _blocked_t >= 3.0:
+			_blocked_t += delta
+			if _blocked_t > 4.0:
+				_blocked_t = 0.0 # après une courte poussée, on retente de contourner
+		position = step_pos
 	if position.distance_to(target) < 1.0:
 		path.remove_at(0)
 		if path.is_empty():
 			_arrived()
+
+
+## Un véhicule bloque la route : on cherche un chemin qui le contourne.
+func _blocked_t_detour(blocker: Unit) -> void:
+	var goal: Vector2 = path[path.size() - 1]
+	if path.size() <= 2 and blocker.position.distance_to(goal) < (radius + blocker.radius):
+		# la destination est occupée : on s'arrête là
+		path = PackedVector2Array()
+		_blocked_t = 0.0
+		_arrived()
+		return
+	var np: PackedVector2Array = game.detour_path(self, blocker, goal)
+	if np.size() > 0:
+		follow(np)
+		_blocked_t = 0.0
 
 
 func _arrived() -> void:

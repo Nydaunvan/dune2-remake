@@ -1796,6 +1796,31 @@ func _separate_units() -> void:
 					_push_apart(u, v)
 
 
+## Véhicule terrestre qui gênerait `u` s'il avançait en `step_pos` (null si la voie est libre).
+func unit_blocking(u: Unit, step_pos: Vector2):
+	for v in units:
+		if v == u or not v.alive or v.air or v.carried:
+			continue
+		var min_d := (u.radius + v.radius) * 0.92
+		var d := v.position.distance_to(step_pos)
+		if d < min_d and d < v.position.distance_to(u.position) - 0.01:
+			return v
+	return null
+
+
+## Chemin vers `goal` qui contourne la case occupée par `blocker` ; vide s'il n'existe pas.
+func detour_path(u: Unit, blocker: Unit, goal: Vector2) -> PackedVector2Array:
+	var bc := _world_to_cell(blocker.position)
+	var gc := _world_to_cell(goal)
+	var uc := _world_to_cell(u.position)
+	if bc == gc or bc == uc or grid.is_point_solid(bc):
+		return PackedVector2Array()
+	grid.set_point_solid(bc, true)
+	var p := grid.get_point_path(uc, gc)
+	grid.set_point_solid(bc, false)
+	return p
+
+
 func _push_apart(a: Unit, b: Unit) -> void:
 	var d := b.position - a.position
 	var min_d := (a.radius + b.radius) * 0.92
@@ -1808,9 +1833,9 @@ func _push_apart(a: Unit, b: Unit) -> void:
 	var b_moving := not b.path.is_empty()
 	var wa := 0.5
 	if a_moving and not b_moving:
-		wa = 0.15
+		wa = 0.03 # le véhicule à l'arrêt ne bouge presque pas : c'est l'autre qui contourne
 	elif b_moving and not a_moving:
-		wa = 0.85
+		wa = 0.97
 	var side := n.orthogonal() * overlap * 0.25 * (1.0 if a.get_instance_id() % 2 == 0 else -1.0)
 	_nudge(a, -n * overlap * (1.0 - wa) - side * (1.0 - wa))
 	_nudge(b, n * overlap * wa + side * wa)
