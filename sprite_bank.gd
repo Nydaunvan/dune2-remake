@@ -48,6 +48,9 @@ func setup(p_game, faction_ids: Array) -> void:
 			var fr := Vector2(cs * 32) + Vector2(BUILDING_MARGIN, BUILDING_MARGIN)
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "angles": 1,
 					"frame": fr, "extra": BUILDING_EXTRA})
+			if id == "radar":
+				_jobs.append({"key": "radar_tete|%s" % f, "id": "radar_tete", "accent": accent,
+						"angles": 32, "frame": Vector2(96, 96), "extra": 60.0})
 			if id != "tourelle" and GameData.def(id).has("weapon"):
 				_jobs.append({"key": "%s_tete|%s" % [id, f], "id": "%s_tete" % id, "accent": accent,
 						"angles": ANGLES, "frame": Vector2(96, 96), "extra": 60.0})

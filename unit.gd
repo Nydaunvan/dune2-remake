@@ -10,6 +10,13 @@ var air := false     # unité volante : ignore le terrain, ombre au sol
 var repair_acc := 0.0
 var repair_site = null
 var carried := false # transportée (cachée, suit son transport)
+var lift := 1.0 # 0 : posé (décollage de l'aérodrome), 1 : en vol
+var emerging := false # sort d'un bâtiment de production
+var _em_t := 0.0
+var _em_dur := 1.0
+var _em_from := Vector2.ZERO
+var _em_to := Vector2.ZERO
+var _em_goal := Vector2.INF
 var eaten := false   # en train d'être englouti par un ver
 var cargo_units: Array = []
 var slots := 0
@@ -160,6 +167,7 @@ func force_return() -> bool:
 
 ## Ordre du joueur : va quelque part, puis reprend le travail (ouvriers).
 func order_path(new_path: PackedVector2Array) -> void:
+	_end_emerge()
 	load_target = null
 	target = null
 	forced = false
@@ -205,6 +213,7 @@ func flee() -> void:
 
 ## Ordre d'attaque du joueur : poursuit et détruit la cible.
 func order_attack(t) -> void:
+	_end_emerge()
 	if weapon == "" or not alive:
 		return
 	if t is Unit and t.air and not GameData.can_hit_air(id):
@@ -215,6 +224,7 @@ func order_attack(t) -> void:
 
 ## Attaque en mouvement : avance vers la case, engage tout ce qui croise sa route.
 func order_amove(goal: Vector2i) -> void:
+	_end_emerge()
 	if weapon == "" or not alive:
 		return
 	target = null
@@ -250,7 +260,7 @@ func _valid(t) -> bool:
 
 
 func world_center() -> Vector2:
-	return position + Vector2(0, -AIR_LIFT) if air else position
+	return position + Vector2(0, -lift_px()) if air else position
 
 
 func radius_px() -> float:
@@ -258,10 +268,62 @@ func radius_px() -> float:
 
 
 ## Centre visuel (écran) de l'unité : sa position, relevée si elle vole, et recentrée sur le modèle.
+func lift_px() -> float:
+	return AIR_LIFT * lift
+
+
+## Sortie d'un bâtiment : glisse de `from` à `to` (porte -> devant), puis rejoint `goal`.
+## Les unités terrestres passent derrière le bâtiment tant qu'elles sont « à l'intérieur » ;
+## les appareils s'élèvent depuis leur piste.
+func begin_emerge(from: Vector2, to: Vector2, dur: float, goal := Vector2.INF) -> void:
+	emerging = true
+	_em_t = 0.0
+	_em_dur = maxf(dur, 0.2)
+	_em_from = from
+	_em_to = to
+	_em_goal = goal
+	position = from
+	if (to - from).length() > 1.0:
+		rotation = (to - from).angle()
+	if air:
+		lift = 0.0
+	else:
+		z_index = -1
+
+
+## Un ordre reçu pendant la sortie la termine aussitôt.
+func _end_emerge() -> void:
+	if not emerging:
+		return
+	emerging = false
+	position = _em_to
+	lift = 1.0
+	z_index = 8 if air else 3
+	queue_redraw()
+
+
+func _emerge(delta: float) -> void:
+	_em_t += delta
+	var k := clampf(_em_t / _em_dur, 0.0, 1.0)
+	var e := k * k * (3.0 - 2.0 * k)
+	position = _em_from.lerp(_em_to, e)
+	if air:
+		lift = e
+	elif k > 0.45 and z_index < 3:
+		z_index = 3 # sorti : repasse devant le bâtiment
+	queue_redraw()
+	if k >= 1.0:
+		emerging = false
+		lift = 1.0
+		z_index = 8 if air else 3
+		if _em_goal != Vector2.INF and path.is_empty() and position.distance_to(_em_goal) > 20.0:
+			game.order_unit_move(self, _em_goal)
+
+
 func visual_center() -> Vector2:
 	var c := position
 	if air:
-		c.y -= AIR_LIFT
+		c.y -= lift_px()
 	if game != null and game.bank != null:
 		var vb: Rect2 = game.bank.visual_box(_sprite_key(), rotation)
 		if vb.size != Vector2.ZERO:
@@ -404,6 +466,7 @@ func devour() -> void:
 
 ## Rentre à l'atelier (Usine ou Centre de réparation) pour être soigné contre des Solaris.
 func order_repair(site) -> void:
+	_end_emerge()
 	if site == null:
 		return
 	repair_site = site
@@ -441,6 +504,7 @@ func _repair(delta: float) -> void:
 
 ## Ordre : va chercher cette unité terrestre alliée et l'embarque.
 func order_load(t) -> void:
+	_end_emerge()
 	if role != "transport" or not _valid(t) or t.air or t.carried or t == self:
 		return
 	if cargo_units.size() >= slots:
@@ -534,6 +598,9 @@ func _physics_process(delta: float) -> void:
 		return
 	if carried:
 		return
+	if emerging:
+		_emerge(delta)
+		return
 	_work(delta)
 	_combat(delta)
 	_transport(delta)
@@ -618,7 +685,7 @@ func _shoot(t) -> void:
 	# Le projectile part du bout du canon dessiné (alterné entre les canons s'il y en a plusieurs)
 	var mo := Models.muzzle_offset(id, rotation, _muzzle_i)
 	if mo != Vector2.INF and game.bank != null and game.bank.has(_sprite_key()):
-		from = position + mo + (Vector2(0, -AIR_LIFT) if air else Vector2.ZERO)
+		from = position + mo + (Vector2(0, -lift_px()) if air else Vector2.ZERO)
 		_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(id)
 	game.fire(self, t, weapon, dps * float(wd["cd"]) * (1.0 + GameData.RANK_DMG * rank), from, ctrl)
 
@@ -831,8 +898,8 @@ func _draw_sprite() -> bool:
 		draw_circle(Vector2.ZERO, radius * 1.3, Color(0.1, 0.03, 0.12, 0.34))
 		# fine ligne verticale entre l'ombre et l'appareil : lecture immédiate de l'altitude
 		draw_set_transform(Vector2.ZERO, unrot, Vector2.ONE)
-		draw_dashed_line(Vector2(0, 0).rotated(unrot), Vector2(0, -AIR_LIFT + 8.0).rotated(unrot), Color(1, 1, 1, 0.12), 1.0, 3.0)
-		draw_set_transform(Vector2(0, -AIR_LIFT).rotated(unrot), model_rot, Vector2.ONE)
+		draw_dashed_line(Vector2(0, 0).rotated(unrot), Vector2(0, -lift_px() + 8.0).rotated(unrot), Color(1, 1, 1, 0.12), 1.0, 3.0)
+		draw_set_transform(Vector2(0, -lift_px()).rotated(unrot), model_rot, Vector2.ONE)
 		draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
 		_draw_rotors(unrot)
 		return true
@@ -848,7 +915,7 @@ func _draw_rotors(unrot: float) -> void:
 	var rs := Models.rotors(id)
 	if rs.is_empty():
 		return
-	draw_set_transform(Vector2(0, -AIR_LIFT).rotated(unrot), unrot, Vector2.ONE)
+	draw_set_transform(Vector2(0, -lift_px()).rotated(unrot), unrot, Vector2.ONE)
 	var t := Time.get_ticks_msec() / 1000.0 + float(get_instance_id() % 97)
 	for ro in rs:
 		var hub: Vector3 = ro["hub"]
@@ -883,8 +950,8 @@ func _draw() -> void:
 		draw_circle(Vector2(-4, 14), 11.0, Color(0, 0, 0, 0.25))
 		var fwd := Vector2.from_angle(rotation)
 		var side := fwd.orthogonal()
-		draw_colored_polygon(PackedVector2Array([fwd * 16.0 + Vector2(0, -AIR_LIFT), side * 12.0 - fwd * 10.0 + Vector2(0, -AIR_LIFT),
-				-fwd * 6.0 + Vector2(0, -AIR_LIFT), -side * 12.0 - fwd * 10.0 + Vector2(0, -AIR_LIFT)]), body)
+		draw_colored_polygon(PackedVector2Array([fwd * 16.0 + Vector2(0, -lift_px()), side * 12.0 - fwd * 10.0 + Vector2(0, -lift_px()),
+				-fwd * 6.0 + Vector2(0, -lift_px()), -side * 12.0 - fwd * 10.0 + Vector2(0, -lift_px())]), body)
 		_draw_overlay()
 		return
 	match role:

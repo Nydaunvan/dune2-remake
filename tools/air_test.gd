@@ -38,6 +38,7 @@ func _process(_d: float) -> bool:
 			if u.team == 0 and u.id == "recolteur":
 				hv = u
 				break
+		tr._end_emerge()
 		tr.position = hv.position + Vector2(120, 0)
 		tr.order_load(hv)
 	if f == 120:

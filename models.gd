@@ -51,6 +51,7 @@ static func build(id: String, accent: Color) -> Node3D:
 		"mur_acier": _mur(r, accent, true)
 		"silo": _silo(r, accent)
 		"radar": _radar(r, accent)
+		"radar_tete": _radar_tete(r, accent)
 		"reparation": _reparation(r, accent)
 		"reacteur": _reacteur(r, accent)
 		"relais_solaire": _relais(r, accent)
@@ -97,6 +98,15 @@ static func muzzle_offset(id: String, rot: float, idx := 0) -> Vector2:
 	var arr: Array = MUZZLES[id]
 	var m: Vector3 = arr[idx % arr.size()]
 	return Vector2(m.x, m.z).rotated(rot) + Vector2(0.0, -m.y * tan(deg_to_rad(30.0)))
+
+
+## Portes de production (modèle) : les unités en sortent. "pad" : piste d'envol des appareils.
+const DOORS := {
+	"usine": {"x": -14.0, "z": 21.5, "y": 8.5, "w": 30.0},
+	"fonderie": {"x": -14.0, "z": 21.0, "y": 8.0, "w": 30.0},
+	"raffinerie": {"x": -20.0, "z": 23.0, "y": 4.0, "w": 24.0},
+	"aerodrome": {"pad": Vector3(24, 5, 8)},
+}
 
 
 ## Rotors animés (dessinés par l'unité, pas cuits dans le sprite) : moyeu (x, y, z du modèle),
@@ -496,8 +506,14 @@ static func _radar(r: Node3D, acc: Color) -> void:
 	_slab(r, 64, 64, acc)
 	_box(r, Vector3(26, 12, 26), Vector3(0, 9, 0), METAL)
 	_cyl(r, 3, 4, 16, Vector3(0, 22, 0), DARK, 6)
+	_cyl(r, 6, 6, 2.0, Vector3(0, 30.5, 0), acc, 8, Vector3.ZERO, 0.8)
+
+
+## Plateau du radar : cuit à part (32 angles) et dessiné en rotation par le bâtiment.
+static func _radar_tete(r: Node3D, _acc: Color) -> void:
 	_cyl(r, 20, 4, 3, Vector3(0, 34, 0), LIGHT, 10, Vector3(0.5, 0.0, 0.0))
-	_ball(r, 2.6, Vector3(0, 38, 7), GLOW_GREEN, 2.5)
+	_box(r, Vector3(2, 2, 14), Vector3(0, 38, 8), DARK, Vector3(0.5, 0.0, 0.0))     # bras de l'illuminateur
+	_ball(r, 2.6, Vector3(0, 40, 14), GLOW_GREEN, 2.5)
 
 
 static func _reparation(r: Node3D, acc: Color) -> void:

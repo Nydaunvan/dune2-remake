@@ -2669,7 +2669,38 @@ func _spawn_produced_unit(id: String) -> void:
 ## Fait apparaître une unité produite par un camp, devant son bâtiment de production.
 func spawn_for(id: String, team: int) -> Unit:
 	var from_id: String = GameData.def(id)["from"]
-	return _spawn_unit(id, _find_free_cell(_dock_of(from_id, team)), team)
+	var dock := _find_free_cell(_dock_of(from_id, team))
+	var u := _spawn_unit(id, dock, team)
+	var b: Building = null
+	for bb in buildings:
+		if bb.id == from_id and bb.team == team and bb.alive:
+			b = bb
+			break
+	if b == null or not Models.DOORS.has(from_id):
+		return u
+	var door: Dictionary = Models.DOORS[from_id]
+	var c := b.world_center()
+	b.open_door(1.7)
+	if door.has("pad"):
+		# Appareil : décolle de la piste et rejoint son point de ralliement
+		var pad: Vector3 = door["pad"]
+		u.begin_emerge(c + Vector2(pad.x, pad.z), _cell_to_world(dock), 1.5)
+		return u
+	var edge_y := c.y + float(b.cell_size.y * TILE) * 0.5
+	var front := _world_to_cell(Vector2(c.x + float(door["x"]), edge_y + 8.0))
+	if not _is_walkable(front) or _cell_has_unit(front):
+		return u # devant la porte, c'est bouché : apparition directe
+	u.begin_emerge(Vector2(c.x + float(door["x"]), c.y + float(door["z"]) - 20.0), _cell_to_world(front), 1.3, _cell_to_world(dock))
+	return u
+
+
+## Ordre de déplacement pour une unité isolée (sortie d'usine...).
+func order_unit_move(u: Unit, world_pos: Vector2) -> void:
+	var cell := _world_to_cell(world_pos)
+	if u.air:
+		u.order_path(PackedVector2Array([u.position, world_pos]))
+	elif _is_walkable(cell):
+		u.order_path(path_to(u.position, cell))
 
 
 func _dock_of(building_id: String, team := 0) -> Vector2i:

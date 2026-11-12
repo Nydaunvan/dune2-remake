@@ -47,6 +47,10 @@ var selected := false:
 		selected = value
 		queue_redraw()
 var _target
+var door_t := 0.0   # porte de production ouverte (secondes restantes)
+var door_dur := 1.7
+var fx_t := 0.0     # éclat de tir (tour sonique)
+var _phase := randf() * 20.0
 
 
 func setup(p_id: String, p_cell: Vector2i, p_size: Vector2i, p_tile: int,
@@ -83,15 +87,46 @@ func init_combat(p_game, p_team: int) -> void:
 		set_physics_process(false)
 
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if GameData.def(id).get("wall", false):
 		set_process(false)
 		return
 	# Redessine une fois les modèles 3D cuits
-	if game != null and game.bank != null and game.bank.has("%s|%s" % [id, game.faction_id_of(team)]):
+	if not _sprite_ok and game != null and game.bank != null and game.bank.has("%s|%s" % [id, game.faction_id_of(team)]):
 		_sprite_ok = true
 		queue_redraw()
+	if not _sprite_ok:
+		return
+	if not _animated():
 		set_process(false)
+		return
+	door_t = maxf(0.0, door_t - delta)
+	fx_t = maxf(0.0, fx_t - delta)
+	if visible and _on_screen():
+		queue_redraw() # animations : radar, tour sonique, énergie, fonderie, portes
+
+
+## Bâtiments dont le dessin est animé en continu.
+func _animated() -> bool:
+	return id in ["radar", "tour_sonique", "centrale", "reacteur", "relais_solaire", "fonderie", "raffinerie",
+			"chantier", "marche", "reparation", "aerodrome", "usine"]
+
+
+func _on_screen() -> bool:
+	if game == null or game.camera == null:
+		return true
+	var half: Vector2 = get_viewport_rect().size / game.camera.zoom * 0.5 + Vector2(160, 160)
+	var d: Vector2 = (world_center() - game.camera.get_screen_center_position()).abs()
+	return d.x < half.x and d.y < half.y
+
+
+## Ouvre la porte de production : une unité va en sortir.
+func open_door(dur := 1.7) -> void:
+	door_t = dur
+	door_dur = dur
+	if _sprite_ok:
+		set_process(true)
+		queue_redraw()
 
 
 ## Monte d'un niveau : plus de PV, et un bonus propre au bâtiment (voir GameData.UPGRADES).
@@ -176,6 +211,7 @@ func _physics_process(delta: float) -> void:
 			var snapped: float = game.bank.snap_angle("%s|%s" % [hk, game.faction_id_of(team)], aim)
 			from = world_center() + Models.muzzle_offset(hk, snapped, _muzzle_i)
 			_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(hk)
+		fx_t = 0.6 if id == "tour_sonique" else 0.0
 		game.fire(self, _target, weapon, dps * float(wd["cd"]), from)
 
 
@@ -196,6 +232,7 @@ func _draw_sprite(s: Vector2) -> bool:
 	draw_texture_rect(tex, Rect2(c - sz / 2.0, sz), false, tint)
 	if level > 1:
 		_draw_upgrade(s, fid)
+	_draw_anim(s, fid, bank)
 	if weapon != "":
 		var hk := "%s_tete|%s" % [id, fid]
 		if not bank.has(hk):
@@ -205,6 +242,121 @@ func _draw_sprite(s: Vector2) -> bool:
 			var hs := bank.draw_size(hk)
 			draw_texture_rect(ht, Rect2(c - hs / 2.0, hs), false)
 	return true
+
+
+## Animations par-dessus le sprite cuit : plateau radar tournant, ondes de la tour sonique,
+## lueurs d'énergie, fumées de fonderie, portes de production qui s'ouvrent.
+func _draw_anim(s: Vector2, fid: String, bank) -> void:
+	var c := s / 2.0
+	var t := Time.get_ticks_msec() / 1000.0 + _phase
+	var powered: bool = game.power_ok(team)
+	var acc: Color = GameData.FACTIONS[fid]["color"] if GameData.FACTIONS.has(fid) else Color.WHITE
+	match id:
+		"radar":
+			var ang := t * (1.15 if powered else 0.2)
+			var hk := "radar_tete|%s" % fid
+			var ht = bank.frame(hk, ang)
+			if ht != null:
+				var hs: Vector2 = bank.draw_size(hk)
+				draw_texture_rect(ht, Rect2(c - hs / 2.0, hs), false)
+			if powered:
+				# écho : onde qui s'élargit depuis le plateau, et balayage lumineux
+				var k := fmod(t / 3.2, 1.0)
+				draw_arc(c, lerpf(18.0, 86.0, k), 0.0, TAU, 48, Color(0.4, 1.0, 0.6, (1.0 - k) * 0.30), 2.0, true)
+				var tip := c + Models.project(Vector3(0, 40, 0), 0.0)
+				draw_line(tip, tip + Vector2.from_angle(ang) * 30.0, Color(0.5, 1.0, 0.7, 0.18), 3.0, true)
+			var blink := 0.5 + 0.5 * sin(t * 6.0)
+			draw_circle(c + Models.project(Vector3(0, 31.5, 0), 0.0), 3.0 + blink, Color(1.0, 0.3, 0.25, 0.35 + 0.4 * blink))
+		"tour_sonique":
+			var em := c + Models.muzzle_offset("tour_sonique_tete", aim, 0)
+			var pulse := 0.5 + 0.5 * sin(t * 3.0)
+			var sc := Color(0.45, 0.85, 1.0)
+			draw_circle(em, 5.0 + 2.5 * pulse, Color(sc.r, sc.g, sc.b, 0.20 + 0.20 * pulse))
+			# ondes lentes au repos
+			if not offline:
+				var k := fmod(t / 2.4, 1.0)
+				draw_arc(em, 6.0 + 22.0 * k, aim - 0.9, aim + 0.9, 18, Color(sc.r, sc.g, sc.b, (1.0 - k) * 0.35), 2.0, true)
+			# tir : trois ondes de choc successives dans la direction visée
+			if fx_t > 0.0:
+				var p := 1.0 - fx_t / 0.6
+				for i in 3:
+					var rr := 12.0 + p * 70.0 + i * 15.0
+					var a := clampf(1.0 - p, 0.0, 1.0) * (1.0 - i * 0.28)
+					draw_arc(em, rr, aim - 0.55, aim + 0.55, 20, Color(0.6, 0.95, 1.0, a * 0.8), 3.0 - i * 0.6, true)
+				draw_circle(em, 10.0 * (1.0 - p) + 3.0, Color(0.8, 1.0, 1.0, (1.0 - p) * 0.8))
+		"centrale":
+			for x in [-15.0, 15.0]:
+				var ph := 0.5 + 0.5 * sin(t * 2.4 + x)
+				var p := c + Models.project(Vector3(x, 25.0, -2.0), 0.0)
+				draw_circle(p, 7.0 + 3.0 * ph, Color(0.3, 0.85, 1.0, 0.16 + 0.22 * ph))
+				draw_circle(p, 3.0, Color(0.8, 1.0, 1.0, 0.45 + 0.3 * ph))
+		"reacteur":
+			var ph := 0.5 + 0.5 * sin(t * 3.2)
+			var p := c + Models.project(Vector3(0, 28.0, 0), 0.0)
+			draw_circle(p, 16.0 + 4.0 * ph, Color(0.3, 0.8, 1.0, 0.12 + 0.12 * ph))
+			draw_circle(p, 8.0, Color(0.7, 0.95, 1.0, 0.25 + 0.25 * ph))
+			for i in 3:
+				var a := t * 2.0 + i * TAU / 3.0
+				draw_circle(p + Vector2(cos(a), sin(a) * 0.6) * 15.0, 2.0, Color(0.8, 1.0, 1.0, 0.8))
+		"relais_solaire":
+			var ph := 0.5 + 0.5 * sin(t * 2.0)
+			var p := c + Models.project(Vector3(0, 36.0, 0), 0.0)
+			draw_circle(p, 5.0 + 2.0 * ph, Color(1.0, 0.6, 0.2, 0.25 + 0.3 * ph))
+			var sh := fmod(t * 0.5, 1.0)
+			var q := c + Models.project(Vector3(lerpf(-20.0, 20.0, sh), 29.0, 0), 0.0)
+			draw_circle(q, 3.0, Color(1.0, 0.95, 0.7, 0.5 * sin(sh * PI)))
+		"chantier":
+			var ph := 0.5 + 0.5 * sin(t * 2.2)
+			draw_circle(c + Models.project(Vector3(0, 56.0, 0), 0.0), 5.0 + 2.0 * ph, Color(0.3, 0.8, 1.0, 0.2 + 0.3 * ph))
+		"fonderie", "raffinerie":
+			if id == "fonderie":
+				for x in [16.0, 30.0]:
+					var top := c + Models.project(Vector3(x, 38.0, -14.0), 0.0)
+					var fl := 0.5 + 0.5 * sin(t * 9.0 + x * 3.0)
+					draw_circle(top, 5.0 + 2.0 * fl, Color(1.0, 0.5, 0.15, 0.25 + 0.25 * fl))
+					for i in 4:
+						var ph := fmod(t * 0.45 + i * 0.25 + x * 0.013, 1.0)
+						draw_circle(top + Vector2(ph * 14.0, -ph * 46.0), 3.0 + ph * 8.0,
+								Color(0.34, 0.32, 0.36, (1.0 - ph) * 0.30))
+				var gl := 0.5 + 0.5 * sin(t * 5.0)
+				draw_rect(Rect2(c + Models.project(Vector3(-29, 11, 19.5), 0.0) - Vector2(0, 2), Vector2(30, 4)), Color(1.0, 0.55, 0.2, 0.18 + 0.22 * gl))
+			else:
+				var ph := 0.5 + 0.5 * sin(t * 2.6)
+				var p := c + Models.project(Vector3(18, 19.0, -4), 0.0)
+				draw_rect(Rect2(p - Vector2(13, 11), Vector2(26, 22)), Color(1.0, 0.6, 0.2, 0.08 + 0.14 * ph))
+		"marche":
+			for x in [-24.0, 0.0, 24.0]:
+				var ph := 0.5 + 0.5 * sin(t * 4.0 + x * 0.2)
+				var p := c + Models.project(Vector3(x, 14.0, 17.5), 0.0)
+				draw_rect(Rect2(p - Vector2(8, 2), Vector2(16, 4)), Color(1.0, 0.3, 0.9, 0.18 + 0.3 * ph))
+		"reparation":
+			var sw := sin(t * 1.6)
+			var p := c + Models.project(Vector3(sw * 28.0, 33.5, 0), 0.0)
+			draw_rect(Rect2(p - Vector2(5, 3), Vector2(10, 6)), Color(0.5, 1.0, 0.7, 0.55))
+			draw_rect(Rect2(c + Models.project(Vector3(sw * 28.0 - 4.0, 2.0, 4.0), 0.0) - Vector2(0, 0), Vector2(8, 26)), Color(0.4, 1.0, 0.6, 0.06))
+	# Porte de production : s'ouvre quand une unité sort
+	if door_t > 0.0 and Models.DOORS.has(id):
+		var d: Dictionary = Models.DOORS[id]
+		var op := sin(clampf(1.0 - door_t / door_dur, 0.0, 1.0) * PI)
+		if d.has("pad"):
+			var pp: Vector3 = d["pad"]
+			var pc := c + Vector2(pp.x, pp.z)
+			var fl := 0.5 + 0.5 * sin(t * 18.0)
+			draw_arc(pc, 17.0, 0.0, TAU, 32, Color(1.0, 0.7, 0.25, 0.5 * op + 0.2 * fl * op), 3.0, true)
+			draw_arc(pc, 11.0, 0.0, TAU, 28, Color(acc.r, acc.g, acc.b, 0.6 * op), 2.0, true)
+			for i in 4:
+				var a := TAU * i / 4.0 + t * 3.0
+				draw_circle(pc + Vector2.from_angle(a) * 17.0, 2.2, Color(1.0, 0.9, 0.5, 0.9 * op))
+		else:
+			var w: float = d["w"]
+			var dc := c + Models.project(Vector3(float(d["x"]), float(d["y"]), float(d["z"])), 0.0)
+			var h := 6.4 * op + 0.5
+			draw_rect(Rect2(dc + Vector2(-w / 2.0, -h / 2.0 - 1.0), Vector2(w, h + 2.0)), Color(0.05, 0.04, 0.06, 0.9 * op))
+			draw_rect(Rect2(dc + Vector2(-w / 2.0 + 2.0, h / 2.0 - 2.0), Vector2(w - 4.0, 2.0)), Color(1.0, 0.75, 0.35, 0.8 * op))
+			# lumière qui s'écoule devant la porte
+			var base := dc + Vector2(0, h / 2.0 + 1.0)
+			draw_colored_polygon(PackedVector2Array([base + Vector2(-w / 2.0, 0), base + Vector2(w / 2.0, 0),
+					base + Vector2(w / 2.0 + 8.0, 22.0), base + Vector2(-w / 2.0 - 8.0, 22.0)]), Color(1.0, 0.8, 0.45, 0.18 * op))
 
 
 ## Améliorations visibles : plus un bâtiment est modernisé, plus il s'orne de blindages,
