@@ -143,7 +143,7 @@ func _physics_process(delta: float) -> void:
 		_target = null
 		if _scan <= 0.0:
 			_scan = 0.4
-			_target = game.find_enemy(team, world_center(), w_range + radius_px(), true, weapon)
+			_target = game.find_enemy(team, world_center(), w_range + radius_px(), true, id)
 	if _target == null:
 		return
 	var tp: Vector2 = _target.world_center()

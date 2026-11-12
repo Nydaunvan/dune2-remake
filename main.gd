@@ -907,13 +907,13 @@ func faction_color(team: int) -> Color:
 
 
 ## Ennemi le plus intéressant autour d'un point : unités armées d'abord.
-func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, wpn := ""):
+func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, shooter_id := ""):
 	var best = null
 	var best_s := INF
 	for u in units:
 		if not hostile(u.team, team) or not u.alive or u.carried or (side_of(team) == 0 and not u.seen):
 			continue
-		if u.air and wpn != "" and not GameData.hits_air(wpn):
+		if u.air and shooter_id != "" and not GameData.can_hit_air(shooter_id):
 			continue
 		var d := u.position.distance_to(pos) - u.radius
 		if d > max_d:
@@ -940,7 +940,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, wpn 
 func enemy_at(world_pos: Vector2):
 	for u in units:
 		if hostile(u.team, 0) and u.alive and u.seen and not u.carried \
-				and (u.position + Vector2(0, -Unit.AIR_LIFT if u.air else 0.0)).distance_to(world_pos) < u.radius + 8.0:
+				and u.visual_center().distance_to(world_pos) < u.pick_radius():
 			return u
 	for b in buildings:
 		if hostile(b.team, 0) and b.alive and b.visible and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
@@ -1202,7 +1202,7 @@ func _clear_focus() -> void:
 ## Entité (ami ou ennemi, visible) sous le curseur : unité d'abord, puis bâtiment.
 func entity_at(world_pos: Vector2):
 	for u in units:
-		if u.alive and u.seen and u.position.distance_to(world_pos) < u.radius + 6.0:
+		if u.alive and u.seen and not u.carried and u.visual_center().distance_to(world_pos) < u.pick_radius():
 			return u
 	for b in buildings:
 		if b.alive and b.visible and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
@@ -1221,8 +1221,8 @@ func _finish_selection(end: Vector2) -> void:
 	for u in units:
 		if u.team != 0 or u.carried:
 			continue
-		var up: Vector2 = u.position + Vector2(0, -Unit.AIR_LIFT if u.air else 0.0)
-		var hit := up.distance_to(end) < u.radius + 4.0 if is_click \
+		var up: Vector2 = u.visual_center()
+		var hit := up.distance_to(end) < u.pick_radius() if is_click \
 				else rect.has_point(up)
 		if hit and u not in selected:
 			u.selected = true
@@ -1263,7 +1263,7 @@ func order_context(world_pos: Vector2) -> void:
 func _friendly_ground_at(world_pos: Vector2):
 	for u in units:
 		if u.team == 0 and u.alive and not u.air and not u.carried and u not in selected \
-				and u.position.distance_to(world_pos) < u.radius + 8.0:
+				and u.visual_center().distance_to(world_pos) < u.pick_radius():
 			return u
 	return null
 

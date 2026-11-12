@@ -33,7 +33,7 @@ func _process(_d: float) -> bool:
 		print("nacelle dispo (niv2): ", main.is_available("nacelle"), " libellule: ", main.is_available("libellule"))
 		tr = main.spawn_for("nacelle", 0)
 		var lib = main.spawn_for("libellule", 0)
-		print("air: ", tr.air, " slots ", tr.slots, " libellule hits_air ", GameData.hits_air(lib.weapon))
+		print("air: ", tr.air, " slots ", tr.slots, " libellule hits_air ", GameData.can_hit_air(lib.id))
 		for u in main.units:
 			if u.team == 0 and u.id == "recolteur":
 				hv = u
@@ -47,6 +47,6 @@ func _process(_d: float) -> bool:
 	if f == 600:
 		print("après trajet: carried=", hv.carried, " position ok=", hv.position.distance_to(tr.position) < 80.0, " état=", hv.state, " soute ", tr.cargo_units.size())
 		var foe = main._spawn_unit("egide", main._find_free_cell(Vector2i(main.start_cell) + Vector2i(20, 0)), 1)
-		print("egide peut cibler la nacelle: ", main.find_enemy(1, tr.position, 99999.0, true, foe.weapon) != tr, " | autocannon peut: ", main.find_enemy(1, tr.position, 99999.0, true, "autocannon") == tr)
+		print("egide peut cibler la nacelle: ", main.find_enemy(1, tr.position, 99999.0, true, foe.id) != tr, " | autocannon peut: ", main.find_enemy(1, tr.position, 99999.0, true, "libellule") == tr)
 		return true
 	return false

@@ -5,7 +5,7 @@ extends Node2D
 
 var id := ""
 var role := "combat" # combat | harvester | miner | mcv | convoy
-const AIR_LIFT := 22.0
+const AIR_LIFT := 46.0 # hauteur de vol : l'unité se voit nettement au-dessus de son ombre
 var air := false     # unité volante : ignore le terrain, ombre au sol
 var repair_acc := 0.0
 var repair_site = null
@@ -19,7 +19,8 @@ var faction_color := Color("4aa8ff")
 var game # le nœud principal (main.gd)
 
 var speed := 110.0
-var turn_speed := 8.0
+var turn_speed := 10.0
+var _last_rot := 0.0
 var radius := 11.0
 var hp := 100.0
 var max_hp := 100.0
@@ -158,7 +159,7 @@ func flee() -> void:
 func order_attack(t) -> void:
 	if weapon == "" or not alive:
 		return
-	if t is Unit and t.air and not GameData.hits_air(weapon):
+	if t is Unit and t.air and not GameData.can_hit_air(id):
 		return
 	amove_goal = Vector2i(-1, -1)
 	_set_target(t, true)
@@ -201,11 +202,28 @@ func _valid(t) -> bool:
 
 
 func world_center() -> Vector2:
-	return position
+	return position + Vector2(0, -AIR_LIFT) if air else position
 
 
 func radius_px() -> float:
 	return radius
+
+
+## Centre visuel (écran) de l'unité : sa position, relevée si elle vole, et recentrée sur le modèle.
+func visual_center() -> Vector2:
+	var c := position
+	if air:
+		c.y -= AIR_LIFT
+	if game != null and game.bank != null:
+		var vb: Rect2 = game.bank.visual_box(_sprite_key(), rotation)
+		if vb.size != Vector2.ZERO:
+			c += vb.get_center().limit_length(radius)
+	return c
+
+
+## Rayon de sélection (clic et anneau) : couvre tout le modèle.
+func pick_radius() -> float:
+	return radius + 12.0
 
 
 ## Dégâts reçus : blindage et type d'arme comptent. Riposte ou fuite.
@@ -440,6 +458,9 @@ func _process(_delta: float) -> void:
 	if bank != null:
 		# Les modèles 3D sont cuits une image par angle : on redessine quand l'angle change
 		var idx := bank.frame_index(_sprite_key(), rotation)
+		if absf(angle_difference(rotation, _last_rot)) > 0.02:
+			_last_rot = rotation
+			queue_redraw() # écart résiduel du modèle par rapport à l'image cuite
 		if idx != _frame_idx or (not _sprite_ready and bank.has(_sprite_key())):
 			_frame_idx = idx
 			_sprite_ready = bank.has(_sprite_key())
@@ -479,20 +500,20 @@ func _combat(delta: float) -> void:
 			_scan_t -= delta
 			if _scan_t <= 0.0:
 				_scan_t = 0.3
-				var t = game.find_enemy(team, position, w_range, false, weapon)
+				var t = game.find_enemy(team, position, w_range, false, id)
 				if t != null and cooldown <= 0.0:
 					_shoot(t)
 		"idle", "amove":
 			_scan_t -= delta
 			if _scan_t <= 0.0:
 				_scan_t = 0.35
-				var t = game.find_enemy(team, position, w_range + 64.0, false, weapon)
+				var t = game.find_enemy(team, position, w_range + 64.0, false, id)
 				if t != null:
 					_set_target(t, false)
 
 
 func _attack(delta: float) -> void:
-	if not _valid(target) or (target is Unit and (target.carried or (target.air and not GameData.hits_air(weapon)))):
+	if not _valid(target) or (target is Unit and (target.carried or (target.air and not GameData.can_hit_air(id)))):
 		target = null
 		forced = false
 		if amove_goal.x >= 0:
@@ -542,7 +563,7 @@ func _move(delta: float) -> void:
 	var desired := (target - position).angle()
 	# Le véhicule tourne d'abord, puis avance (sensation jeu de stratégie classique)
 	rotation = lerp_angle(rotation, desired, clampf(turn_speed * delta, 0.0, 1.0))
-	if air or absf(angle_difference(rotation, desired)) < 0.6:
+	if air or absf(angle_difference(rotation, desired)) < 0.12:
 		position = position.move_toward(target, speed * delta)
 	if position.distance_to(target) < 1.0:
 		path.remove_at(0)
@@ -675,17 +696,23 @@ func _draw_sprite() -> bool:
 	if tex == null:
 		return false
 	var sz := bank.draw_size(key)
-	# Ombre portée douce (bas-gauche), puis le modèle sans la rotation du nœud
+	# Les décalages sont donnés à l'écran : on les contre-tourne car le nœud est tourné.
+	var unrot := -rotation
+	# L'image cuite la plus proche est tournée de l'écart résiduel : le modèle suit exactement le cap
+	var model_rot := -bank.snap_angle(key, rotation)
+	# Ombre portée douce (bas-gauche, au sol), puis le modèle sans la rotation du nœud
 	if air:
-		draw_set_transform(Vector2(-4, 22), 0.0, Vector2(1.0, 0.55))
-		draw_circle(Vector2.ZERO, radius * 1.3, Color(0.1, 0.03, 0.12, 0.3))
-		draw_set_transform(Vector2(0, -AIR_LIFT), -rotation, Vector2.ONE)
+		draw_set_transform(Vector2(-6, 8).rotated(unrot), unrot, Vector2(1.0, 0.55))
+		draw_circle(Vector2.ZERO, radius * 1.3, Color(0.1, 0.03, 0.12, 0.34))
+		# fine ligne verticale entre l'ombre et l'appareil : lecture immédiate de l'altitude
+		draw_set_transform(Vector2.ZERO, unrot, Vector2.ONE)
+		draw_dashed_line(Vector2(0, 0).rotated(unrot), Vector2(0, -AIR_LIFT + 8.0).rotated(unrot), Color(1, 1, 1, 0.12), 1.0, 3.0)
+		draw_set_transform(Vector2(0, -AIR_LIFT).rotated(unrot), model_rot, Vector2.ONE)
 		draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
-		draw_set_transform(Vector2.ZERO, -rotation, Vector2.ONE)
 		return true
-	draw_set_transform(Vector2(-5, 6), 0.0, Vector2(1.0, 0.55))
+	draw_set_transform(Vector2(-5, 6).rotated(unrot), unrot, Vector2(1.0, 0.55))
 	draw_circle(Vector2.ZERO, radius * 1.25, Color(0.1, 0.03, 0.12, 0.28))
-	draw_set_transform(Vector2.ZERO, -rotation, Vector2.ONE)
+	draw_set_transform(Vector2.ZERO, model_rot, Vector2.ONE)
 	draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
 	return true
 
@@ -735,7 +762,9 @@ func _draw() -> void:
 
 
 func _draw_overlay() -> void:
-	draw_set_transform(Vector2.ZERO, -rotation, Vector2.ONE) # barre de vie toujours horizontale
+	# Tout est centré sur le modèle (relevé pour les volants) ; barre de vie toujours horizontale
+	var oc := to_local(visual_center())
+	draw_set_transform(oc, -rotation, Vector2.ONE)
 	if hp < max_hp:
 		var w := 26.0
 		draw_rect(Rect2(-w / 2.0, -22, w, 4), Color(0, 0, 0, 0.6))
@@ -749,10 +778,10 @@ func _draw_overlay() -> void:
 		var o := Vector2(-13 + i * 7, -29)
 		draw_polyline(PackedVector2Array([o + Vector2(-3, 2), o + Vector2(0, -1), o + Vector2(3, 2)]), GameData.GOLD, 2.0)
 	if control_timer > 0.0:
-		draw_arc(Vector2.ZERO, radius + 4.0, 0.0, TAU, 24, Color(1.9, 0.4, 2.0), 2.0, true)
+		draw_arc(Vector2.ZERO, pick_radius() - 2.0, 0.0, TAU, 24, Color(1.9, 0.4, 2.0), 2.0, true)
 	if selected:
 		var pulse := 0.5 + 0.5 * sin(Time.get_ticks_msec() * 0.006)
-		draw_arc(Vector2.ZERO, radius + 6.0 + pulse * 2.0, 0.0, TAU, 40, GameData.GREEN, 2.0, true)
+		draw_arc(Vector2.ZERO, pick_radius() + pulse * 2.0, 0.0, TAU, 40, GameData.GREEN, 2.0, true)
 
 # --- Sauvegarde -----------------------------------------------------------------
 

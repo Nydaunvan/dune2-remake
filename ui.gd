@@ -655,7 +655,7 @@ class InfoPanel extends GlassPanel:
 		y += 22.0
 		if u.weapon != "":
 			var mult := 1.0 + GameData.RANK_DMG * u.rank
-			_row(34, y, "Arme", String(WEAPON.get(u.weapon, u.weapon)) + (" — air + sol" if GameData.hits_air(u.weapon) else " — sol seulement"))
+			_row(34, y, "Arme", String(WEAPON.get(u.weapon, u.weapon)) + (" — air + sol" if GameData.can_hit_air(u.id) else " — sol seulement"))
 			y += 22.0
 			_row(34, y, "Dégâts", "%.0f /s    Portée %d cases" % [u.dps * mult, int(u.w_range / 32.0)])
 		elif u.role == "transport":

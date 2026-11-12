@@ -78,6 +78,26 @@ func used_rect(key: String, angle := 0.0) -> Rect2:
 	return arr[frame_index(key, angle)]
 
 
+## Zone réellement occupée par le modèle, en coordonnées de dessin (centre de l'unité = origine).
+func visual_box(key: String, angle := 0.0) -> Rect2:
+	var arr: Array = _tex.get(key, [])
+	var ur: Rect2 = used_rect(key, angle)
+	if arr.is_empty() or ur.size == Vector2.ZERO:
+		return Rect2()
+	var tsz: Vector2 = arr[0].get_size()
+	var dsz: Vector2 = _size.get(key, tsz)
+	var k := dsz / tsz
+	return Rect2(ur.position * k - dsz / 2.0, ur.size * k)
+
+
+## Angle exact de l'image choisie pour `angle` (écart résiduel = angle - snap_angle).
+func snap_angle(key: String, angle: float) -> float:
+	var arr: Array = _tex.get(key, [])
+	if arr.size() <= 1:
+		return angle
+	return float(frame_index(key, angle)) * TAU / arr.size()
+
+
 func frame_index(key: String, angle: float) -> int:
 	var arr: Array = _tex.get(key, [])
 	if arr.size() <= 1:

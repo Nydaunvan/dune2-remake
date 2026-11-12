@@ -196,7 +196,7 @@ const BUILDINGS := {
 		"no_upgrade": true, "desc": "Grosse production d'énergie",
 	},
 	"batterie": {
-		"name": "Batterie de roquettes", "cost": 600, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
+		"aa": true, "name": "Batterie de roquettes", "cost": 600, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
 		"requires": ["usine", "radar"], "hp": 750, "armor": "building", "unlock": 3, "no_upgrade": true,
 		"weapon": "rocket", "dps": 40, "range": 11, "vision": 10, "desc": "Défense longue portée",
 	},
@@ -266,7 +266,7 @@ const UNITS := {
 	},
 	# --- Unités volantes (Aérodrome) ---
 	"libellule": {
-		"name": "Libellule", "role": "combat", "desc": "Chasseur léger, touche l'air", "air": true,
+		"aa": true, "name": "Libellule", "role": "combat", "desc": "Chasseur léger, touche l'air", "air": true,
 		"armor": "light", "weapon": "autocannon",
 		"cost": 380, "time": 7.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
 		"hp": 160, "speed": 210.0, "vision": 12, "dps": 18, "range": 4,
@@ -284,7 +284,7 @@ const UNITS := {
 		"hp": 320, "speed": 150.0, "vision": 9, "slots": 4,
 	},
 	"faucheur": {
-		"name": "Faucheur", "role": "combat", "desc": "Hélicoptère à roquettes", "air": true,
+		"aa": true, "name": "Faucheur", "role": "combat", "desc": "Hélicoptère à roquettes", "air": true,
 		"armor": "medium", "weapon": "rocket",
 		"cost": 560, "time": 9.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
 		"hp": 340, "speed": 150.0, "vision": 10, "dps": 40, "range": 7,
@@ -302,7 +302,7 @@ const UNITS := {
 		"hp": 600, "speed": 100.0, "vision": 9, "slots": 6,
 	},
 	"guepe": {
-		"name": "Guêpe", "role": "combat", "desc": "Chasseur ultra-rapide", "air": true,
+		"aa": true, "name": "Guêpe", "role": "combat", "desc": "Chasseur ultra-rapide", "air": true,
 		"armor": "light", "weapon": "autocannon",
 		"cost": 330, "time": 6.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
 		"hp": 140, "speed": 240.0, "vision": 13, "dps": 17, "range": 4,
@@ -321,7 +321,7 @@ const UNITS := {
 	},
 	# --- Maison Solis ---
 	"sentinelle": {
-		"name": "Sentinelle", "role": "combat", "desc": "Éclaireur rapide",
+		"aa": true, "name": "Sentinelle", "role": "combat", "desc": "Éclaireur rapide, touche l'air",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 220, "time": 5.0, "level": 1, "requires": ["usine"], "from": "usine",
 		"hp": 190, "dps": 15, "speed": 160.0, "range": 5, "vision": 11,
@@ -352,14 +352,14 @@ const UNITS := {
 		"hp": 950, "dps": 36, "speed": 65.0, "range": 6,
 	},
 	"salve": {
-		"name": "Salve", "role": "combat", "desc": "Lance-roquettes longue portée",
+		"aa": true, "name": "Salve", "role": "combat", "desc": "Lance-roquettes, touche l'air",
 		"armor": "light", "weapon": "rocket",
 		"cost": 540, "time": 9.0, "level": 2, "requires": ["usine", "radar"], "from": "usine",
 		"hp": 260, "dps": 46, "speed": 80.0, "range": 11, "vision": 9,
 	},
 	# --- Cartel Vael ---
 	"faucon": {
-		"name": "Faucon", "role": "combat", "desc": "Raider ultra-rapide",
+		"aa": true, "name": "Faucon", "role": "combat", "desc": "Raider rapide, touche l'air",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 170, "time": 4.0, "level": 1, "requires": ["usine"], "from": "usine",
 		"hp": 170, "dps": 17, "speed": 200.0, "range": 4, "vision": 11,
@@ -395,9 +395,9 @@ static func def(id: String) -> Dictionary:
 
 
 ## Multiplicateur de dégâts d'une arme contre un type de blindage.
-## Les armes qui peuvent toucher une unité volante.
-static func hits_air(weapon: String) -> bool:
-	return weapon == "autocannon" or weapon == "rocket" or weapon == "sonic"
+## Seules certaines unités / défenses (drapeau "aa") peuvent toucher une unité volante.
+static func can_hit_air(id: String) -> bool:
+	return bool(def(id).get("aa", false))
 
 
 static func mult(weapon: String, armor: String) -> float:
