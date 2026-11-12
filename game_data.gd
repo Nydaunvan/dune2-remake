@@ -1105,6 +1105,75 @@ static func base_cost(id: String) -> int:
 	return int(BUILDINGS[id]["cost"])
 
 
+## Descriptions propres à chaque faction pour les bâtiments et unités de base (même rôle, autre style).
+const DESC_FX := {
+	"chantier": {
+		"solis": "Cœur de la base : tout se construit ici. Plus il est évolué, plus de bâtiments et de places en file.",
+		"kharn": "Place forte de la Légion : tout se construit ici. Plus elle est évoluée, plus de bâtiments et de places en file.",
+		"vael": "Campement du Cartel : tout se monte ici. Plus il est évolué, plus de bâtiments et de places en file.",
+		"conclave": "Racine de la base : tout y pousse. Plus il est évolué, plus de bâtiments et de places en file.",
+	},
+	"centrale": {
+		"solis": "Capte l'énergie solaire pour alimenter la base (+100). Sans énergie, la production ralentit.",
+		"kharn": "Brûle du minerai pour alimenter la base (+100). Sans énergie, la production ralentit.",
+		"vael": "Générateur discret qui alimente la base (+100). Sans énergie, la production ralentit.",
+		"conclave": "Cuve d'énergie vive qui alimente la base (+100). Sans énergie, la production ralentit.",
+	},
+	"raffinerie": {
+		"solis": "Raffine l'épice rapportée par les moissonneuses et la convertit en Solaris.",
+		"kharn": "Traite l'épice rapportée par les récolteurs blindés et la convertit en Solaris.",
+		"vael": "Comptoir où l'épice des pilleurs est raffinée et vendue en Solaris.",
+		"conclave": "Alambic qui distille l'épice rapportée par les collecteurs en Solaris.",
+	},
+	"fonderie": {
+		"solis": "Fond le minerai extrait par les foreuses : il sert à bâtir et à améliorer.",
+		"kharn": "Fond le minerai extrait par les mineurs lourds : il sert à bâtir et à améliorer.",
+		"vael": "Forge mobile qui transforme le minerai des fouilleurs : il sert à bâtir et à améliorer.",
+		"conclave": "Creuset qui fond le minerai des foreurs de cristal : il sert à bâtir et à améliorer.",
+	},
+	"usine": {
+		"solis": "Assemble les unités terrestres. Ses niveaux débloquent de nouveaux engins et la modernisation.",
+		"kharn": "Produit les blindés de la Légion. Ses niveaux débloquent de nouveaux engins et la modernisation.",
+		"vael": "Atelier qui produit les véhicules du Cartel. Ses niveaux débloquent de nouveaux engins et la modernisation.",
+		"conclave": "Fait croître les unités terrestres du Conclave. Ses niveaux débloquent de nouveaux engins et la modernisation.",
+	},
+	"tourelle": {
+		"solis": "Défense de base : canon précis contre le sol et l'air, courte portée.",
+		"kharn": "Casemate blindée : canon de défense contre le sol et l'air, courte portée.",
+		"vael": "Poste d'embuscade : canon léger contre le sol et l'air, courte portée.",
+		"conclave": "Sentinelle de cristal : tir de défense contre le sol et l'air, courte portée.",
+	},
+	"recolteur": {
+		"solis": "Moissonne l'épice et la rapporte à la raffinerie : source de Solaris. Il se replie devant les vers.",
+		"kharn": "Récolte l'épice et la rapporte à la raffinerie : source de Solaris. Blindé, mais lent.",
+		"vael": "Pille l'épice et la rapporte à la raffinerie : source de Solaris, plus rentable chez le Cartel.",
+		"conclave": "Collecte l'épice en flottant au-dessus du sable et la rapporte à la raffinerie : source de Solaris.",
+	},
+	"mineur": {
+		"solis": "Fore le minerai et le rapporte à la fonderie : sert à bâtir et à produire.",
+		"kharn": "Extrait le minerai et le rapporte à la fonderie : sert à bâtir et à produire.",
+		"vael": "Fouille le minerai et le rapporte à la fonderie : sert à bâtir et à produire.",
+		"conclave": "Fore les veines de cristal et rapporte le minerai à la fonderie : sert à bâtir et à produire.",
+	},
+	"mcv": {
+		"solis": "Se déploie en Atelier de conception : une seconde base.",
+		"kharn": "Se déploie en Forteresse de commandement : une seconde base.",
+		"vael": "Se déploie en Camp de base : une seconde base.",
+		"conclave": "Se déploie en Noyau cristallin : une seconde base.",
+	},
+}
+
+
+## Description d'un bâtiment ou d'une unité, dans le style de la faction.
+static func desc_of(id: String, faction: String) -> String:
+	if DESC_FX.has(id):
+		var fx: Dictionary = DESC_FX[id]
+		if fx.has(faction):
+			return fx[faction]
+	var d := def(id)
+	return String(d.get("desc", "")) if not d.is_empty() else ""
+
+
 static func def(id: String) -> Dictionary:
 	if BUILDINGS.has(id):
 		return BUILDINGS[id]

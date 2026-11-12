@@ -935,7 +935,7 @@ class InfoPanel extends GlassPanel:
 		var d := GameData.def(u.id)
 		var mine: bool = u.team == 0
 		var rank_tag := String(GameData.RANKS[u.rank]["name"]).to_upper() if u.role == "combat" else ""
-		_hp_block(GameData.name_of(u.id, game.faction_id_of(u.team)), String(d.get("desc", "")), u.hp, u.max_hp, mine, rank_tag)
+		_hp_block(GameData.name_of(u.id, game.faction_id_of(u.team)), GameData.desc_of(u.id, game.faction_id_of(u.team)), u.hp, u.max_hp, mine, rank_tag)
 		if u.role == "mcv" or u.role == "convoy":
 			UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 			var yr := 152.0
@@ -1010,10 +1010,16 @@ class InfoPanel extends GlassPanel:
 			rows.append(["Énergie", "+%d" % b.power])
 
 
+	func _building_sub(b: Building, mine: bool) -> String:
+		var ds := GameData.desc_of(b.id, game.faction_id_of(b.team))
+		if ds == "":
+			return "Structure alliée" if mine else "Structure ennemie"
+		return ds if mine else "Ennemi — " + ds
+
 	func _draw_building(b: Building) -> void:
 		var d := GameData.def(b.id)
 		var mine: bool = b.team == 0
-		_hp_block(GameData.name_of(b.id, game.faction_id_of(b.team)), "Structure alliée" if mine else "Structure ennemie", b.hp, b.max_hp, mine,
+		_hp_block(GameData.name_of(b.id, game.faction_id_of(b.team)), _building_sub(b, mine), b.hp, b.max_hp, mine,
 				"NIVEAU %d/%d" % [b.level, GameData.MAX_LEVEL])
 		UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 		var rows: Array = []
@@ -1182,8 +1188,8 @@ class BuildIcon extends Control:
 			var up := GameData.upgrade_power(id)
 			if up > 0 and not d.get("no_upgrade", false):
 				tip += " (+%d par niveau)" % up
-		if d.has("desc"):
-			tip += "\n" + d["desc"]
+		if GameData.desc_of(id, game.faction_id) != "":
+			tip += "\n" + GameData.desc_of(id, game.faction_id)
 		var names := GameData.req_names(d)
 		if not names.is_empty():
 			tip += "\nNécessite : " + ", ".join(names)

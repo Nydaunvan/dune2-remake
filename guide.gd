@@ -204,8 +204,8 @@ func _p_buildings() -> String:
 			line += ", nécessite : " + ", ".join(req)
 		if d.get("unlock", 0) > 1 and d.get("unlock", 0) <= 3:
 			line += ", débloqué par la campagne (mission %d)" % Campaign.mission_for_unlock(faction, int(d["unlock"]))
-		if d.has("desc"):
-			line += "\n    " + String(d["desc"])
+		if GameData.desc_of(id, faction) != "":
+			line += "\n    " + GameData.desc_of(id, faction)
 		if GameData.UPGRADES.has(id):
 			line += "\n    À chaque niveau : " + String(GameData.UPGRADES[id])
 		if d.has("weapon"):
@@ -235,8 +235,8 @@ func _p_units() -> String:
 		var ureq := GameData.req_names(d, faction)
 		if not ureq.is_empty():
 			line += ", nécessite : " + ", ".join(ureq)
-		if d.has("desc"):
-			line += "\n    " + String(d["desc"])
+		if GameData.desc_of(id, faction) != "":
+			line += "\n    " + GameData.desc_of(id, faction)
 		if d.has("capacity"):
 			line += "\n    Capacité %d, récolte %d/s" % [int(d["capacity"]), int(d["rate"])]
 		if GameData.UNIT_TECH.has(id):
