@@ -156,7 +156,7 @@ func _p_start() -> String:
 func _p_controls() -> String:
 	return _h("Souris") + """• [b]Clic gauche[/b] : sélectionner une unité ou un bâtiment ; glisser pour tracer un cadre de sélection. [b]Maj[/b] ajoute à la sélection.
 • [b]Clic droit[/b] sur le sol : déplacer. Sur un ennemi : attaquer. Sur un allié transporteur : embarquer. Sur une icône de la file : annuler.
-• [b]Molette[/b] : zoom. Approcher le curseur du bord de l'écran fait défiler la carte.
+• [b]Molette[/b] : zoom. [b]Bouton central maintenu[/b] : fait glisser la carte. Approcher le curseur du bord de l'écran fait défiler la carte.
 • Dans l'encart d'information d'une unité : boutons [b]ARRÊT[/b], [b]DÉPLACER[/b], [b]ATTAQUER[/b] (déplacement en attaquant tout ce qu'on croise) et [b]DÉPLOYER[/b] / [b]DÉCHARGER[/b] selon l'unité.
 """ + _h("Clavier") + """• [b]Flèches ou Z Q S D[/b] : déplacer la caméra
 • """ + _k("D") + " : déployer l'engin de chantier — " + _k("U") + """ : décharger un transport

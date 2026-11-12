@@ -1134,6 +1134,9 @@ func _process(delta: float) -> void:
 	else:
 		camera.offset = Vector2.ZERO
 
+	if panning and not Input.is_mouse_button_pressed(MOUSE_BUTTON_MIDDLE):
+		panning = false
+		Input.set_default_cursor_shape(Input.CURSOR_ARROW)
 	if dragging and not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 		dragging = false # relâché au-dessus de l'interface
 		_finish_selection(get_global_mouse_position())
@@ -1191,6 +1194,9 @@ func _zoom(factor: float) -> void:
 
 # --- Entrées ------------------------------------------------------------------
 
+var panning := false
+
+
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed:
 		match event.keycode:
@@ -1228,6 +1234,9 @@ func _unhandled_input(event: InputEvent) -> void:
 				if worm == null and not units.is_empty():
 					var sand := _harvesters_on_sand()
 					_spawn_worm(sand.pick_random() if not sand.is_empty() else units.pick_random())
+	elif event is InputEventMouseMotion and panning:
+		camera.position -= event.relative / camera.zoom.x
+		_clamp_camera()
 	elif event is InputEventMouseButton:
 		match event.button_index:
 			MOUSE_BUTTON_LEFT:
@@ -1244,6 +1253,9 @@ func _unhandled_input(event: InputEvent) -> void:
 						command_mode = ""
 					else:
 						order_context(get_global_mouse_position())
+			MOUSE_BUTTON_MIDDLE:
+				panning = event.pressed # molette maintenue : on fait glisser la carte
+				Input.set_default_cursor_shape(Input.CURSOR_DRAG if panning else Input.CURSOR_ARROW)
 			MOUSE_BUTTON_WHEEL_UP:
 				if event.pressed: _zoom(1.1)
 			MOUSE_BUTTON_WHEEL_DOWN:
