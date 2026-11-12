@@ -179,8 +179,8 @@ func _p_economy() -> String:
 • Le nombre d'engins est limité par le niveau de : """ + _name("chantier") + """ : récolteurs 2 / 3 / 5 et mineurs 1 / 2 / 3 aux niveaux 1 / 2 / 3.
 • [b]Paiement progressif[/b] : construire, produire une unité, améliorer un bâtiment ou moderniser une unité ne coûte pas tout d'un coup. Il suffit d'avoir 10 % du prix pour lancer l'opération ; le reste est prélevé au fur et à mesure de l'avancement. Si la caisse est vide, l'opération se met en pause jusqu'au retour des fonds. Annuler une production rembourse ce qui a déjà été payé.
 • Le stockage est limité ; construisez des [b]Silos d'épice[/b] et améliorez Raffineries et Fonderies pour l'agrandir.
-""" + _h("L'énergie") + """Chaque bâtiment produit (Centrale, Réacteur) ou consomme de l'énergie ; la valeur est indiquée sur son icône et dans son encart. Améliorer un bâtiment peut augmenter sa consommation.
-En cas de [color=#ff7777][b]manque d'énergie[/b][/color] : les Raffineries n'encaissent plus les récoltes, les Fonderies, le Radar, le Centre de réparation, l'Aérodrome et les défenses s'éteignent (« HORS TENSION »). Reconstruisez une Centrale ou un Réacteur sans attendre.
+""" + _h("L'énergie") + """Chaque bâtiment produit (""" + _name("centrale") + """, """ + _name("reacteur") + """) ou consomme de l'énergie ; la valeur est indiquée sur son icône et dans son encart. Améliorer un bâtiment peut augmenter sa consommation.
+En cas de [color=#ff7777][b]manque d'énergie[/b][/color] : plus aucune récolte n'est encaissée (""" + _name("raffinerie") + """, """ + _name("fonderie") + """) ; """ + _name("radar") + """, """ + _name("reparation") + """, """ + _name("aerodrome") + """ et les défenses s'éteignent (« HORS TENSION »). Reconstruisez ou améliorez vite votre production d'énergie (""" + _name("centrale") + """, """ + _name("reacteur") + """).
 """ + _h("Améliorer ses bâtiments") + """Un bâtiment s'améliore jusqu'au [b]niveau 3[/b] (bouton AMÉLIORER). Chaque niveau donne +25 % de PV et un bonus propre au bâtiment, et son [b]apparence évolue[/b] : plaques de blindage, antenne, modules de toit, puis bande énergétique et dôme doré au niveau 3. Les niveaux de """ + _name("chantier") + """ débloquent les bâtiments en escarmouche. Les niveaux de """ + _name("usine") + """ débloquent de nouvelles unités et permettent la [b]modernisation des unités[/b] (bonus permanents propres à chaque type).
 """ + _h("Réparer et démolir") + """• RÉPARER : remet un bâtiment à neuf contre du minerai (au plus la moitié de son prix, proportionnel aux dégâts). Les unités se réparent aussi dans un Centre de réparation.
 • DÉMOLIR : rembourse 40 % du coût.
@@ -288,7 +288,7 @@ func _p_dangers() -> String:
 • Quand un ver approche, un message s'affiche et une [color=#ff7777][b]zone de danger rouge[/b][/color] apparaît sur la carte et sur le radar.
 • Les récolteurs fuient automatiquement ; vous pouvez aussi les ramener à la raffinerie ou sur la roche.
 • Un ver mord au plus deux fois puis replonge, avec une longue pause avant le suivant.
-""" + _h("Le brouillard de guerre") + """Seul ce que vos unités et bâtiments voient est affiché. Le Radar étend fortement la vision. Les zones déjà explorées restent visibles mais sans les mouvements ennemis.
+""" + _h("Le brouillard de guerre") + """Seul ce que vos unités et bâtiments voient est affiché. Le bâtiment « """ + _name("radar") + """ » étend fortement la vision. Les zones déjà explorées restent visibles mais sans les mouvements ennemis.
 """ + _h("Les armes et les blindages") + """Chaque arme est plus ou moins efficace selon le blindage de la cible (léger, moyen, lourd, bâtiment). Combinez les unités de votre faction. Les défenses et les Tourelles sont indispensables contre les assauts réguliers de l'IA : plus la partie avance, plus les vagues sont grosses.
 """ + _h("L'adversaire IA") + """L'IA construit comme vous, récolte, produit puis lance des vagues d'assaut après un délai, en défendant sa base quand elle est menacée. En mission, son rythme dépend du briefing (voir la fiche ENNEMI de chaque mission).
 """
@@ -301,7 +301,7 @@ func _p_system() -> String:
 • La carte est reconstruite à l'identique ; bâtiments, unités, ressources, files de production, brouillard exploré et IA sont restaurés.
 """ + _h("Menu principal") + """Choisissez votre faction, puis CAMPAGNE (liste des missions avec briefing détaillé), ESCARMOUCHE (jusqu'à 3 adversaires), CHARGER ou GUIDE. Les emblèmes des factions s'animent lorsque vous les survolez.
 """ + _h("Astuces") + """• Construisez votre Centrale avant tout, puis surveillez l'énergie en haut de l'écran.
-• Placez les défenses entre votre base et l'ennemi, et des défenses antiaériennes si l'adversaire a un Aérodrome.
+• Placez les défenses entre votre base et l'ennemi, et des défenses antiaériennes si l'adversaire possède un bâtiment aérien (« """ + _name("aerodrome") + """ »).
 • Groupez vos unités avant de lancer un assaut ; ATTAQUER fait avancer le groupe en tirant sur tout ce qu'il croise.
 • Surveillez le journal en bas de la colonne de droite : il garde l'historique des alertes.
 """

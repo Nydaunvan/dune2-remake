@@ -77,7 +77,7 @@ const CAMPAIGNS := {
 					{"type": "upgrade", "id": "centrale", "level": 3}, {"type": "build", "label": "le complexe", "ids": {"radar": 1, "reacteur": 1}}],
 			"ai": {"slowdown": 1.9, "grace": 420.0, "pause": 70.0, "max_army": 10, "wave": 5, "credits": 1500, "ore": 1800},
 			"obj": "Portez Chantier, Usine et Centrale à leur niveau cible et bâtissez radar et réacteur",
-			"brief": "Le conseil de Solis veut une vitrine : un campement entièrement modernisé. Montez le Chantier, l'Usine et la Centrale aux niveaux demandés, puis ajoutez radar et réacteur. Pendant les travaux un bâtiment ne produit plus : échelonnez les chantiers pendant que {ENEMY} observe de loin.",
+			"brief": "Le conseil de Solis veut une vitrine : un campement entièrement modernisé. Montez le Chantier, l'Usine et la Centrale aux niveaux demandés, puis ajoutez un radar et un réacteur. Pendant les travaux un bâtiment ne produit plus : échelonnez les chantiers pendant que {ENEMY} observe de loin.",
 		},
 		{
 			"id": "foreuses", "title": "Les foreuses", "enemy": "conclave", "size": 96, "credits": 2200, "ore": 2400,
@@ -108,7 +108,7 @@ const CAMPAIGNS := {
 			"start_units": ["@0", "@1"],
 			"objectives": [{"type": "build", "label": "la batterie orbitale", "ids": {"radar": 1, "canon_solaire": 1}}, {"type": "kills", "count": 20}],
 			"obj": "Bâtissez un radar et un canon solaire, abattez 20 unités ennemies",
-			"brief": "Le projet le plus secret de Solis : une frappe orbitale à très longue portée. Montez la batterie, protégez-la et prouvez sa puissance sur les colonnes de {ENEMY}.",
+			"brief": "Le projet le plus secret de Solis : une frappe orbitale à très longue portée. Montez le canon solaire, protégez-le et prouvez sa puissance sur les colonnes de {ENEMY}.",
 		},
 		{
 			"id": "pont", "title": "Pont aérien", "enemy": "conclave", "size": 112, "credits": 3500, "ore": 3500,
@@ -133,7 +133,7 @@ const CAMPAIGNS := {
 					{"type": "build", "label": "le front", "ids": {"tourelle": 4}}, {"type": "upgrade", "id": "tourelle", "level": 2}],
 			"ai": {"slowdown": 1.1, "grace": 200.0, "pause": 45.0, "max_army": 24, "wave": 7, "credits": 3000, "ore": 3200},
 			"obj": "Tenez 13 minutes, détruisez 25 unités, alignez 4 tourelles dont une améliorée",
-			"brief": "Dernier rempart : la base de l'Aiguille est déjà bâtie, mais {ENEMY} y envoie tout ce qu'il possède. Fortifiez, améliorez vos tourelles et brisez ses assauts un par un jusqu'à la relève.",
+			"brief": "Dernier rempart : la base de l'Aiguille est déjà bâtie, mais {ENEMY} y envoie tout ce qu'elle possède. Fortifiez, améliorez vos tourelles et brisez ses assauts un par un jusqu'à la relève.",
 		},
 	],
 	# --- Légion Kharn : puissance brute, offensive ---
@@ -224,7 +224,7 @@ const CAMPAIGNS := {
 			"start_units": ["@0", "@0", "@1"],
 			"objectives": [{"type": "build", "label": "les défenses", "ids": {"tourelle": 4, "bunker": 2}}, {"type": "survive", "time": 480.0}, {"type": "kills", "count": 20}],
 			"obj": "Bâtissez 4 tourelles et 2 bunkers, tenez 8 minutes et abattez 20 unités",
-			"brief": "Rien ne passe : enterrez vos défenses et laissez {ENEMY} s'épuiser sur la ligne. Quand il faiblira, c'est la Légion qui frappera.",
+			"brief": "Rien ne passe : enterrez vos défenses et laissez {ENEMY} s'épuiser sur la ligne. Quand elle faiblira, c'est la Légion qui frappera.",
 		},
 		{
 			"id": "pluie", "title": "Pluie d'acier", "enemy": "conclave", "enemy_base": true, "size": 112, "credits": 3500, "ore": 3500,
@@ -248,7 +248,7 @@ const CAMPAIGNS := {
 			"ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
 			"third_ai": {"slowdown": 1.7, "grace": 420.0, "pause": 70.0, "max_army": 10, "wave": 5, "credits": 1600, "ore": 1800},
 			"obj": "Rasez 3 avant-postes, détruisez 30 unités, récoltez 3000 Solaris et 2000 minerai",
-			"brief": "Trois maisons se disputent la même vallée. {ENEMY} garde trois avant-postes, {RIVAL} pille tout ce qui passe. Prenez-les à tous les deux : abattez les avant-postes, faites des victimes et remplissez les silos.",
+			"brief": "Trois maisons se disputent la même vallée. {ENEMY} garde trois avant-postes, {RIVAL} pille tout ce qui passe. Prenez-les à tous les deux : abattez les avant-postes, faites des victimes et remplissez vos réserves de Solaris et de minerai.",
 		},
 		{
 			"id": "cimetiere", "title": "Le cimetière d'acier", "enemy": "solis", "rival": true, "size": 112, "outposts": 4, "credits": 3000, "ore": 3000,
@@ -299,7 +299,7 @@ const CAMPAIGNS := {
 			"objectives": [{"type": "survive", "time": 420.0}, {"type": "kills", "count": 12}],
 			"ai": {"slowdown": 1.4, "grace": 240.0, "pause": 50.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Survivez 7 minutes et abattez 12 unités ennemies",
-			"brief": "{ENEMY} et {RIVAL} se disputent le même territoire et chacun veut notre peau. Le temps convenu : assez pour toucher la prime, pas assez pour leur laisser le désert. Frappez celui qui s'expose.",
+			"brief": "{ENEMY} et {RIVAL} se disputent le même territoire et chacun veut notre peau. Le temps convenu : assez pour toucher la prime, pas assez pour leur laisser le désert. Frappez le camp qui s'expose.",
 		},
 		{
 			"id": "pillage", "title": "Pillage aérien", "enemy": "kharn", "size": 112, "credits": 2500, "ore": 2500,
@@ -325,7 +325,7 @@ const CAMPAIGNS := {
 			"ai": {"slowdown": 1.15, "grace": 360.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Rasez 3 avant-postes, amassez 4000 Solaris et abattez 25 unités ennemies",
-			"brief": "Le coup du siècle : le coffre central de {ENEMY} intéresse aussi {RIVAL}. Prenez-le avant eux, remplissez les caisses et abattez ceux qui vous barrent la route.",
+			"brief": "Le coup du siècle : le coffre central de {ENEMY} intéresse aussi {RIVAL}. Prenez-le avant les autres, remplissez les caisses et abattez ceux qui vous barrent la route.",
 		},
 		{
 			"id": "caravane", "title": "La grande caravane", "enemy": "kharn", "size": 112, "credits": 2500, "ore": 2500,
@@ -342,7 +342,7 @@ const CAMPAIGNS := {
 					{"type": "build", "label": "les entrepôts", "ids": {"silo": 2, "silo_minerai": 2}}],
 			"ai": {"slowdown": 1.9, "grace": 420.0, "pause": 70.0, "max_army": 10, "wave": 5, "credits": 1500, "ore": 1800},
 			"obj": "Récoltez 6000 Solaris et 3000 minerai, bâtissez 2 silos d'épice et 2 silos de minerai",
-			"brief": "Le Cartel ouvre son plus gros marché clandestin : il faut de l'épice, du minerai et des silos pour tout entreposer. Les vers sont nerveux, les récolteurs doivent l'être aussi. {ENEMY} n'y verra que du feu.",
+			"brief": "Le Cartel ouvre son plus gros marché clandestin : il faut de l'épice, du minerai et des entrepôts pour tout stocker. Les vers sont nerveux, les récolteurs doivent l'être aussi. {ENEMY} n'y verra que du feu.",
 		},
 		{
 			"id": "mirage", "title": "Mirage", "enemy": "solis", "size": 96, "credits": 2500, "ore": 2500,
@@ -380,7 +380,7 @@ const CAMPAIGNS := {
 			"start_units": ["@0", "@0", "@1", "@1", "@2", "@4"], "time_limit": 900.0,
 			"objectives": [{"type": "destroy_type", "id": "centrale", "count": 2}, {"type": "destroy_type", "id": "raffinerie", "count": 1}],
 			"obj": "Détruisez 2 centrales et une raffinerie ennemies en 15 minutes",
-			"brief": "{ENEMY} fortifie sa base : ses centrales sont son point faible. Frappez vite, avec vos saboteurs en tête, puis disparaissez avant qu'il ne réagisse.",
+			"brief": "{ENEMY} fortifie sa base : ses centrales sont son point faible. Frappez vite, avec vos saboteurs en tête, puis disparaissez avant qu'elle ne réagisse.",
 		},
 		{
 			"id": "troisgrands", "title": "Guerre des trois", "enemy": "kharn", "rival": true, "size": 112, "credits": 3000, "ore": 3000,
@@ -442,7 +442,7 @@ const CAMPAIGNS := {
 			"objectives": [{"type": "survive", "time": 420.0}, {"type": "kills", "count": 12}],
 			"ai": {"slowdown": 1.4, "grace": 240.0, "pause": 50.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Survivez 7 minutes et abattez 12 unités ennemies",
-			"brief": "{ENEMY} et {RIVAL} se disputent la même vallée et chacun veut briser notre cristal. Tenez le temps convenu, laissez-les s'user et frappez celui qui s'expose.",
+			"brief": "{ENEMY} et {RIVAL} se disputent la même vallée et chacun veut briser notre cristal. Tenez le temps convenu, laissez-les s'user et frappez le camp qui s'expose.",
 		},
 		{
 			"id": "sanctuaire", "title": "Le sanctuaire", "enemy": "vael", "size": 96, "credits": 2200, "ore": 2400,
@@ -458,7 +458,7 @@ const CAMPAIGNS := {
 			"ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1500, "ore": 1800},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Pillez les 4 entrepôts, récoltez 3000 Solaris et formez 6 unités",
-			"brief": "Quatre postes gardent les galeries de {ENEMY}, et {RIVAL} s'y intéresse aussi. Rasez-les avant eux, remplissez nos réserves et armez le Conclave contre les deux.",
+			"brief": "Quatre postes gardent les galeries de {ENEMY}, et {RIVAL} s'y intéresse aussi. Rasez-les avant les autres, remplissez nos réserves et armez le Conclave contre les deux.",
 		},
 		{
 			"id": "prisme", "title": "Le prisme", "enemy": "solis", "size": 96, "credits": 2500, "ore": 2500,
@@ -529,7 +529,7 @@ const CAMPAIGNS := {
 			"start_units": ["@0", "@0", "@1", "@1", "@2"], "time_limit": 1200.0,
 			"objectives": [{"type": "destroy_type", "id": "chantier", "count": 1}, {"type": "destroy_type", "id": "centrale", "count": 1}, {"type": "kills", "count": 20}],
 			"obj": "Détruisez le chantier et la centrale ennemis et abattez 20 unités en 20 minutes",
-			"brief": "Une éclipse approche : le soleil de {ENEMY} va s'éteindre. Brisez sa base pendant qu'il est aveugle, chantier et centrale d'abord.",
+			"brief": "Une éclipse approche : le soleil de {ENEMY} va s'éteindre. Brisez sa base pendant qu'elle est aveugle, chantier et centrale d'abord.",
 		},
 		{
 			"id": "triade", "title": "La triade", "enemy": "vael", "rival": true, "size": 112, "credits": 3000, "ore": 3000,
@@ -713,7 +713,7 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 	if d.has("convoy"):
 		d["convoy"]["ambushes"] = int(d["convoy"]["ambushes"]) + int(g * 3.0)
 		d["convoy"]["ambush_size"] = int(d["convoy"]["ambush_size"]) + int(g * 3.0)
-	d["obj"] = _fnames(_obj_short(d, faction), faction)
+	d["obj"] = _obj_short(d, faction)
 	return d
 
 
@@ -725,7 +725,7 @@ static func _obj_short(d: Dictionary, faction: String) -> String:
 			"build":
 				var names: PackedStringArray = []
 				for id in o["ids"]:
-					names.append(GameData.name_of(id, faction).to_lower())
+					names.append("%s ×%d" % [GameData.name_of(id, faction).to_lower(), int(o["ids"][id])])
 				parts.append("bâtir " + ", ".join(names))
 			"harvest": parts.append("récolter %d Solaris" % int(o["amount"]))
 			"train": parts.append("former %d unités" % int(o["count"]))
@@ -734,11 +734,11 @@ static func _obj_short(d: Dictionary, faction: String) -> String:
 			"outposts": parts.append("raser les avant-postes")
 			"hold": parts.append("tenir la zone %s" % _mins(float(d["zone"]["time"])))
 			"destroy_all": parts.append("détruire tous les adversaires" if d.get("rival", false) else "détruire l'adversaire")
-			"upgrade": parts.append("%s niveau %d" % [GameData.name_of(o["id"], faction).to_lower(), int(o["level"])])
+			"upgrade": parts.append("améliorer %s au niveau %d" % [GameData.name_of(o["id"], faction).to_lower(), int(o["level"])])
 			"kills": parts.append("%d victimes" % int(o["count"]))
-			"destroy_type": parts.append("détruire %d %s" % [int(o["count"]), GameData.name_of(o["id"], faction).to_lower()])
+			"destroy_type": parts.append("détruire %s ×%d" % [foe_building_names(o["id"], d, faction).to_lower(), int(o["count"])])
 			"ore": parts.append("récolter %d minerai" % int(o["amount"]))
-			"power": parts.append("%d d'énergie" % int(o["power"] if o.has("power") else o["amount"]))
+			"power": parts.append("produire %d d'énergie" % int(o["power"] if o.has("power") else o["amount"]))
 			"air": parts.append("%d appareils volants" % int(o["count"]))
 	var t := ", ".join(parts)
 	if d.has("time_limit"):
@@ -761,6 +761,19 @@ static func third_of(faction: String, m: int) -> String:
 	if not d.get("rival", false):
 		return ""
 	return _third(faction, d)
+
+
+## Nom d'un bâtiment chez le ou les adversaires (leur nom à eux, pas celui de la faction du joueur).
+static func foe_building_names(id: String, d: Dictionary, faction: String) -> String:
+	var fs: Array = [d["enemy"]]
+	if d.get("rival", false):
+		fs.append(_third(faction, d))
+	var names: Array = []
+	for f in fs:
+		var n: String = GameData.name_of(id, f)
+		if not names.has(n):
+			names.append(n)
+	return " / ".join(PackedStringArray(names))
 
 
 static func _third(faction: String, d: Dictionary) -> String:
@@ -795,55 +808,111 @@ static func briefing(faction: String, m: int) -> String:
 		t += " {RIVAL} est aussi de la partie, hostile à tous."
 	if f4 != "" and not t.contains("{FOURTH}"):
 		t += " {FOURTH} entre aussi dans la mêlée : quatre camps, chacun pour soi."
-	t = t.replace("{ENEMY}", GameData.FACTIONS[enemy_of(faction, m)]["name"])
-	t = t.replace("{RIVAL}", GameData.FACTIONS[rival]["name"] if rival != "" else "")
-	t = t.replace("{FOURTH}", GameData.FACTIONS[f4]["name"] if f4 != "" else "")
-	return FLAVOR[faction] + "\n\n" + _gnames(_fnames(t, faction), faction)
+	t = _put_faction(t, "{ENEMY}", enemy_of(faction, m))
+	t = _put_faction(t, "{RIVAL}", rival)
+	t = _put_faction(t, "{FOURTH}", f4)
+	return FLAVOR[faction] + "\n\n" + _gnames(t, faction)
 
 
-## Mots courants du briefing (radar, tourelle…) -> nom du bâtiment de la faction, pour rester cohérent avec les objectifs en jeu.
+## Insère « la Légion Kharn » / « le Cartel Vael » à la place d'un repère, avec l'article et la contraction
+## (du, au, de la, à la) qui conviennent au contexte, et la majuscule en début de phrase.
+static func _put_faction(t: String, token: String, f: String) -> String:
+	while t.contains(token):
+		var i := t.find(token)
+		var nm: String = GameData.FACTIONS[f]["name"] if f != "" else ""
+		var fem: bool = FACTION_ART.get(f, "m") == "f"
+		var before := t.substr(0, i)
+		var after := t.substr(i + token.length())
+		var art := "la " if fem else "le "
+		if before.ends_with(" de ") or before == "de ":
+			before = before.substr(0, before.length() - 3)
+			art = "de la " if fem else "du "
+			before += art
+		elif before.ends_with(" à ") or before == "à ":
+			before = before.substr(0, before.length() - 2)
+			before += ("à la " if fem else "au ")
+		else:
+			var start := before.strip_edges() == "" or before.rstrip(" ").ends_with(".") or before.rstrip(" ").ends_with("!") or before.rstrip(" ").ends_with("?")
+			before += (art.capitalize().substr(0, 1) + art.substr(1)) if start else art
+		t = before + nm + after
+	return t
+
+
+## Genre et pluriel des noms de bâtiments de chaque faction (pour accorder articles et déterminants).
+## id -> faction -> [genre, pluriel]. Un nom absent de cette table n'est pas réécrit.
+const NOUNS := {
+	"radar": {"solis": ["m", "centres de veille"], "kharn": ["m", "postes d'écoute"],
+			"vael": ["f", "vigies nomades"], "conclave": ["m", "yeux de cristal"]},
+	"tourelle": {"solis": ["f", "tourelles de garde"], "kharn": ["f", "casemates"],
+			"vael": ["m", "postes d'embuscade"], "conclave": ["f", "sentinelles de cristal"]},
+	"aerodrome": {"solis": ["m", "aérodromes"], "kharn": ["f", "pistes de guerre"],
+			"vael": ["f", "pistes de fortune"], "conclave": ["f", "plateformes d'envol"]},
+	"reacteur": {"solis": ["m", "réacteurs solaires"], "kharn": ["m", "réacteurs lourds"],
+			"vael": ["m", "réacteurs de contrebande"], "conclave": ["m", "cœurs de cristal"]},
+	"chantier": {"solis": ["m", "ateliers de conception"], "kharn": ["f", "forteresses de commandement"],
+			"vael": ["m", "camps de base"], "conclave": ["m", "noyaux cristallins"]},
+	"centrale": {"solis": ["f", "centrales solaires"], "kharn": ["f", "chaudières de guerre"],
+			"vael": ["f", "dynamos du désert"], "conclave": ["f", "cuves d'énergie vive"]},
+	"raffinerie": {"solis": ["f", "raffineries solaires"], "kharn": ["f", "raffineries lourdes"],
+			"vael": ["m", "comptoirs de raffinage"], "conclave": ["m", "alambics de cristal"]},
+	"usine": {"solis": ["f", "usines d'assemblage"], "kharn": ["m", "arsenaux"],
+			"vael": ["m", "ateliers ambulants"], "conclave": ["f", "matrices de cristal"]},
+	"fonderie": {"solis": ["f", "fonderies de précision"], "kharn": ["m", "hauts fourneaux"],
+			"vael": ["f", "forges nomades"], "conclave": ["m", "creusets d'obsidienne"]},
+}
+const NOUN_RX := {"radar": "radars?", "tourelle": "tourelles?", "aerodrome": "a[ée]rodromes?", "reacteur": "r[ée]acteurs?",
+		"chantier": "chantiers?", "centrale": "centrales?", "raffinerie": "raffineries?", "usine": "usines?", "fonderie": "fonderies?"}
+## Faction -> [genre, nom] pour « la Légion Kharn », « le Cartel Vael »…
+const FACTION_ART := {"solis": "f", "kharn": "f", "vael": "m", "conclave": "m"}
+
+
+static func _starts_vowel(w: String) -> bool:
+	var c := w.substr(0, 1).to_lower()
+	return c in ["a", "e", "i", "o", "u", "y", "h", "é", "è", "ê", "œ", "â", "î", "ô", "û"]
+
+
+## Mots courants du briefing (radar, tourelle…) -> nom du bâtiment de la faction, avec article et
+## pluriel accordés, pour rester cohérent avec les objectifs en jeu.
 static func _gnames(t: String, faction: String) -> String:
-	var rx := {"radar": "radars?", "tourelle": "tourelles?", "aerodrome": "a[ée]rodromes?", "reacteur": "r[ée]acteurs?",
-			"canon_solaire": "canons? solaires?", "serre": "serres?"}
-	for id in rx:
-		if not GameData.BUILDINGS.has(id):
+	for id in NOUN_RX:
+		if not NOUNS[id].has(faction):
 			continue
-		var f: String = GameData.BUILDINGS[id].get("faction", "")
-		if f != "" and f != faction:
-			continue
-		var nm: String = GameData.name_of(id, faction).to_lower()
-		var re := RegEx.create_from_string("(?i)\\b" + String(rx[id]) + "\\b")
+		var gender: String = NOUNS[id][faction][0]
+		var plural_nm: String = NOUNS[id][faction][1]
+		var sing_nm: String = GameData.name_of(id, faction).to_lower()
+		var re := RegEx.create_from_string("(?i)(?<![\\wéèêàâîôûœ'-])(?:(un|une|le|la|l'|les|des|du|de la|de l'|d'|deux|trois|quatre|\\d+|vos|votre|ses|leurs?|son|sa|notre|nos|ce|cette)\\s?)?(" + String(NOUN_RX[id]) + ")(?![\\wéèêàâîôûœ-])")
 		var out := ""
 		var last := 0
 		for mt in re.search_all(t):
-			var word: String = mt.get_string()
-			if word.to_lower() == nm:
-				continue
-			var plural := word.to_lower().ends_with("s")
-			var parts := nm.split(" ", true, 1)
-			var w1: String = parts[0]
-			if plural and not (w1.ends_with("s") or w1.ends_with("x")):
-				w1 += "s"
-			var repl: String = w1 + (" " + parts[1] if parts.size() > 1 else "")
-			if word.substr(0, 1) == word.substr(0, 1).to_upper():
+			var det: String = mt.get_string(1)
+			var word: String = mt.get_string(2).to_lower()
+			var dl := det.to_lower()
+			var plural := word.ends_with("s") or dl in ["les", "des", "deux", "trois", "quatre", "vos", "ses", "leurs", "nos"] or dl.is_valid_int()
+			var nm := plural_nm if plural else sing_nm
+			var vow := _starts_vowel(nm)
+			var nd := det
+			match dl:
+				"un", "une":
+					nd = "un" if gender == "m" else "une"
+				"le", "la", "l'":
+					nd = ("l'" if vow else ("le" if gender == "m" else "la")) if not plural else "les"
+				"du", "de la", "de l'":
+					nd = ("de l'" if vow else ("du" if gender == "m" else "de la")) if not plural else "des"
+				"d'":
+					nd = "d'" if vow else "de "
+				"ce", "cette":
+					nd = "ce" if gender == "m" else "cette"
+				"son", "sa":
+					nd = "son" if (gender == "m" or vow) else "sa"
+			var sep := "" if (nd.ends_with("'") or nd.ends_with(" ") or nd == "") else " "
+			var repl := nd + sep + nm
+			if det != "" and det.substr(0, 1) == det.substr(0, 1).to_upper() and nd != "":
+				repl = repl.substr(0, 1).to_upper() + repl.substr(1)
+			elif det == "" and mt.get_string(2).substr(0, 1) == mt.get_string(2).substr(0, 1).to_upper():
 				repl = repl.substr(0, 1).to_upper() + repl.substr(1)
 			out += t.substr(last, mt.get_start() - last) + repl
 			last = mt.get_end()
 		t = out + t.substr(last)
-	return t
-
-
-## Remplace les noms génériques des bâtiments cités dans un texte par ceux de la faction.
-static func _fnames(t: String, faction: String) -> String:
-	for id in ["chantier", "usine", "centrale", "raffinerie", "fonderie"]:
-		var nm: String = GameData.name_of(id, faction)
-		var cap: String = String(id).capitalize()
-		if nm == cap:
-			continue
-		# Articles neutralisés : le genre du nom propre à la faction est inconnu
-		for art in [["de l'", "de « %s »"], ["du ", "de « %s »"], ["de la ", "de « %s »"], ["l'", "« %s »"], ["la ", "« %s »"], ["le ", "« %s »"]]:
-			t = t.replace(String(art[0]) + cap, String(art[1]) % nm)
-		t = t.replace(cap, "« %s »" % nm)
 	return t
 
 
@@ -912,7 +981,7 @@ static func objective_lines(faction: String, m: int, d: Dictionary) -> Array:
 			"kills":
 				obj.append("Détruire %d unités ennemies" % int(o["count"]))
 			"destroy_type":
-				obj.append("Détruire %d %s ennemi(s)" % [int(o["count"]), GameData.name_of(o["id"], faction).to_lower()])
+				obj.append("Détruire chez l'ennemi : %s ×%d" % [foe_building_names(o["id"], d, faction), int(o["count"])])
 			"ore":
 				obj.append("Récolter %d minerai au total" % int(o["amount"]))
 			"power":
@@ -959,7 +1028,7 @@ static func details(faction: String, m: int) -> Array:
 		sit.append("Le convoi part après %s : préparez votre escorte avant" % _mins(float(d["convoy"]["start"])))
 		sit.append("%d embuscades ennemies (%d unités chacune) sur une route dégagée" % [int(d["convoy"]["ambushes"]), int(d["convoy"]["ambush_size"])])
 	if d.has("outposts"):
-		sit.append("Chaque avant-poste est gardé par des tourelles et des patrouilles")
+		sit.append(_gnames("Chaque avant-poste est gardé par des tourelles et des patrouilles", faction))
 	out.append(["SITUATION", sit])
 	# Ennemi
 	var ai: Dictionary = d["ai"]

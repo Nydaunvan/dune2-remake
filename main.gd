@@ -2992,7 +2992,13 @@ func objective_info(i: int) -> Dictionary:
 		"destroy_type":
 			var nd: int = o["count"]
 			var got := int(destroyed.get(o["id"], 0))
-			return {"text": "Structure ennemie « %s » détruite : %d/%d" % [GameData.dname(o["id"]), mini(got, nd), nd],
+			var fn: Array = []
+			for tm in team_factions:
+				if tm != 0 and hostile(int(tm), 0):
+					var nme: String = GameData.name_of(o["id"], String(team_factions[tm]))
+					if not fn.has(nme):
+						fn.append(nme)
+			return {"text": "Structure ennemie « %s » détruite : %d/%d" % [" / ".join(PackedStringArray(fn)), mini(got, nd), nd],
 					"frac": clampf(float(got) / nd, 0.0, 1.0)}
 		"ore":
 			var ao: int = o["amount"]

@@ -1,6 +1,7 @@
 extends SceneTree
 ## Faisabilité statique des objectifs de toutes les campagnes.
 func _chain(id: String, fac: String, tier: int) -> String:
+	if id == "chantier": return ""
 	if not GameData.BUILDINGS.has(id): return "%s inconnu" % id
 	var d: Dictionary = GameData.BUILDINGS[id]
 	var f: String = d.get("faction", "")
