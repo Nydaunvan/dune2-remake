@@ -781,7 +781,7 @@ func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void
 			if game_time - _full_warn > 6.0:
 				_full_warn = game_time
 				ui.toast("Stockage de %s plein : construisez un %s" % ["Solaris" if kind == "spice" else "minerai", "Silo d'épice" if kind == "spice" else "Silo de minerai"], GameData.RED)
-	if team == 0:
+	if team == 0 and not ais.has(0):
 		if kind == "spice":
 			credits += gain
 			earned += gain
@@ -2014,9 +2014,47 @@ func income_bonus(kind: String, team := 0) -> float:
 	return bonus
 
 
+## Ouvrier de secours : un camp qui possède une raffinerie (ou une fonderie) mais plus aucun récolteur
+## (ou mineur) en reçoit un gratuitement après 40 s. Sans cela, un camp sans ouvrier ni ressources
+## ne pourrait plus jamais en racheter : la partie serait perdue d'avance (joueur comme IA).
+const RELIEF_DELAY := 40.0
+var _relief := {}
+
+func _relief_workers(dt: float) -> void:
+	for t in team_factions.keys():
+		for pair in [["raffinerie", "recolteur"], ["fonderie", "mineur"]]:
+			var key := "%d|%s" % [t, pair[1]]
+			var site: Building = null
+			for b in buildings:
+				if b.team == t and b.alive and b.id == pair[0]:
+					site = b
+					break
+			var has_worker := false
+			if site != null:
+				for u in units:
+					if u.team == t and u.alive and u.id == pair[1]:
+						has_worker = true
+						break
+				if not has_worker:
+					if t == 0 and not ais.has(0):
+						has_worker = queued_count(pair[1]) > 0
+					elif ais.has(t):
+						has_worker = String(ais[t].unit_q.get("id", "")) == pair[1]
+			if site == null or has_worker:
+				_relief.erase(key)
+				continue
+			_relief[key] = float(_relief.get(key, 0.0)) + dt
+			if float(_relief[key]) >= RELIEF_DELAY:
+				_relief.erase(key)
+				_spawn_unit(pair[1], _find_free_cell(dock_cell(site, home_of(t))), t)
+				if t == 0 and ui != null:
+					ui.toast("%s de secours livré : %s" % [GameData.dname(pair[1]), GameData.dname(pair[0])], GameData.GOLD)
+
+
 ## Effets des bâtiments spéciaux, toutes les 0,5 s : revenus passifs et soins.
 func _building_effects(dt: float) -> void:
 	_update_power_state()
+	_relief_workers(dt)
 	for b in buildings:
 		if not b.alive or b.offline or b.up_left > 0.0:
 			continue
@@ -2046,7 +2084,7 @@ func _building_effects(dt: float) -> void:
 		var ow := int(_ore_acc[t])
 		if ow > 0:
 			_ore_acc[t] = float(_ore_acc[t]) - ow
-			if t == 0:
+			if t == 0 and not ais.has(0):
 				ore = mini(ore + ow, maxi(storage_cap("ore"), ore))
 			elif ais.has(t):
 				ais[t].add_income("ore", ow)
@@ -2054,7 +2092,7 @@ func _building_effects(dt: float) -> void:
 		var whole := int(_inc_acc[t])
 		if whole > 0:
 			_inc_acc[t] = float(_inc_acc[t]) - whole
-			if t == 0:
+			if t == 0 and not ais.has(0):
 				credits = mini(credits + whole, maxi(storage_cap("spice"), credits))
 			elif ais.has(t):
 				ais[t].add_income("spice", whole)
@@ -2724,7 +2762,7 @@ func _setup_sides() -> void:
 			_spawn_base_units(Vector2(home), t)
 		else:
 			_spawn_unit("mcv", _find_free_cell(home), t)
-		if t == 0:
+		if t == 0 and not GameSession.auto_player:
 			continue
 		var a := SkirmishAI.new()
 		a.setup(self, team_factions[t], t)

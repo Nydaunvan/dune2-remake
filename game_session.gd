@@ -4,6 +4,7 @@ class_name GameSession
 static var faction := "solis"
 static var mode := "skirmish" # "skirmish" ou "campaign"
 static var mission := 0
+static var auto_player := false # tests : le camp du joueur est lui aussi piloté par une IA (banc d'équilibrage)
 static var instant_bases := false # tests : bases complètes dès le départ
 static var load_slot := -1 # emplacement à charger au prochain lancement de la partie (-1 : partie neuve)
 static var opponents := 1 # escarmouche : nombre d'adversaires (1 à 3 ; à partir de 2, chacun pour soi)

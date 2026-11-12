@@ -49,13 +49,16 @@ const FACTIONS := {
 	"conclave": {
 		"name": "Conclave Obsidien",
 		"tagline": "Cristal et résilience",
-		"desc": "Minerai +20 %, unités qui se régénèrent.\nÉclats cristallins en zone, construction plus lente.",
+		"desc": "Minerai +20 %, unités qui se régénèrent hors combat.\nÉclats cristallins en zone, construction plus lente.",
 		"color": Color("b277ff"), "accent": Color("ead6ff"),
-		"build_time_mult": 1.1, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.2, "regen": 2.0,
+		"build_time_mult": 1.1, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.2, "regen": 1.2,
 		"units": ["ombre", "prisme", "obelisque", "tesson", "fracasseur", "monolithe", "veilleur", "aiguille", "quartz"],
 		"air": ["vesper", "eclipse", "passeur", "ephemere", "scintille", "stalactite", "aurore"],
 	},
 }
+
+## Régénération de faction (Conclave) : seulement après ce délai sans recevoir de coup.
+const REGEN_CALM := 6.0
 
 # Armes : cd = cadence (s), splash = rayon des dégâts de zone (px)
 const WEAPONS := {
@@ -65,7 +68,7 @@ const WEAPONS := {
 	"sonic": {"cd": 1.6, "speed": 500.0, "color": Color(0.5, 1.2, 1.6), "splash": 64.0, "len": 12.0},
 	"acid": {"cd": 1.2, "speed": 560.0, "color": Color(0.4, 1.4, 0.5), "splash": 0.0, "len": 12.0},
 	"control": {"cd": 1.4, "speed": 700.0, "color": Color(1.3, 0.4, 1.5), "splash": 0.0, "len": 12.0},
-	"shard": {"cd": 0.9, "speed": 780.0, "color": Color(1.1, 0.55, 1.8), "splash": 30.0, "len": 13.0},
+	"shard": {"cd": 0.9, "speed": 780.0, "color": Color(1.1, 0.55, 1.8), "splash": 22.0, "len": 13.0},
 	# Armes génériques des nouvelles unités (son emprunté à "snd")
 	"mortar": {"cd": 2.4, "speed": 380.0, "color": Color(1.5, 0.7, 0.3), "splash": 70.0, "len": 16.0, "snd": "rocket"},
 	"flame": {"cd": 0.22, "speed": 520.0, "color": Color(1.8, 0.8, 0.2), "splash": 0.0, "len": 12.0, "snd": "autocannon"},
@@ -82,7 +85,7 @@ const MULT := {
 	"sonic": {"light": 1.1, "medium": 1.0, "heavy": 0.9, "building": 0.7},
 	"acid": {"light": 0.8, "medium": 1.2, "heavy": 1.4, "building": 0.9},
 	"control": {"light": 1.0, "medium": 1.0, "heavy": 1.0, "building": 1.0},
-	"shard": {"light": 1.2, "medium": 1.0, "heavy": 0.9, "building": 0.8},
+	"shard": {"light": 1.05, "medium": 1.0, "heavy": 0.9, "building": 0.8},
 	"mortar": {"light": 1.0, "medium": 1.0, "heavy": 0.9, "building": 1.3},
 	"flame": {"light": 1.5, "medium": 1.0, "heavy": 0.5, "building": 0.6},
 	"plasma": {"light": 1.0, "medium": 1.1, "heavy": 1.2, "building": 1.0},

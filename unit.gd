@@ -54,6 +54,7 @@ var kills := 0
 var rank := 0
 var tech := 0        # modernisation faite (0/1)
 var _sep_t := 0.0
+var _calm_t := 99.0     # temps écoulé depuis le dernier coup reçu
 var _direct_t := 0.0
 var _slot_used := false
 var tech_left := 0.0 # modernisation en cours : secondes restantes
@@ -379,6 +380,7 @@ func take_damage(raw: float, wpn: String, attacker = null) -> void:
 		return
 	var dm: float = raw * GameData.mult(wpn, armor)
 	hp -= dm
+	_calm_t = 0.0
 	if is_instance_valid(attacker) and attacker.team != team:
 		last_attacker_team = attacker.team
 		if attacker.team == 0:
@@ -649,8 +651,9 @@ func _physics_process(delta: float) -> void:
 	if carried:
 		return
 	var rg: float = float(game.fdata_of(team).get("regen", 0.0))
-	if rg > 0.0 and hp < max_hp:
-		hp = minf(max_hp, hp + rg * delta) # cristal vivant : régénération lente
+	_calm_t += delta
+	if rg > 0.0 and hp < max_hp and _calm_t >= GameData.REGEN_CALM:
+		hp = minf(max_hp, hp + rg * delta) # cristal vivant : se régénère hors combat
 		queue_redraw()
 	if heal_rate > 0.0:
 		_heal_tick(delta)

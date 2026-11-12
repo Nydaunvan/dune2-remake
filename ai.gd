@@ -882,25 +882,29 @@ func _muster(army: Array, now: float) -> void:
 		for u in idle:
 			if u.position.distance_to(game._cell_to_world(rc)) > 7.0 * game.TILE:
 				u.order_amove(rc)
-	var need := wave_size
+	# Disponibles pour une vague : tout ce qui n'est ni en raid ni blessé (une unité qui rejoint le point
+	# de rassemblement ou qui échange des tirs à proximité compte aussi, sinon la vague ne part jamais)
+	var avail := army.filter(func(u: Unit) -> bool: return not (u in raid) and not u.has_meta("ai_hurt"))
+	var need := mini(wave_size, maxi(4, int(_army_limit() * 0.7)))
+	var full_need := need
 	var pause := wave_pause
 	if skill >= 0.5 and now >= wave_grace * 0.7:
 		# Contre-attaque : l'adversaire a peu d'armée, on frappe sans attendre
 		var fa := _foe_units().filter(func(u) -> bool: return u.weapon != "" and not u.is_worker())
-		if _power(idle) > 1.8 * _power(fa) and idle.size() >= 4:
+		if _power(avail) > 1.8 * _power(fa) and avail.size() >= 4:
 			need = 4
 			pause = wave_pause * 0.3
-	if now < wave_grace * (0.7 if need < wave_size else 1.0) or now - wave_ended < pause or idle.size() < need:
+	if now < wave_grace * (0.7 if need < full_need else 1.0) or now - wave_ended < pause or avail.size() < need:
 		return
 	# Force engagée contre ce que l'on va affronter : on n'attaque pas à perte
 	var tgt = _pick_target()
 	if tgt == null:
 		return
 	var defend := _power(_defenders_near(tgt.world_center(), 9.0 * game.TILE))
-	var mine := _power(idle)
+	var mine := _power(avail)
 	if skill >= 0.3 and mine < 0.75 * defend and now - wave_ended < wave_pause * 3.0:
 		return # trop faible : on attend du renfort
-	squad = idle.duplicate()
+	squad = avail.duplicate()
 	if skill >= 0.4 and squad.size() >= 6:
 		squad = squad.slice(0, int(squad.size() * 0.8)) # une réserve reste à la base
 	squad_start = squad.size()
@@ -1006,10 +1010,17 @@ func _attack(now: float) -> void:
 		_end_wave(now)
 
 
-func _retreat(now: float) -> void:
+## Décrochage : déplacement simple vers le point de rassemblement (sans s'arrêter pour tirer).
+func _fall_back(list: Array) -> void:
 	var rc := _rally_cell()
-	for u in squad_alive():
-		u.order_amove(rc)
+	var slots: Dictionary = game._assign_slots(list.filter(func(u) -> bool: return is_instance_valid(u) and u.alive), rc)
+	for u in slots:
+		if u.state != "move":
+			u.order_path(game.path_to(u.position, slots[u]))
+
+
+func _retreat(now: float) -> void:
+	_fall_back(squad_alive())
 	if _mode_t > 25.0:
 		_end_wave(now)
 
@@ -1123,10 +1134,16 @@ func _run_raid(now: float) -> void:
 			for u in raid:
 				u.order_attack(nxt)
 			return
-	if done or hurt or _raid_t > 90.0:
-		var rc := _rally_cell()
+	# Raid intercepté par plus fort que lui : on décroche au lieu de se faire détruire pour rien
+	var outgunned := false
+	if not raid.is_empty():
+		var cen := Vector2.ZERO
 		for u in raid:
-			u.order_amove(rc)
+			cen += u.position
+		cen /= float(raid.size())
+		outgunned = _power(_defenders_near(cen, 8.0 * game.TILE)) > 1.1 * _power(raid)
+	if done or hurt or outgunned or _raid_t > 90.0:
+		_fall_back(raid)
 		raid.clear()
 		raid_target = null
 		raid_ended = now
