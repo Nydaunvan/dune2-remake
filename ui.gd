@@ -546,8 +546,8 @@ class InfoPanel extends GlassPanel:
 		for i in COMMANDS.size():
 			var cmd: Array = COMMANDS[i]
 			var cb := GameUI.NeonButton.new(cmd[1])
-			cb.position = Vector2(398.0 + i * 98.0, 22)
-			cb.size = Vector2(92, 36)
+			cb.position = Vector2(398.0 + i * 96.0, 14)
+			cb.size = Vector2(90, 32)
 			cb.pressed.connect(func() -> void:
 				var c: String = cb.get_meta("cmd")
 				game.on_command(c))
@@ -580,7 +580,12 @@ class InfoPanel extends GlassPanel:
 		btn.visible = is_b or is_u
 		if is_b:
 			var b: Building = _focus
-			btn.position = Vector2(COL2, 244)
+			btn.position = Vector2(COL2, 14)
+			btn.size = Vector2(340, 32)
+			rbtn.position = Vector2(COL2, 52)
+			rbtn.size = Vector2(224, 32)
+			dbtn.position = Vector2(COL2 + 232.0, 52)
+			dbtn.size = Vector2(108, 32)
 			var why: String = game.upgrade_block(b, game.ore)
 			btn.enabled = why == ""
 			if b.up_left > 0.0:
@@ -593,7 +598,10 @@ class InfoPanel extends GlassPanel:
 			btn.tooltip_text = why
 		elif is_u:
 			var u: Unit = _focus
-			btn.position = Vector2(COL2, 244)
+			btn.position = Vector2(592, 52)
+			btn.size = Vector2(188, 32)
+			rbtn.position = Vector2(398, 52)
+			rbtn.size = Vector2(186, 32)
 			var why2: String = game.unit_upgrade_block(u)
 			btn.enabled = why2 == ""
 			if u.tech_left > 0.0:
@@ -605,6 +613,14 @@ class InfoPanel extends GlassPanel:
 			btn.glyph = "credit"
 			btn.tooltip_text = why2
 		_update_commands()
+		if _focus is Building:
+			rbtn.position = Vector2(COL2, 52)
+			rbtn.size = Vector2(224, 32)
+			dbtn.position = Vector2(COL2 + 232.0, 52)
+			dbtn.size = Vector2(108, 32)
+		elif _focus is Unit:
+			rbtn.position = Vector2(398, 52)
+			rbtn.size = Vector2(186, 32)
 		var can_rep: bool = (_focus is Building or _focus is Unit) and _focus.team == 0 \
 				and not (_focus is Unit and (_focus.role == "convoy"))
 		rbtn.visible = can_rep
@@ -882,6 +898,9 @@ class NeonButton extends Control:
 		var fs := 13
 		var tw := UiStyle.text_width(text, fs, true)
 		var gw := 22.0 if glyph != "" else 0.0
+		while fs > 9 and tw + gw > size.x - 14.0:
+			fs -= 1
+			tw = UiStyle.text_width(text, fs, true)
 		var x0 := (size.x - tw - gw) * 0.5
 		if glyph != "":
 			UiStyle.glyph(self, glyph, Vector2(x0 + 8, size.y * 0.5), 12.0, col if enabled else tc)
