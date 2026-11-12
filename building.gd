@@ -38,6 +38,8 @@ var _scan := 0.0
 var _sprite_ok := false
 var level := 1
 var base_hp := 500.0
+var _soak_acc := 0.0 # dégâts récents (décroissance ~1 s)
+var _soak_t := 0.0
 var base_power := 0
 var base_dps := 0.0
 var vision := 7
@@ -73,7 +75,7 @@ func init_combat(p_game, p_team: int) -> void:
 		bars.name = "Bars"
 		add_child(bars)
 	var d := GameData.def(id)
-	max_hp = float(d.get("hp", 500))
+	max_hp = GameData.building_hp(id)
 	hp = max_hp
 	base_hp = max_hp
 	base_power = power
@@ -135,7 +137,7 @@ func upgrade() -> void:
 		return
 	level += 1
 	var old := max_hp
-	max_hp = base_hp * (1.0 + 0.25 * (level - 1))
+	max_hp = base_hp * (1.0 + GameData.LEVEL_HP * (level - 1))
 	hp += max_hp - old
 	power = GameData.power_at(id, level)
 	if weapon != "":
@@ -162,7 +164,16 @@ func radius_px() -> float:
 func take_damage(raw: float, wpn: String, attacker = null) -> void:
 	if not alive:
 		return
-	hp -= raw * GameData.mult(wpn, armor)
+	var dmg := raw * GameData.mult(wpn, armor)
+	# Amortissement des dégâts concentrés (voir GameData.SOAK_*) : estimation du taux sur ~1 s
+	var now: float = game.game_time
+	_soak_acc *= exp(-(now - _soak_t))
+	_soak_t = now
+	var thr := maxf(max_hp * GameData.SOAK_FRAC, 1.0)
+	if _soak_acc > thr:
+		dmg *= pow(_soak_acc / thr, GameData.SOAK_EXP - 1.0)
+	_soak_acc += dmg
+	hp -= dmg
 	queue_redraw()
 	game.notify_attack(self)
 	if weapon != "" and _target == null and is_instance_valid(attacker) and attacker.alive:
@@ -562,7 +573,7 @@ func export_state() -> Dictionary:
 
 func restore_state(s: Dictionary) -> void:
 	level = int(s["level"])
-	max_hp = base_hp * (1.0 + 0.25 * (level - 1))
+	max_hp = base_hp * (1.0 + GameData.LEVEL_HP * (level - 1))
 	power = GameData.power_at(id, level)
 	if weapon != "":
 		dps = base_dps * (1.0 + 0.25 * (level - 1))

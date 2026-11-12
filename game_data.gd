@@ -94,6 +94,18 @@ const RANK_HP := 0.15
 
 # Niveaux de bâtiment : 1 à MAX_LEVEL. Coût du niveau suivant = coût de base * UPGRADE_COST * niveau.
 const MAX_LEVEL := 3
+# Solidité des bâtiments : PV de base x BUILD_HP_MULT x "tough" ; +LEVEL_HP par niveau.
+const BUILD_HP_MULT := 1.5
+const LEVEL_HP := 0.4
+# Dégâts concentrés amortis : au-delà de SOAK_FRAC * PV max par seconde, les dégâts reçus
+# sont réduits (taux effectif = seuil * (taux/seuil)^SOAK_EXP). Une grosse armée ne rase plus un bâtiment en un instant.
+const SOAK_FRAC := 0.025
+const SOAK_EXP := 0.65
+
+
+static func building_hp(id: String) -> float:
+	var d := def(id)
+	return float(d.get("hp", 500)) * BUILD_HP_MULT * float(d.get("tough", 1.0))
 const UPGRADE_COST := 0.6
 ## Consommation d'énergie ajoutée à chaque niveau (bâtiments consommateurs améliorables).
 static func upgrade_power(id: String) -> int:
@@ -159,7 +171,7 @@ const CHANTIER_COST := 800 # base de calcul pour l'amélioration du Chantier
 
 # Bâtiment de départ (non constructible par le joueur)
 const START_BUILDING := {
-	"name": "Chantier", "size": Vector2i(3, 3), "power": 0, "hp": 1500, "armor": "building", "vision": 9,
+	"name": "Chantier", "size": Vector2i(3, 3), "power": 0, "hp": 1500, "tough": 1.4, "armor": "building", "vision": 9,
 }
 
 # Bâtiments : coût en MINERAI
@@ -170,15 +182,15 @@ const BUILDINGS := {
 	},
 	"raffinerie": {
 		"name": "Raffinerie", "cost": 450, "time": 12.6,
-		"size": Vector2i(3, 2), "power": -30, "requires": ["centrale"], "hp": 900, "armor": "building",
+		"size": Vector2i(3, 2), "power": -30, "requires": ["centrale"], "hp": 900, "tough": 1.2, "armor": "building",
 	},
 	"fonderie": {
 		"name": "Fonderie", "cost": 400, "time": 12.6,
-		"size": Vector2i(3, 2), "power": -25, "requires": ["centrale"], "hp": 800, "armor": "building",
+		"size": Vector2i(3, 2), "power": -25, "requires": ["centrale"], "hp": 800, "tough": 1.2, "armor": "building",
 	},
 	"usine": {
 		"name": "Usine", "cost": 500, "time": 12.6,
-		"size": Vector2i(3, 2), "power": -20, "requires": ["centrale"], "hp": 1000, "armor": "building",
+		"size": Vector2i(3, 2), "power": -20, "requires": ["centrale"], "hp": 1000, "tough": 1.2, "armor": "building",
 	},
 	"tourelle": {
 		"name": "Tourelle", "cost": 350, "time": 11.2,
@@ -191,7 +203,7 @@ const BUILDINGS := {
 	# --- Bâtiments débloqués par la campagne ("unlock" = mission à terminer avant) ---
 	"mur": {
 		"name": "Mur", "cost": 40, "time": 2.8, "size": Vector2i(1, 1), "power": 0, "requires": [],
-		"hp": 450, "armor": "building", "vision": 3, "unlock": 1, "no_upgrade": true, "wall": true,
+		"hp": 450, "tough": 1.5, "armor": "building", "vision": 3, "unlock": 1, "no_upgrade": true, "wall": true,
 		"desc": "Barre le passage",
 	},
 	"silo": {
@@ -220,7 +232,7 @@ const BUILDINGS := {
 	},
 	"reacteur": {
 		"name": "Réacteur", "cost": 700, "time": 12.0, "size": Vector2i(2, 2), "power": 260,
-		"requires": ["centrale", "usine"], "hp": 700, "armor": "building", "unlock": 3,
+		"requires": ["centrale", "usine"], "hp": 700, "tough": 1.5, "armor": "building", "unlock": 3,
 		"no_upgrade": true, "desc": "Grosse production d'énergie",
 		"req_level": {"centrale": 2, "usine": 2}, "max": 2,
 	},
@@ -254,7 +266,7 @@ const BUILDINGS := {
 	},
 	"bunker": {
 		"name": "Bunker", "cost": 650, "time": 12.0, "size": Vector2i(2, 2), "power": -15,
-		"requires": ["usine"], "hp": 2000, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"requires": ["usine"], "hp": 2000, "tough": 2.0, "armor": "building", "unlock": 3, "no_upgrade": true,
 		"faction": "kharn", "aa": true, "vs_air": 0.8,
 		"weapon": "cannon", "dps": 34, "range": 6, "vision": 9,
 		"desc": "Fortin ultra-résistant (Kharn)",
@@ -262,7 +274,7 @@ const BUILDINGS := {
 	},
 	"mur_acier": {
 		"name": "Mur d'acier", "cost": 90, "time": 3.5, "size": Vector2i(1, 1), "power": 0, "requires": [],
-		"hp": 1400, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true, "wall": true,
+		"hp": 1400, "tough": 2.2, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true, "wall": true,
 		"faction": "kharn", "desc": "Mur renforcé (Kharn)",
 	},
 	"tour_acide": {
@@ -294,7 +306,7 @@ const BUILDINGS := {
 	},
 	"mur_cristal": {
 		"name": "Mur de cristal", "cost": 70, "time": 3.2, "size": Vector2i(1, 1), "power": 0, "requires": [],
-		"hp": 1000, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true, "wall": true,
+		"hp": 1000, "tough": 2.0, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true, "wall": true,
 		"faction": "conclave", "desc": "Mur cristallin qui se régénère (Conclave)",
 	},
 }
