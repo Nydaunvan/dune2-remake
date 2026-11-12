@@ -869,10 +869,10 @@ func is_visible_cell(c: Vector2i) -> bool:
 func _update_fog() -> void:
 	fog_vis.fill(0)
 	for u in units:
-		if side_of(u.team) == 0 and u.alive:
+		if u.team == 0 and u.alive: # brouillard propre au joueur : alliés exclus
 			_reveal(u.position, u.vision)
 	for b in buildings:
-		if side_of(b.team) == 0 and b.alive:
+		if b.team == 0 and b.alive:
 			_reveal(b.world_center(), GameData.BUILDING_VISION if (b.offline and b.id == "radar") else b.vision)
 	var data := PackedByteArray()
 	data.resize(map_w * map_h)
@@ -891,13 +891,13 @@ func _update_fog() -> void:
 	fog_radar_tex.update(fog_radar_img)
 	# Les ennemis n'apparaissent que dans les zones visibles ; leurs bâtiments restent une fois repérés
 	for u in units:
-		if side_of(u.team) == 0:
+		if u.team == 0:
 			u.seen = true
 		else:
 			u.seen = is_visible_cell(_world_to_cell(u.position))
 		u.visible = u.seen and not u.carried
 	for b in buildings:
-		if side_of(b.team) == 0:
+		if b.team == 0:
 			b.seen = true
 			b.visible = true
 			continue
@@ -975,7 +975,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, shoo
 	var best = null
 	var best_s := INF
 	for u in units:
-		if not hostile(u.team, team) or not u.alive or u.carried or (side_of(team) == 0 and not u.seen):
+		if not hostile(u.team, team) or not u.alive or u.carried or (team == 0 and not u.seen):
 			continue
 		if u.air and shooter_id != "" and not GameData.can_hit_air(shooter_id):
 			continue
@@ -988,7 +988,7 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, shoo
 			best = u
 	if not units_only:
 		for b in buildings:
-			if not hostile(b.team, team) or not b.alive or (side_of(team) == 0 and not b.seen):
+			if not hostile(b.team, team) or not b.alive or (team == 0 and not b.seen):
 				continue
 			var d := b.world_center().distance_to(pos) - b.radius_px()
 			if d > max_d:
@@ -2149,7 +2149,7 @@ func _place_building(id: String, cell: Vector2i, team := 0, with_worker := true)
 	b.init_combat(self, team)
 	add_child(b)
 	buildings.append(b)
-	if hostile(team, 0): # jamais visible avant d'être repéré (brouillard)
+	if team != 0: # jamais visible avant d'être repéré (brouillard)
 		b.visible = false
 		b.seen = false
 	if sfx != null and game_time > 1.0:
@@ -2523,7 +2523,7 @@ func _spawn_unit(id: String, cell: Vector2i, team := 0) -> Unit:
 	u.position = _cell_to_world(cell)
 	add_child(u)
 	units.append(u)
-	if hostile(team, 0):
+	if team != 0:
 		u.visible = false
 		u.seen = false
 	return u

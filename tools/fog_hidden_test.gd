@@ -27,7 +27,7 @@ func _process(_d: float) -> bool:
 	var leaks := 0
 	var hostile_b := 0
 	for b in main.buildings:
-		if main.hostile(b.team, 0):
+		if b.team != 0:
 			hostile_b += 1
 			var known := false
 			for c in b.cells():
@@ -35,7 +35,7 @@ func _process(_d: float) -> bool:
 			if b.visible and not known:
 				leaks += 1
 	for u in main.units:
-		if main.hostile(u.team, 0) and u.visible and not main.is_visible_cell(main._world_to_cell(u.position)):
+		if u.team != 0 and u.visible and not main.is_visible_cell(main._world_to_cell(u.position)):
 			leaks += 1
 	print("%s: bâtiments hostiles=%d fuites=%d" % [cases[ci][1], hostile_b, leaks])
 	if leaks > 0:
