@@ -1600,6 +1600,9 @@ func worker_block(id: String, team := 0) -> String:
 ## Contraintes des bâtiments évolués : niveau de bâtiments requis et nombre maximal.
 func building_block(id: String, team := 0) -> String:
 	var d: Dictionary = GameData.def(id)
+	# Aucune construction tant que le Chantier n'est pas déployé (ni s'il a été détruit)
+	if not has_building("chantier", team):
+		return "%s requis" % GameData.name_of("chantier", faction_id_of(team))
 	var rl: Dictionary = d.get("req_level", {})
 	for rid in rl:
 		if best_level(rid, team) < int(rl[rid]):
