@@ -171,15 +171,18 @@ void fragment() {
 		float base = horizon + 0.035 + depth * 0.40 - 0.02 * fi;
 		float amp = 0.035 + 0.075 * depth;
 		float ridge = base - amp * dune(x, fi * 5.0);
-		float e = 0.012;
-		float slope = (dune(x + e, fi * 5.0) - dune(x - e, fi * 5.0)) / (2.0 * e) * amp * (1.6 + depth * 1.8) * ar;
+		float sc = (1.6 + depth * 1.8) * ar;
 		float aa = SCREEN_PIXEL_SIZE.y * 1.6;
 		if (uv.y > ridge - aa) {
 			// éclairage : côté tourné vers le soleil (à droite) éclairé
 			float below = uv.y - ridge;
-			// seule la zone proche de la crête montre le relief ; plus bas, un dégradé doux
-			float slope_lit = smoothstep(0.0, 1.0, clamp(0.5 + slope * 3.2, 0.0, 1.0));
-			float lit = mix(0.55, slope_lit, exp(-below * (30.0 - 10.0 * depth)));
+			// pente lue en biais (l'ombre de la dune glisse le long de sa face, jamais de bande verticale)
+			// et sur un large pas, pour un dégradé continu d'un bout à l'autre de la dune
+			float xs = x - below * sc * 1.4;
+			float e = 0.06;
+			float slope = (dune(xs + e, fi * 5.0) - dune(xs - e, fi * 5.0)) / (2.0 * e) * amp * sc;
+			float slope_lit = smoothstep(0.0, 1.0, clamp(0.5 + slope * 2.0, 0.0, 1.0));
+			float lit = mix(0.55, slope_lit, exp(-below * (12.0 - 4.0 * depth)));
 			vec3 shade_c = mix(vec3(0.24, 0.07, 0.13), vec3(0.10, 0.035, 0.08), depth);
 			vec3 lit_c = mix(vec3(0.98, 0.54, 0.36), vec3(0.62, 0.27, 0.20), depth);
 			vec3 sand = mix(shade_c, lit_c, lit);
