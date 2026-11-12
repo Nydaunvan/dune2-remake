@@ -51,6 +51,11 @@ func setup(p_game) -> void:
 	guide.custom_minimum_size = Vector2(160, 56)
 	guide.pressed.connect(func() -> void: Guide.open(game, game.faction_id))
 	hb.add_child(guide)
+	var vers := GameUI.NeonButton.new("v%s" % ChangelogData.current())
+	vers.accent = GameData.GOLD
+	vers.custom_minimum_size = Vector2(110, 56)
+	vers.pressed.connect(func() -> void: Changelog.open(game))
+	hb.add_child(vers)
 	var menu := GameUI.NeonButton.new("MENU PRINCIPAL")
 	menu.accent = GameData.RED
 	menu.custom_minimum_size = Vector2(250, 56)

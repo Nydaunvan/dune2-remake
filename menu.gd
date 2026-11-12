@@ -80,6 +80,14 @@ func _ready() -> void:
 			Color(1, 1, 1, 0.55), false)
 	vb.add_child(_hint)
 
+	# Numéro de version cliquable → journal des versions
+	var ver := GameUI.NeonButton.new("VERSION %s — NOUVEAUTÉS" % ChangelogData.current())
+	ver.accent = GameData.GOLD
+	ver.custom_minimum_size = Vector2(300, 38)
+	ver.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	ver.pressed.connect(func() -> void: Changelog.open(self))
+	vb.add_child(ver)
+
 
 func _label(text: String, size: int, color: Color, outline: bool) -> Label:
 	var l := Label.new()
@@ -494,3 +502,5 @@ class FactionCard extends Control:
 func _unhandled_key_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and event.keycode == KEY_F1:
 		Guide.open(self, selected)
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_F2:
+		Changelog.open(self)

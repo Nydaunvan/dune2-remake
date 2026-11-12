@@ -47,6 +47,8 @@ func _process(_d: float) -> bool:
 	if f == 5 and OS.has_environment("SHOT_GUIDE"):
 		var g = Guide.open(node, GameSession.faction)
 		g._show(OS.get_environment("SHOT_GUIDE"))
+	if f == 5 and OS.has_environment("SHOT_CHANGELOG"):
+		Changelog.open(node)
 	if f == 5 and OS.has_environment("SHOT_OVERLAY"):
 		node._open_campaign()
 	if f == 3 and OS.has_environment("SHOT_FOCUS"):

@@ -1196,6 +1196,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				_clear_focus()
 			KEY_F1:
 				Guide.open(self, faction_id)
+			KEY_F2:
+				Changelog.open(self)
 			KEY_O:
 				ui.toggle_objectives()
 			KEY_P:

@@ -161,7 +161,7 @@ func _p_controls() -> String:
 """ + _h("Clavier") + """• [b]Flèches ou Z Q S D[/b] : déplacer la caméra
 • """ + _k("D") + " : déployer l'engin de chantier — " + _k("U") + """ : décharger un transport
 • """ + _k("O") + " : afficher / masquer les objectifs — " + _k("M") + """ : couper le son
-• """ + _k("Échap") + " ou " + _k("P") + " : menu pause — " + _k("F1") + """ : ce guide
+• """ + _k("Échap") + " ou " + _k("P") + " : menu pause — " + _k("F1") + " : ce guide — " + _k("F2") + """ : journal des versions
 • """ + _k("F6") + " : sauvegarde rapide — " + _k("F7") + """ : chargement rapide
 • """ + _k("F11") + " : plein écran — " + _k("F10") + """ : retour au menu principal
 """ + _h("Interface") + """• [b]Barre du haut[/b] : Solaris, minerai, énergie (produite / consommée), temps de jeu, boutons OBJECTIFS, GUIDE et MENU.
