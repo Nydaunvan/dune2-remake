@@ -1227,7 +1227,7 @@ class BuildIcon extends Control:
 			_card_note("BÂTIMENT REQUIS", 11)
 		if not GameData.UNITS.has(id) and not game.is_unlocked(id):
 			var lock_s := "CHANTIER NIV. %d" % game.chantier_needed(id) if game.mission.is_empty() \
-					else "MISSION %d" % int(d.get("unlock", 0))
+					else "MISSION %d" % Campaign.mission_for_unlock(game.faction_id, int(d.get("unlock", 0)))
 			_card_note(lock_s, 12)
 		elif d.has("faction") and not GameData.UNITS.has(id):
 			UiStyle.text(self, Vector2(12, 24), "FACTION", 10, game.fdata["color"] * 1.5, true)

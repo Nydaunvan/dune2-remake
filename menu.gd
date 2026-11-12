@@ -68,7 +68,7 @@ func _ready() -> void:
 		b.custom_minimum_size = Vector2(210, 58)
 		btns.add_child(b)
 
-	_hint = _label("Campagne : 10 missions par faction — Escarmouche : détruisez la ou les bases adverses", 15,
+	_hint = _label("Campagne : 15 à 18 missions par faction — Escarmouche : détruisez la ou les bases adverses", 15,
 			Color(1, 1, 1, 0.55), false)
 	vb.add_child(_hint)
 
@@ -330,7 +330,7 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 		tag += "  —  TERMINÉE"
 	v.add_child(_left(tag, 15, GameData.GOLD))
 	v.add_child(_left(String(m["title"]).to_upper(), 24, Color.WHITE))
-	var lvl := Campaign.level_of(i)
+	var lvl := Campaign.level_of(selected, i)
 	var dcol := Color(0.4, 1.0, 0.6).lerp(Color(1.0, 0.3, 0.25), float(lvl - 1) / 9.0)
 	v.add_child(_left("DIFFICULTÉ  %s%s  %d/10" % ["◆".repeat(lvl), "◇".repeat(10 - lvl), lvl], 13, dcol))
 	var br := _left(Campaign.briefing(selected, i), 14, Color(1, 1, 1, 0.8))

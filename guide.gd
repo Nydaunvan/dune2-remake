@@ -142,7 +142,7 @@ func _name(id: String) -> String:
 
 func _p_start() -> String:
 	return _h("Le but du jeu") + """Bâtissez une base sur la planète désertique, récoltez l'épice (Solaris) et le minerai, formez une armée puis détruisez vos adversaires. Il existe deux façons de jouer :
-• [b]Campagne[/b] : 10 missions par faction, chacune avec ses objectifs, son adversaire et son briefing. Les missions terminées débloquent de nouveaux bâtiments.
+• [b]Campagne[/b] : 15 à 18 missions par faction (Solis 15, Kharn 16, Vael 17, Conclave 18), chacune avec ses objectifs, son adversaire et son briefing. Les missions terminées débloquent de nouveaux bâtiments.
 • [b]Escarmouche[/b] : une carte aléatoire, un ou deux adversaires menés par l'IA. Tout se débloque en améliorant le Chantier. La fenêtre de paramètres de l'escarmouche permet de choisir 1 ou 2 adversaires (avec 2 adversaires, chaque faction attaque toutes les autres : chacun pour soi), la faction adverse, la taille de la carte, les ressources de départ et la difficulté de l'IA.
 """ + _h("Vos premières minutes") + """1. Sélectionnez l'[b]engin de chantier[/b] et appuyez sur """ + _k("D") + """ (ou bouton DÉPLOYER) : il devient un Chantier, le cœur de votre base.
 2. Construisez une [b]Centrale[/b] : sans énergie, rien ne fonctionne correctement.
@@ -203,7 +203,7 @@ func _p_buildings() -> String:
 		if not req.is_empty():
 			line += ", nécessite : " + ", ".join(req)
 		if d.get("unlock", 0) > 1 and d.get("unlock", 0) <= 3:
-			line += ", débloqué par la campagne (mission %d)" % int(d["unlock"])
+			line += ", débloqué par la campagne (mission %d)" % Campaign.mission_for_unlock(faction, int(d["unlock"]))
 		if d.has("desc"):
 			line += "\n    " + String(d["desc"])
 		if GameData.UPGRADES.has(id):

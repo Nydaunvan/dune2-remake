@@ -151,7 +151,7 @@ func _ready() -> void:
 	elif _save.is_empty():
 		credits = int(credits * GameSession.skirm_res)
 		ore = int(ore * GameSession.skirm_res)
-	tier = GameSession.mission if GameSession.mode == "campaign" else Campaign.cleared(faction_id)
+	tier = Campaign.tier_of(faction_id, GameSession.mission) if GameSession.mode == "campaign" else Campaign.tier_of(faction_id, Campaign.cleared(faction_id))
 	# Écran de chargement (la partie est en pause tant que tout n'est pas prêt)
 	if DisplayServer.get_name() != "headless":
 		loading = LoadingScreen.new(fdata["color"])
@@ -2295,7 +2295,7 @@ func on_item_clicked(id: String, button: int) -> void:
 		if mission.is_empty():
 			ui.toast("%s : améliorez le Chantier au niveau %d" % [GameData.dname(id), chantier_needed(id)], GameData.AMBER)
 		else:
-			ui.toast("%s : débloqué après la mission %d de la campagne" % [GameData.dname(id), int(d.get("unlock", 0))], GameData.AMBER)
+			ui.toast("%s : débloqué après la mission %d de la campagne" % [GameData.dname(id), Campaign.mission_for_unlock(faction_id, int(d.get("unlock", 0)))], GameData.AMBER)
 		return
 	if worker_block(id) != "":
 		ui.toast("%s : %d maximum avec ce niveau de Chantier — améliorez le Chantier pour en avoir plus" % [GameData.dname(id), worker_cap(id)], GameData.AMBER)
