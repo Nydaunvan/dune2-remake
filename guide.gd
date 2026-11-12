@@ -225,6 +225,12 @@ func _p_units() -> String:
 			line += ", dégâts %d/s, portée %d" % [int(d["dps"]), int(d["range"])]
 		if d.get("aa", false):
 			line += ", [color=#7fe9ff]peut toucher les unités volantes[/color]"
+			if float(d.get("vs_air", 1.0)) < 1.0:
+				line += " (tir réduit)"
+		if float(d.get("vs_ground", 1.0)) < 1.0:
+			line += ", [color=#ffb36b]peu efficace contre le sol[/color]"
+		if float(d.get("vs_air", 1.0)) > 1.0:
+			line += ", [color=#7fe9ff]redoutable contre l'air[/color]"
 		var ureq := GameData.req_names(d)
 		if not ureq.is_empty():
 			line += ", nécessite : " + ", ".join(ureq)

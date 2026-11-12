@@ -168,6 +168,8 @@ const BUILDINGS := {
 		"name": "Tourelle", "cost": 350, "time": 11.2,
 		"size": Vector2i(2, 2), "power": -15, "requires": ["usine"], "hp": 700, "armor": "building",
 		"weapon": "cannon", "dps": 22, "range": 7, "vision": 9,
+		"aa": true,
+		"vs_air": 0.8,
 	},
 	# --- Bâtiments débloqués par la campagne ("unlock" = mission à terminer avant) ---
 	"mur": {
@@ -198,7 +200,8 @@ const BUILDINGS := {
 	"batterie": {
 		"aa": true, "name": "Batterie de roquettes", "cost": 600, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
 		"requires": ["usine", "radar"], "hp": 750, "armor": "building", "unlock": 3, "no_upgrade": true,
-		"weapon": "rocket", "dps": 40, "range": 11, "vision": 10, "desc": "Défense longue portée",
+		"weapon": "rocket", "dps": 38, "range": 11, "vision": 10, "desc": "Défense longue portée",
+		"vs_air": 1.2,
 	},
 	"aerodrome": {
 		"name": "Aérodrome", "cost": 600, "time": 12.0, "size": Vector2i(3, 2), "power": -30,
@@ -231,7 +234,7 @@ const BUILDINGS := {
 	"tour_acide": {
 		"name": "Tour acide", "cost": 500, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
 		"requires": ["usine"], "hp": 600, "armor": "building", "unlock": 3, "no_upgrade": true,
-		"faction": "vael", "weapon": "acid", "dps": 38, "range": 7, "vision": 9,
+		"faction": "vael", "weapon": "acid", "dps": 34, "range": 7, "vision": 9,
 		"desc": "Perce les blindages (Vael)",
 	},
 	"marche": {
@@ -266,10 +269,12 @@ const UNITS := {
 	},
 	# --- Unités volantes (Aérodrome) ---
 	"libellule": {
-		"aa": true, "name": "Libellule", "role": "combat", "desc": "Chasseur léger, touche l'air", "air": true,
+		"aa": true, "name": "Libellule", "role": "combat", "desc": "Chasseur de supériorité aérienne (faible contre le sol)", "air": true,
 		"armor": "light", "weapon": "autocannon",
-		"cost": 380, "time": 7.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
-		"hp": 160, "speed": 210.0, "vision": 12, "dps": 18, "range": 4,
+		"cost": 360, "time": 7.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 170, "speed": 210.0, "vision": 12, "dps": 20, "range": 4,
+		"vs_air": 1.3,
+		"vs_ground": 0.5,
 	},
 	"aigrette": {
 		"name": "Aigrette", "role": "combat", "desc": "Bombardier sonique (zone)", "air": true,
@@ -286,32 +291,34 @@ const UNITS := {
 	"faucheur": {
 		"aa": true, "name": "Faucheur", "role": "combat", "desc": "Hélicoptère à roquettes", "air": true,
 		"armor": "medium", "weapon": "rocket",
-		"cost": 560, "time": 9.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
-		"hp": 340, "speed": 150.0, "vision": 10, "dps": 40, "range": 7,
+		"cost": 620, "time": 9.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 330, "speed": 150.0, "vision": 10, "dps": 36, "range": 7,
 	},
 	"marteau": {
 		"name": "Marteau", "role": "combat", "desc": "Bombardier lourd (sol)", "air": true,
 		"armor": "heavy", "weapon": "cannon",
-		"cost": 820, "time": 12.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
-		"hp": 520, "speed": 110.0, "vision": 9, "dps": 46, "range": 5,
+		"cost": 900, "time": 12.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 500, "speed": 110.0, "vision": 9, "dps": 42, "range": 5,
 	},
 	"mule": {
 		"name": "Mule", "role": "transport", "desc": "Transport de 6 unités", "air": true,
 		"armor": "heavy",
-		"cost": 600, "time": 10.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"cost": 650, "time": 10.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
 		"hp": 600, "speed": 100.0, "vision": 9, "slots": 6,
 	},
 	"guepe": {
-		"aa": true, "name": "Guêpe", "role": "combat", "desc": "Chasseur ultra-rapide", "air": true,
+		"aa": true, "name": "Guêpe", "role": "combat", "desc": "Chasseur ultra-rapide (faible contre le sol)", "air": true,
 		"armor": "light", "weapon": "autocannon",
-		"cost": 330, "time": 6.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
-		"hp": 140, "speed": 240.0, "vision": 13, "dps": 17, "range": 4,
+		"cost": 340, "time": 6.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 150, "speed": 240.0, "vision": 13, "dps": 22, "range": 4,
+		"vs_air": 1.3,
+		"vs_ground": 0.5,
 	},
 	"frelon": {
 		"name": "Frelon", "role": "combat", "desc": "Bombardier acide (sol)", "air": true,
 		"armor": "light", "weapon": "acid",
-		"cost": 580, "time": 10.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
-		"hp": 230, "speed": 175.0, "vision": 10, "dps": 44, "range": 5,
+		"cost": 620, "time": 10.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 230, "speed": 175.0, "vision": 10, "dps": 40, "range": 5,
 	},
 	"pelican": {
 		"name": "Pélican", "role": "transport", "desc": "Transport de 4 unités rapide", "air": true,
@@ -321,10 +328,11 @@ const UNITS := {
 	},
 	# --- Maison Solis ---
 	"sentinelle": {
-		"aa": true, "name": "Sentinelle", "role": "combat", "desc": "Éclaireur rapide, touche l'air",
+		"aa": true, "name": "Sentinelle", "role": "combat", "desc": "Éclaireur rapide, harcèle l'air",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 220, "time": 5.0, "level": 1, "requires": ["usine"], "from": "usine",
 		"hp": 190, "dps": 15, "speed": 160.0, "range": 5, "vision": 11,
+		"vs_air": 0.7,
 	},
 	"egide": {
 		"name": "Égide", "role": "combat", "desc": "Char moyen polyvalent",
@@ -343,7 +351,7 @@ const UNITS := {
 		"name": "Bélier", "role": "combat", "desc": "Buggy d'assaut bon marché",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 290, "time": 6.0, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 230, "dps": 17, "speed": 120.0, "range": 3,
+		"hp": 250, "dps": 17, "speed": 120.0, "range": 3,
 	},
 	"brute": {
 		"name": "Brute", "role": "combat", "desc": "Char lourd",
@@ -352,23 +360,24 @@ const UNITS := {
 		"hp": 950, "dps": 36, "speed": 65.0, "range": 6,
 	},
 	"salve": {
-		"aa": true, "name": "Salve", "role": "combat", "desc": "Lance-roquettes, touche l'air",
+		"aa": true, "name": "Salve", "role": "combat", "desc": "Lance-missiles, anti-aérien de référence",
 		"armor": "light", "weapon": "rocket",
 		"cost": 540, "time": 9.0, "level": 2, "requires": ["usine", "radar"], "from": "usine",
-		"hp": 260, "dps": 46, "speed": 80.0, "range": 11, "vision": 9,
+		"hp": 260, "dps": 38, "speed": 80.0, "range": 11, "vision": 9,
 	},
 	# --- Cartel Vael ---
 	"faucon": {
-		"aa": true, "name": "Faucon", "role": "combat", "desc": "Raider rapide, touche l'air",
+		"aa": true, "name": "Faucon", "role": "combat", "desc": "Raider rapide, harcèle l'air",
 		"armor": "light", "weapon": "autocannon",
-		"cost": 170, "time": 4.0, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 170, "dps": 17, "speed": 200.0, "range": 4, "vision": 11,
+		"cost": 210, "time": 4.0, "level": 1, "requires": ["usine"], "from": "usine",
+		"hp": 150, "dps": 15, "speed": 200.0, "range": 4, "vision": 11,
+		"vs_air": 0.7,
 	},
 	"vipere": {
 		"name": "Vipère", "role": "combat", "desc": "Char antiblindage (acide)",
 		"armor": "medium", "weapon": "acid",
-		"cost": 460, "time": 8.0, "level": 2, "requires": ["usine"], "from": "usine",
-		"hp": 420, "dps": 41, "speed": 105.0, "range": 6,
+		"cost": 520, "time": 8.0, "level": 2, "requires": ["usine"], "from": "usine",
+		"hp": 400, "dps": 36, "speed": 105.0, "range": 6,
 	},
 	"mirage": {
 		"name": "Mirage", "role": "combat", "desc": "Prend le contrôle d'un char ennemi",
@@ -398,6 +407,11 @@ static func def(id: String) -> Dictionary:
 ## Seules certaines unités / défenses (drapeau "aa") peuvent toucher une unité volante.
 static func can_hit_air(id: String) -> bool:
 	return bool(def(id).get("aa", false))
+
+
+## Modulation des dégâts selon la cible : "vs_air" / "vs_ground" du tireur (1.0 par défaut).
+static func aim_mult(shooter_id: String, target_is_air: bool) -> float:
+	return float(def(shooter_id).get("vs_air" if target_is_air else "vs_ground", 1.0))
 
 
 static func mult(weapon: String, armor: String) -> float:

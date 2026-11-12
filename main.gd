@@ -1019,6 +1019,7 @@ func enemy_at(world_pos: Vector2):
 
 func fire(shooter, target, weapon: String, damage: float, from: Vector2, control := false) -> void:
 	var p := Projectile.new()
+	damage *= GameData.aim_mult(shooter.id, target is Unit and target.air)
 	p.setup(self, weapon, shooter.team, from, target, damage, shooter, control)
 	add_child(p)
 	Fx.impact(self, from, GameData.WEAPONS[weapon]["color"], 2, 0.16)
