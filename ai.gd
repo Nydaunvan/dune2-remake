@@ -577,7 +577,7 @@ func _think_units() -> void:
 ## Choisit le prochain char selon ce que le joueur aligne : efficacité de l'arme contre ses blindages,
 ## anti-aérien s'il a des appareils, rapport efficacité/prix, et un peu de variété.
 func _pick_ground_unit() -> String:
-	var ids: Array = fdata["units"].filter(func(i: String) -> bool: return _available(i))
+	var ids: Array = fdata["units"].filter(func(i: String) -> bool: return _available(i) and GameData.UNITS[i].has("weapon"))
 	if ids.is_empty():
 		return ""
 	if skill < 0.3:
@@ -618,7 +618,7 @@ func _pick_ground_unit() -> String:
 func _pick_air_unit() -> String:
 	var ids: Array = []
 	for id in fdata["air"]:
-		if GameData.UNITS[id].get("role", "") == "combat" and _available(id):
+		if GameData.UNITS[id].get("role", "") == "combat" and GameData.UNITS[id].has("weapon") and _available(id):
 			ids.append(id)
 	if ids.is_empty():
 		return ""
