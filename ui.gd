@@ -788,7 +788,7 @@ class InfoPanel extends GlassPanel:
 			y += 22.0
 			_row(34, y, "Vol", "Ignore le terrain")
 		else:
-			_row(34, y, "Capacité", "%d  (%d en soute)" % [int(u.cargo_cap), int(u.cargo)])
+			_row(34, y, "Capacité", "%d  (%d en soute)" % [roundi(u.cargo_cap), roundi(u.cargo)])
 			y += 22.0
 			_row(34, y, "Rendement", "%d /s" % int(u.harvest_rate))
 		UiStyle.section(self, Vector2(COL2, 128), 340, "ÉVOLUTION" if u.role == "combat" else "RÔLE", UiStyle.GOLD)

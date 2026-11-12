@@ -722,6 +722,8 @@ func _harvest(delta: float) -> void:
 	var room := cargo_cap - cargo
 	var got: float = game.extract(work_cell, minf(harvest_rate * delta, room))
 	cargo += got
+	if cargo >= cargo_cap - 0.01:
+		cargo = cargo_cap # évite 159,999… à l'affichage et au dépôt
 	queue_redraw()
 	if cargo >= cargo_cap - 0.01:
 		_start_return()

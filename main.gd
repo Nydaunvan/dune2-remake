@@ -635,7 +635,7 @@ func storage_cap(kind: String, team := 0) -> int:
 
 func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void:
 	var fd := fdata_of(team)
-	var gain := int(amount * float(fd["spice_mult" if kind == "spice" else "ore_mult"]) * income_bonus(kind, team))
+	var gain := roundi(amount * float(fd["spice_mult" if kind == "spice" else "ore_mult"]) * income_bonus(kind, team))
 	if team == 0:
 		var room := storage_cap(kind) - (credits if kind == "spice" else ore)
 		if gain > room:
