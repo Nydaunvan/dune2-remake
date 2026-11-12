@@ -5,11 +5,11 @@ class_name Campaign
 const SAVE_PATH := "user://campaign.cfg"
 
 ## Types d'objectifs : build, harvest, train, survive, destroy_all, outposts,
-## escort, hold, protect_ally (contrainte : la base alliée ne doit pas tomber).
+## escort, hold.
 const BASE := {"centrale": 1, "raffinerie": 1, "fonderie": 1, "usine": 1}
 
 ## Une campagne différente par faction : 10 missions chacune, avec son propre adversaire,
-## ses objectifs, son rythme et son briefing ({ENEMY} et {ALLY} = noms des factions).
+## ses objectifs, son rythme et son briefing ({ENEMY} et {RIVAL} = noms des factions).
 const CAMPAIGNS := {
 	# --- Maison Solis : défense, précision, patience ---
 	"solis": [
@@ -29,13 +29,12 @@ const CAMPAIGNS := {
 			"brief": "{ENEMY} a planté deux balises de guerre pour brouiller nos capteurs. Précision d'abord : montez une petite armée de qualité et détruisez-les avant que la Légion ne s'organise.",
 		},
 		{
-			"id": "ligne", "title": "Tenir la ligne", "enemy": "kharn", "ally": true, "size": 96, "credits": 2000, "ore": 2200,
+			"id": "ligne", "title": "Tenir la ligne", "enemy": "kharn", "rival": true, "size": 96, "credits": 2000, "ore": 2200,
 			"start_units": ["@0", "@1"], "ally_units": 2,
-			"objectives": [{"type": "survive", "time": 600.0}, {"type": "protect_ally"}],
+			"objectives": [{"type": "survive", "time": 600.0}, {"type": "kills", "count": 10}],
 			"ai": {"slowdown": 1.5, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
-			"ally_ai": {"slowdown": 1.8, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 5, "credits": 1200, "ore": 1500},
-			"obj": "Survivez 10 minutes sans perdre la base alliée",
-			"brief": "{ALLY} a besoin de notre bouclier. {ENEMY} va déferler en force : fortifiez-vous, tenez la durée exigée et protégez notre allié.",
+			"obj": "Survivez 10 minutes et abattez 10 unités ennemies",
+			"brief": "{ENEMY} va déferler en force et {RIVAL} guette le moment où nous faiblirons. Aucune de ces deux maisons n'est notre amie : fortifiez-vous, tenez la durée exigée et faites payer chaque assaut.",
 		},
 		{
 			"id": "cristaux", "title": "Convoi de cristaux", "enemy": "kharn", "size": 96, "credits": 2000, "ore": 2200,
@@ -129,14 +128,13 @@ const CAMPAIGNS := {
 			"brief": "Le col central attire aussi {RIVAL}, qui n'est l'ami de personne. Occupez-le avec une troupe solide face à {ENEMY} et aux pillards, sans négliger la récolte.",
 		},
 		{
-			"id": "guerre", "title": "Convoi de guerre", "enemy": "vael", "ally": true, "size": 96, "credits": 2000, "ore": 2200,
+			"id": "guerre", "title": "Convoi de guerre", "enemy": "vael", "rival": true, "size": 96, "credits": 2000, "ore": 2200,
 			"start_units": ["@0", "@1"], "ally_units": 2,
 			"convoy": {"count": 4, "need": 3, "ambushes": 3, "start": 420.0, "ambush_size": 3},
 			"objectives": [{"type": "escort"}, {"type": "train", "count": 5}],
 			"ai": {"slowdown": 1.7, "grace": 600.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1500, "ore": 1800},
-			"ally_ai": {"slowdown": 1.9, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 5, "credits": 1200, "ore": 1500},
 			"obj": "Escortez le convoi de munitions : 3 camions sur 4 doivent arriver",
-			"brief": "Un convoi de munitions doit rejoindre le front. {ENEMY} a tendu trois embuscades sur la route, plus nombreuses mais moins bien défendues : brisez-les. {ALLY} nous couvre à l'arrière.",
+			"brief": "Un convoi de munitions doit rejoindre le front. {ENEMY} a tendu trois embuscades sur la route, plus nombreuses mais moins bien défendues : brisez-les. {RIVAL} rôde aussi dans la région et ne fera aucun cadeau.",
 		},
 		{
 			"id": "ecrasement", "title": "L'écrasement", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
@@ -211,13 +209,12 @@ const CAMPAIGNS := {
 			"brief": "Nos camions de marchandises doivent traverser le territoire de {ENEMY} avant que ses patrouilles ne réagissent. Le départ est rapide, vos éclaireurs doivent l'être aussi.",
 		},
 		{
-			"id": "double", "title": "Double jeu", "enemy": "kharn", "ally": true, "size": 96, "credits": 2000, "ore": 2200,
+			"id": "double", "title": "Double jeu", "enemy": "kharn", "rival": true, "size": 96, "credits": 2000, "ore": 2200,
 			"start_units": ["@0", "@1"], "ally_units": 2,
-			"objectives": [{"type": "survive", "time": 420.0}, {"type": "protect_ally"}],
+			"objectives": [{"type": "survive", "time": 420.0}, {"type": "kills", "count": 12}],
 			"ai": {"slowdown": 1.4, "grace": 240.0, "pause": 50.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
-			"ally_ai": {"slowdown": 1.8, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 5, "credits": 1200, "ore": 1500},
-			"obj": "Survivez 7 minutes sans perdre la base de l'allié",
-			"brief": "{ALLY} nous paie pour tenir les assauts de {ENEMY}. Le temps convenu : assez pour toucher la prime, pas assez pour laisser sa base tomber.",
+			"obj": "Survivez 7 minutes et abattez 12 unités ennemies",
+			"brief": "{ENEMY} et {RIVAL} se disputent le même territoire et chacun veut notre peau. Le temps convenu : assez pour toucher la prime, pas assez pour leur laisser le désert. Frappez celui qui s'expose.",
 		},
 		{
 			"id": "entrepots", "title": "Les entrepôts", "rival": true, "enemy": "solis", "size": 112, "outposts": 4, "credits": 2000, "ore": 2200,
@@ -256,14 +253,13 @@ const CAMPAIGNS := {
 			"brief": "{ENEMY} a mis sa tête à prix, et nous touchons à chaque blindé abattu. Un maximum de victimes dans le temps imparti : harcelez, repliez-vous, recommencez. Quelques Solaris au passage ne feront pas de mal.",
 		},
 		{
-			"id": "fragile", "title": "Alliance fragile", "enemy": "solis", "ally": true, "size": 112, "credits": 2500, "ore": 2500,
+			"id": "fragile", "title": "Route assiégée", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@1"], "ally_units": 3,
 			"convoy": {"count": 5, "need": 4, "ambushes": 3, "start": 360.0, "ambush_size": 3},
-			"objectives": [{"type": "escort"}, {"type": "protect_ally"}, {"type": "upgrade", "id": "raffinerie", "level": 2}],
+			"objectives": [{"type": "escort"}, {"type": "kills", "count": 10}, {"type": "upgrade", "id": "raffinerie", "level": 2}],
 			"ai": {"slowdown": 1.5, "grace": 360.0, "pause": 70.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
-			"ally_ai": {"slowdown": 1.8, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 5, "credits": 1200, "ore": 1500},
-			"obj": "Escortez 4 camions sur 5, gardez la base de l'allié et passez la raffinerie au niveau 2",
-			"brief": "{ALLY} ne nous aime pas, mais il paie. Escortez ses camions à travers les embuscades de {ENEMY}, empêchez sa base de tomber et prouvez le savoir-faire du Cartel en modernisant la raffinerie.",
+			"obj": "Escortez 4 camions sur 5, abattez 10 unités ennemies et passez la raffinerie au niveau 2",
+			"brief": "{ENEMY} a tendu ses embuscades sur la route et {RIVAL} attend que nous trébuchions. Escortez les camions jusqu'au bout, repoussez les deux camps et prouvez le savoir-faire du Cartel en modernisant la raffinerie.",
 		},
 		{
 			"id": "troisgrands", "title": "Guerre des trois", "enemy": "kharn", "rival": true, "size": 112, "credits": 3000, "ore": 3000,
@@ -353,18 +349,15 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 	var g := float(i) / 9.0
 	d["ai"] = AI_CURVE[i].duplicate()
 	var a: Dictionary = d["ai"]
-	# Second adversaire / allié : même courbe, en un peu plus faible
+	# Second adversaire : même courbe, en un peu plus faible
 	d["third_ai"] = {"slowdown": float(a["slowdown"]) * 1.3, "grace": float(a["grace"]) * 1.3, "pause": float(a["pause"]) * 1.3,
 			"max_army": int(int(a["max_army"]) * 0.6), "wave": maxi(int(int(a["wave"]) * 0.7), 3),
 			"credits": int(int(a["credits"]) * 0.7), "ore": int(int(a["ore"]) * 0.7)}
-	if d.get("ally", false):
-		d["ally_ai"] = d["third_ai"]
 	# Les dernières missions : adversaire déjà installé, et la finale oppose trois camps
 	if i >= 7:
 		d["enemy_base"] = true
 	if i == 9:
-		if not d.get("ally", false):
-			d["rival"] = true
+		d["rival"] = true
 		if d.get("rival", false):
 			d["third_base"] = true
 		var has_all := false
@@ -411,7 +404,6 @@ static func _obj_short(d: Dictionary) -> String:
 			"outposts": parts.append("raser les avant-postes")
 			"hold": parts.append("tenir la zone %s" % _mins(float(d["zone"]["time"])))
 			"destroy_all": parts.append("détruire tous les adversaires" if d.get("rival", false) else "détruire l'adversaire")
-			"protect_ally": parts.append("protéger l'allié")
 			"upgrade": parts.append("%s niveau %d" % [String(GameData.def(o["id"])["name"]).to_lower(), int(o["level"])])
 			"kills": parts.append("%d victimes" % int(o["count"]))
 			"destroy_type": parts.append("détruire %d %s" % [int(o["count"]), String(GameData.def(o["id"])["name"]).to_lower()])
@@ -433,10 +425,10 @@ static func level_of(m: int) -> int:
 	return m + 1
 
 
-## Troisième faction de la mission (allié ou rival), "" s'il n'y en a pas.
+## Troisième faction de la mission (second adversaire), "" s'il n'y en a pas.
 static func third_of(faction: String, m: int) -> String:
 	var d: Dictionary = mission(faction, m)
-	if not (d.get("ally", false) or d.get("rival", false)):
+	if not d.get("rival", false):
 		return ""
 	return _third(faction, d)
 
@@ -448,10 +440,6 @@ static func _third(faction: String, d: Dictionary) -> String:
 	return ""
 
 
-static func ally_of(faction: String, m: int) -> String:
-	return third_of(faction, m) if mission(faction, m).get("ally", false) else ""
-
-
 ## Second adversaire (chacun pour soi) : la troisième faction est hostile à tous.
 static func rival_of(faction: String, m: int) -> String:
 	return third_of(faction, m) if mission(faction, m).get("rival", false) else ""
@@ -460,8 +448,6 @@ static func rival_of(faction: String, m: int) -> String:
 static func briefing(faction: String, m: int) -> String:
 	var t: String = mission(faction, m)["brief"]
 	t = t.replace("{ENEMY}", GameData.FACTIONS[enemy_of(faction, m)]["name"])
-	var ally := ally_of(faction, m)
-	t = t.replace("{ALLY}", GameData.FACTIONS[ally]["name"] if ally != "" else "")
 	var rival := rival_of(faction, m)
 	t = t.replace("{RIVAL}", GameData.FACTIONS[rival]["name"] if rival != "" else "")
 	return FLAVOR[faction] + "\n\n" + t
@@ -519,8 +505,6 @@ static func objective_lines(faction: String, m: int, d: Dictionary) -> Array:
 					obj.append("Détruire toutes les unités et structures de %s et de %s" % [enemy, GameData.FACTIONS[_third(faction, d)]["name"]])
 				else:
 					obj.append("Détruire toutes les unités et structures de %s" % enemy)
-			"protect_ally":
-				obj.append("Ne pas laisser tomber la base alliée (défaite sinon)")
 			"upgrade":
 				obj.append("Améliorer : %s au niveau %d" % [GameData.def(o["id"])["name"], int(o["level"])])
 			"kills":
@@ -540,7 +524,6 @@ static func details(faction: String, m: int) -> Array:
 	var d: Dictionary = mission(faction, m)
 	var fd: Dictionary = GameData.FACTIONS[faction]
 	var enemy: String = GameData.FACTIONS[enemy_of(faction, m)]["name"]
-	var ally := ally_of(faction, m)
 	var out: Array = []
 	# Objectifs
 	var obj: Array = objective_lines(faction, m, d)
@@ -570,8 +553,6 @@ static func details(faction: String, m: int) -> Array:
 	sit.append(foes_text(faction, m))
 	if rival_of(faction, m) != "":
 		sit.append("Deux adversaires : toutes les factions présentes vous sont hostiles, et chacune attaque aussi l'autre (chacun pour soi)")
-	if ally != "":
-		sit.append("Allié : %s (IA, démarre aussi avec un engin de chantier)" % GameData.FACTIONS[ally]["name"])
 	if d.has("convoy"):
 		sit.append("Le convoi part après %s : préparez votre escorte avant" % _mins(float(d["convoy"]["start"])))
 		sit.append("%d embuscades ennemies (%d unités chacune) sur une route dégagée" % [int(d["convoy"]["ambushes"]), int(d["convoy"]["ambush_size"])])

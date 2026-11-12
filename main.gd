@@ -238,7 +238,7 @@ func _load_step(frac: float, text: String) -> void:
 
 # --- Camps, carte procédurale ------------------------------------------------
 
-## Factions de chaque équipe : 0 = joueur, 1 = adversaire, 2 = allié (missions).
+## Factions de chaque équipe : 0 = joueur, 1 = adversaire, 2 = second adversaire.
 func _setup_factions() -> void:
 	var others: Array = GameData.FACTIONS.keys().filter(func(k: String) -> bool: return k != faction_id)
 	others.shuffle()
@@ -250,8 +250,8 @@ func _setup_factions() -> void:
 	team_factions = {0: faction_id, 1: enemy}
 	enemy_faction = enemy
 	third_hostile = false
-	if not mission.is_empty() and (mission.get("ally", false) or mission.get("rival", false)):
-		third_hostile = mission.get("rival", false)
+	if not mission.is_empty() and mission.get("rival", false):
+		third_hostile = true
 		team_factions[2] = Campaign.third_of(faction_id, GameSession.mission)
 	elif mission.is_empty() and GameSession.opponents >= 2:
 		third_hostile = true
@@ -928,7 +928,7 @@ func faction_id_of(team: int) -> String:
 	return team_factions.get(team, faction_id)
 
 
-## Camp : 0 = joueur (et allié), 1 = adversaire, 2 = 3e faction hostile (chacun pour soi).
+## Camp : 0 = joueur, 1 = adversaire, 2 = 3e faction hostile (chacun pour soi).
 func side_of(team: int) -> int:
 	if team == 2 and third_hostile:
 		return 2
@@ -1067,9 +1067,6 @@ func _check_end() -> void:
 		var types := []
 		for o in mission["objectives"]:
 			types.append(o["type"])
-		if "protect_ally" in types and not _team_alive(2):
-			lost = true
-			reason = "Votre allié est tombé."
 		if "escort" in types and not escort_done and _convoy_alive() + arrived < int(mission["convoy"]["need"]):
 			lost = true
 			reason = "Le convoi a été détruit."
@@ -1086,7 +1083,7 @@ func _check_end() -> void:
 			won = true
 			for i in mission["objectives"].size():
 				var ty: String = mission["objectives"][i]["type"]
-				if ty == "protect_ally" or obj_state[i]["done"]:
+				if obj_state[i]["done"]:
 					continue
 				if not foes_left and (ty == "kills" or ty == "destroy_type"):
 					continue
@@ -2221,7 +2218,7 @@ func _place_building(id: String, cell: Vector2i, team := 0, with_worker := true)
 	return b
 
 
-## Crée l'engin de chantier de chaque camp (et les IA adverse / alliée).
+## Crée l'engin de chantier de chaque camp (et les IA adverses).
 func _setup_sides() -> void:
 	for t in team_factions.keys():
 		var home := home_of(t)
@@ -2239,7 +2236,7 @@ func _setup_sides() -> void:
 		a.home = Vector2(home)
 		a.foe = nearest_foe_home(t) if nearest_foe_home(t).x >= 0 else start_cell
 		if not mission.is_empty():
-			a.configure(mission["ai"] if t == 1 else mission.get("third_ai", mission.get("ally_ai", mission["ai"])))
+			a.configure(mission["ai"] if t == 1 else mission.get("third_ai", mission["ai"]))
 		elif _save.is_empty() and GameSession.skirm_diff != 1:
 			a.configure(SKIRMISH_DIFF[GameSession.skirm_diff])
 		add_child(a)
@@ -2524,9 +2521,6 @@ func objective_info(i: int) -> Dictionary:
 				if u.team == 0 and u.alive and u.air and u.role == "combat":
 					ca += 1
 			return {"text": "Flotte aérienne : %d/%d" % [mini(ca, na), na], "frac": clampf(float(ca) / na, 0.0, 1.0)}
-		"protect_ally":
-			var ok := _team_alive(2)
-			return {"text": "Base alliée intacte" if ok else "Base alliée détruite", "frac": 1.0 if ok else 0.0}
 	return {"text": "", "frac": 0.0}
 
 
@@ -2544,7 +2538,7 @@ func objectives_status() -> Array:
 		return out
 	for i in mission["objectives"].size():
 		var info := objective_info(i)
-		info["done"] = obj_state[i]["done"] and mission["objectives"][i]["type"] != "protect_ally"
+		info["done"] = obj_state[i]["done"]
 		out.append(info)
 	if mission.has("time_limit"):
 		var lim := float(mission["time_limit"])
