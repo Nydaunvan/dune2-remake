@@ -199,9 +199,7 @@ func _p_buildings() -> String:
 		if GameData.sol_cost(id) > 0:
 			line += " + %d Solaris" % GameData.sol_cost(id)
 		line += ", énergie " + ("[color=#66ff99]+%d[/color]" % pw if pw > 0 else ("[color=#ff9966]%d[/color]" % pw if pw < 0 else "0"))
-		var req: PackedStringArray = []
-		for r in d.get("requires", []):
-			req.append(_name(r))
+		var req := GameData.req_names(d)
 		if not req.is_empty():
 			line += ", nécessite : " + ", ".join(req)
 		if d.get("unlock", 0) > 1 and d.get("unlock", 0) <= 3:
@@ -227,8 +225,9 @@ func _p_units() -> String:
 			line += ", dégâts %d/s, portée %d" % [int(d["dps"]), int(d["range"])]
 		if d.get("aa", false):
 			line += ", [color=#7fe9ff]peut toucher les unités volantes[/color]"
-		if d.has("level"):
-			line += ", Usine niveau %d" % int(d["level"])
+		var ureq := GameData.req_names(d)
+		if not ureq.is_empty():
+			line += ", nécessite : " + ", ".join(ureq)
 		if d.has("desc"):
 			line += "\n    " + String(d["desc"])
 		if d.has("capacity"):

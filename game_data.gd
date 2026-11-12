@@ -451,3 +451,18 @@ static func units_for(faction: String) -> Array:
 	out.append_array(FACTIONS[faction]["units"])
 	out.append_array(FACTIONS[faction]["air"])
 	return out
+
+
+## Texte des prérequis sans doublon : « Usine niveau 3 » remplace « Usine » (une seule mention).
+static func req_names(d: Dictionary) -> PackedStringArray:
+	var names := PackedStringArray()
+	var lvl := int(d.get("level", 1))
+	var usine_done := false
+	if lvl > 1:
+		names.append("Usine niveau %d" % lvl)
+		usine_done = true
+	for r in d.get("requires", []):
+		if r == "usine" and usine_done:
+			continue
+		names.append(BUILDINGS[r]["name"])
+	return names

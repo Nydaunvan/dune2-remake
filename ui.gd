@@ -964,11 +964,7 @@ class BuildIcon extends Control:
 				tip += " (+%d par niveau)" % up
 		if d.has("desc"):
 			tip += "\n" + d["desc"]
-		var names := PackedStringArray()
-		for r in d["requires"]:
-			names.append(GameData.BUILDINGS[r]["name"])
-		if d.has("level"):
-			names.insert(0, "Usine niveau %d" % int(d["level"]))
+		var names := GameData.req_names(d)
 		if not names.is_empty():
 			tip += "\nNécessite : " + ", ".join(names)
 		tooltip_text = tip
