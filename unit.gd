@@ -643,7 +643,7 @@ func _seek(delta: float) -> void:
 	if _retry > 0.0:
 		return
 	var from: Vector2i = game.world_to_cell(position)
-	var c: Vector2i = game.find_resource(cargo_kind, from, 999)
+	var c: Vector2i = game.find_resource(cargo_kind, from, 999, self)
 	if c.x < 0:
 		_retry = 3.0 # plus rien à récolter : on réessaie plus tard
 		return
@@ -665,7 +665,7 @@ func _harvest(delta: float) -> void:
 		_start_return()
 	elif got <= 0.0:
 		# case épuisée : on cherche une case voisine, sinon on rentre
-		var n: Vector2i = game.find_resource(cargo_kind, game.world_to_cell(position), 7)
+		var n: Vector2i = game.find_resource(cargo_kind, game.world_to_cell(position), 7, self)
 		if n.x >= 0:
 			work_cell = n
 			state = "seek"

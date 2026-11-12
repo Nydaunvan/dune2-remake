@@ -542,12 +542,17 @@ func extract(cell: Vector2i, amount: float) -> float:
 
 
 ## Case de ressource la plus proche (de ce type), ou (-1, -1).
-func find_resource(kind: String, from: Vector2i, max_dist := 999) -> Vector2i:
+func find_resource(kind: String, from: Vector2i, max_dist := 999, me = null) -> Vector2i:
 	var best := Vector2i(-1, -1)
 	var best_d := INF
+	# Cases déjà visées par un autre récolteur / mineur : une case = un engin
+	var claimed := {}
+	for u in units:
+		if u != me and u.alive and u.is_worker() and (u.state == "seek" or u.state == "harvest") and u.work_cell.x >= 0:
+			claimed[u.work_cell] = true
 	for c in resource:
 		var r: Dictionary = resource[c]
-		if r["kind"] != kind or occupied.has(c):
+		if r["kind"] != kind or occupied.has(c) or claimed.has(c):
 			continue
 		var d := Vector2(c - from).length()
 		if d < best_d and d <= max_dist:
