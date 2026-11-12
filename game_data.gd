@@ -763,13 +763,13 @@ const UNITS := {
 		"aa": true, "name": "Sentinelle", "role": "combat", "desc": "Éclaireur rapide, harcèle l'air",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 220, "time": 5.0, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 190, "dps": 15, "speed": 160.0, "range": 5, "vision": 11,
+		"hp": 200, "dps": 16, "speed": 160.0, "range": 5, "vision": 11,
 		"vs_air": 0.7,
 	},
 	"egide": {
 		"name": "Égide", "role": "combat", "desc": "Char moyen polyvalent",
 		"armor": "medium", "weapon": "cannon",
-		"cost": 480, "time": 8.0, "level": 2, "requires": ["usine"], "from": "usine",
+		"cost": 450, "time": 8.0, "level": 2, "requires": ["usine"], "from": "usine",
 		"hp": 520, "dps": 27, "speed": 95.0, "range": 6,
 	},
 	"resonateur": {
@@ -783,7 +783,7 @@ const UNITS := {
 		"name": "Bélier", "role": "combat", "desc": "Buggy d'assaut bon marché",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 290, "time": 6.0, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 280, "dps": 17, "speed": 120.0, "range": 3,
+		"hp": 280, "dps": 18, "speed": 120.0, "range": 3,
 	},
 	"brute": {
 		"name": "Brute", "role": "combat", "desc": "Char lourd",
@@ -822,7 +822,7 @@ const UNITS := {
 		"aa": true, "name": "Ombre", "role": "combat", "desc": "Éclaireur furtif, harcèle l'air",
 		"armor": "light", "weapon": "autocannon",
 		"cost": 230, "time": 5.0, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 200, "dps": 15, "speed": 155.0, "range": 5, "vision": 11,
+		"hp": 200, "dps": 13, "speed": 155.0, "range": 5, "vision": 11,
 		"vs_air": 0.7,
 	},
 	"prisme": {
@@ -861,7 +861,7 @@ const UNITS := {
 	"pisteur": {
 		"name": "Pisteur", "role": "combat", "desc": "Éclaireur ultra-rapide, grande vision",
 		"armor": "light", "weapon": "autocannon", "cost": 160, "time": 3.5, "level": 1,
-		"requires": ["usine"], "from": "usine", "hp": 145, "dps": 10, "speed": 200.0, "range": 4,
+		"requires": ["usine"], "from": "usine", "hp": 145, "dps": 11, "speed": 200.0, "range": 4,
 		"vision": 15,
 	},
 	"brise_mur": {
@@ -922,7 +922,7 @@ const UNITS := {
 	"rodeur": {
 		"name": "Rôdeur", "role": "combat", "desc": "Buggy d'assaut rapide et bon marché",
 		"armor": "light", "weapon": "autocannon", "cost": 170, "time": 3.5, "level": 1,
-		"requires": ["usine"], "from": "usine", "hp": 165, "dps": 11, "speed": 170.0, "range": 3,
+		"requires": ["usine"], "from": "usine", "hp": 175, "dps": 11, "speed": 170.0, "range": 3,
 		"vision": 10,
 	},
 	"demolisseur": {
@@ -1043,7 +1043,7 @@ const UNITS := {
 	"tesson": {
 		"name": "Tesson", "role": "combat", "desc": "Raider cristallin rapide", "armor": "light",
 		"weapon": "shard", "cost": 180, "time": 3.5, "level": 1, "requires": ["usine"], "from": "usine",
-		"hp": 150, "dps": 10, "speed": 165.0, "range": 4, "vision": 10,
+		"hp": 150, "dps": 9, "speed": 165.0, "range": 4, "vision": 10,
 	},
 	"fracasseur": {
 		"name": "Fracasseur", "role": "combat", "desc": "Brise les structures à coups d'éclats",

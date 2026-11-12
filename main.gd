@@ -46,6 +46,7 @@ var spice_fields: Array = []           # bassins de sable à épice (cases)
 var ore_fields: Array = []             # filons sur plateaux rocheux
 var corridor_w := 5.5
 var corridors: Array = []              # couloirs garantis (sans montagne)
+var field_corridors: Array = []        # couloirs base -> champ : jamais barrés par une chaîne de montagnes
 var ridges: Array = []                 # chaînes de montagnes [a, b] (avec brèches)
 var carves: Array = []                 # passages creusés pour garantir la connexité
 var plateaus: Array = []               # [centre, rayon] des plateaux rocheux
@@ -352,16 +353,18 @@ func _generate_layout() -> void:
 	for base in [start_cell, enemy_cell, ally_cell, fourth_cell]:
 		if base.x < 0:
 			continue
-		var p1 := _field_near(rng, base, 15.0, 19.0, spice_fields + ore_fields, size)
+		# Même distance pour tous les camps : personne ne démarre avec des champs plus proches
+		var p1 := _field_near(rng, base, 16.0, 17.0, spice_fields + ore_fields, size, keys)
 		spice_fields.append(p1)
-		var p2 := _field_near(rng, base, 11.0, 14.0, spice_fields + ore_fields, size)
+		var p2 := _field_near(rng, base, 12.0, 13.0, spice_fields + ore_fields, size, keys)
 		ore_fields.append(p2)
 	var extra := 1 + size / 48
 	for i in extra:
-		spice_fields.append(_free_point(rng, spice_fields + ore_fields + keys, size, 0.0, 0.45, 12.0))
-		ore_fields.append(_free_point(rng, spice_fields + ore_fields + keys, size, 0.0, 0.45, 12.0))
+		spice_fields.append(_neutral_field(rng, keys, spice_fields + ore_fields, size))
+		ore_fields.append(_neutral_field(rng, keys, spice_fields + ore_fields, size))
 	# Couloirs : chaque point clé relié à la base la plus proche et aux champs
 	corridors = []
+	field_corridors = []
 	for i in keys.size():
 		for j in range(i + 1, keys.size()):
 			corridors.append([keys[i], keys[j]])
@@ -371,6 +374,7 @@ func _generate_layout() -> void:
 			if f.distance_to(k) < f.distance_to(best):
 				best = k
 		corridors.append([best, f])
+		field_corridors.append([best, f])
 	# Chaînes de montagnes : barrent la route directe entre deux camps (avec une ou deux brèches)
 	ridges = []
 	carves = []
@@ -391,6 +395,35 @@ func _generate_layout() -> void:
 		ridges.append([a.lerp(b, gap_t + gap), b])
 
 
+## Champ neutre : loin de toutes les bases (aucun camp n'en profite d'emblée) et des autres champs.
+## On retient le candidat dont l'écart de distance entre la base la plus proche et la suivante est le plus faible.
+func _neutral_field(rng: RandomNumberGenerator, bases: Array, fields: Array, size: int) -> Vector2:
+	var c := Vector2(size, size) / 2.0
+	var best := c
+	var best_s := INF
+	for t in 80:
+		var p := c + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(0.0, 0.42) * size
+		p = p.clamp(Vector2(10, 10), Vector2(size - 10, size - 10)).round()
+		var ok := true
+		for f in fields:
+			if p.distance_to(f) < 12.0:
+				ok = false
+				break
+		if not ok:
+			continue
+		var ds: Array = []
+		for b in bases:
+			ds.append(p.distance_to(b))
+		ds.sort()
+		if float(ds[0]) < 20.0:
+			continue
+		var s: float = (float(ds[1]) - float(ds[0])) if ds.size() > 1 else 0.0
+		if s < best_s:
+			best_s = s
+			best = p
+	return best
+
+
 ## Point aléatoire éloigné des autres (distance en fraction de la demi-carte autour du centre).
 func _free_point(rng: RandomNumberGenerator, avoid: Array, size: int, rmin: float, rmax: float, gap: float) -> Vector2:
 	var c := Vector2(size, size) / 2.0
@@ -409,19 +442,27 @@ func _free_point(rng: RandomNumberGenerator, avoid: Array, size: int, rmin: floa
 	return best
 
 
-func _field_near(rng: RandomNumberGenerator, base: Vector2, dmin: float, dmax: float, avoid: Array, size: int) -> Vector2:
+func _field_near(rng: RandomNumberGenerator, base: Vector2, dmin: float, dmax: float, avoid: Array, size: int, bases: Array = []) -> Vector2:
 	var best := base + Vector2(dmin, 0.0)
-	for t in 40:
+	var best_s := INF
+	for t in 80:
 		var p := base + Vector2.from_angle(rng.randf() * TAU) * rng.randf_range(dmin, dmax)
 		p = p.clamp(Vector2(9, 9), Vector2(size - 9, size - 9)).round()
-		var ok := true
+		var own := p.distance_to(base)
+		# pénalités : trop près d'un autre champ, d'une autre base (il lui profiterait), ou rapproché par le bord de carte
+		var s := absf(own - (dmin + dmax) * 0.5)
 		for q in avoid:
-			if p.distance_to(q) < 10.0:
-				ok = false
-				break
-		if ok and p.distance_to(Vector2(size, size) / 2.0) < size * 0.45:
-			return p
-		best = p
+			s += maxf(10.0 - p.distance_to(q), 0.0) * 4.0
+		for b in bases:
+			if b != base:
+				s += maxf(own + 4.0 - p.distance_to(b), 0.0) * 4.0
+		if p.distance_to(Vector2(size, size) / 2.0) >= size * 0.45:
+			s += 6.0
+		if s < best_s:
+			best_s = s
+			best = p
+		if s < 0.6:
+			break
 	return best
 
 
@@ -461,6 +502,8 @@ func _height(p: Vector2) -> float:
 			m = minf(m, smoothstep(5.0, 9.0, p.distance_to(sf)))
 		for orf in ore_fields:
 			m = minf(m, smoothstep(4.0, 8.0, p.distance_to(orf)))
+		for fc in field_corridors:
+			m = minf(m, smoothstep(3.0, 6.0, _seg_dist(p, fc[0], fc[1])))
 		if m > 0.0:
 			var rd := 99.0
 			for r in ridges:

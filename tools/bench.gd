@@ -13,6 +13,7 @@ var samples: Array = []
 var lost := {0: 0, 1: 0}
 var eco := {}
 var alive_ids := {}
+var info := {}
 func _env(k: String, d: String) -> String:
 	return OS.get_environment(k) if OS.has_environment(k) else d
 func _initialize() -> void:
@@ -55,6 +56,14 @@ func _process(_d: float) -> bool:
 	for k in alive_ids:
 		if not now_ids.has(k):
 			lost[alive_ids[k]] += 1
+			if OS.has_environment("DEATHS") and info.has(k):
+				print("MORT t=%d camp%d %s" % [int(main.game_time), alive_ids[k], info[k]])
+	if OS.has_environment("DEATHS"):
+		for u in main.units:
+			if u.alive and u.team <= 1 and u.role == "combat":
+				var hm: Vector2 = Vector2(main.home_of(u.team)) * main.TILE
+				var fm: Vector2 = Vector2(main.home_of(1 - u.team)) * main.TILE
+				info[u.get_instance_id()] = "%s état=%s pv=%d%% à %d cases de sa base, %d de la base adverse, raid=%s escouade=%s dernier tireur=camp%d" % [u.id, u.state, int(100 * u.hp / u.max_hp), int(u.position.distance_to(hm) / main.TILE), int(u.position.distance_to(fm) / main.TILE), str(u in main.ais[u.team].raid), str(u in main.ais[u.team].squad), u.last_attacker_team]
 	alive_ids = now_ids
 	for mark in [300, 600, 900]:
 		if main.game_time >= mark and not eco.has(mark):

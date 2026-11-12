@@ -545,6 +545,12 @@ func _place(id: String) -> bool:
 	var toward: Vector2 = foe
 	var size: Vector2i = GameData.BUILDINGS[id]["size"]
 	var armed: bool = GameData.BUILDINGS[id].has("weapon")
+	# Raffinerie et fonderie du côté de leur champ : des allers-retours plus courts pour les ouvriers
+	var field := Vector2(-1, -1)
+	if id == "raffinerie" or id == "fonderie":
+		for f in (game.spice_fields if id == "raffinerie" else game.ore_fields):
+			if field.x < 0.0 or base.distance_to(f) < base.distance_to(field):
+				field = f
 	for reach in [11, 16]:
 		var best := Vector2i(-1, -1)
 		var best_s := INF
@@ -558,6 +564,8 @@ func _place(id: String) -> bool:
 				var s: float
 				if armed:
 					s = center.distance_to(toward) * 0.5 + center.distance_to(base)
+				elif field.x >= 0.0:
+					s = center.distance_to(base) + center.distance_to(field) * 0.8
 				elif id == "radar" or id == "silo" or id == "silo_minerai":
 					s = center.distance_to(base) - center.distance_to(toward) * 0.2
 				else:

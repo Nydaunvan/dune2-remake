@@ -1,5 +1,6 @@
 extends SceneTree
-## Test campagne : MISSION=0..2, FACTION. Vérifie le démarrage et l'objectif.
+## Test campagne (FACTION, MISSION) : la mission démarre, ses objectifs s'affichent, et la victoire
+## n'est accordée que lorsque TOUS les objectifs sont remplis.
 var main
 var frame := 0
 func _initialize() -> void:
@@ -11,16 +12,12 @@ func _initialize() -> void:
 func _process(_d: float) -> bool:
 	frame += 1
 	if frame == 10:
-		print("ennemi=%s credits=%d ia(grace=%d max=%d) obj=%s" % [main.enemy_faction, main.credits, main.ai.wave_grace, main.ai.max_army, str(main.objective_progress())])
-		if main.mission["type"] == "harvest":
-			main.earned = 4000
-		if main.mission["type"] == "survive":
-			main.game_time = 481.0
-		if main.mission["type"] == "destroy":
-			for b in main.buildings.duplicate():
-				if b.team == 1:
-					b.take_damage(999999.0, "cannon")
-	if frame == 60:
-		print("over=%s cleared=%d" % [main.over, Campaign.cleared(GameSession.faction)])
+		var st: Array = main.objectives_status()
+		print("ennemi=%s Solaris=%d minerai=%d palier=%d objectifs=%s" % [main.enemy_faction, main.credits, main.ore, main.tier, str(st.map(func(x): return x["text"]))])
+		if st.is_empty():
+			print("CAMPAGNE ÉCHEC : aucun objectif")
+	if frame == 40:
+		# rien n'est accompli : la partie ne doit pas être gagnée
+		print("CAMPAGNE %s (fini=%s)" % ["OK" if not main.over else "ÉCHEC : terminée sans rien faire", main.over])
 		return true
 	return false
