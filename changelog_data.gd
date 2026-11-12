@@ -2,6 +2,7 @@ class_name ChangelogData
 ## Journal des versions (du plus récent au plus ancien). Voir aussi CHANGELOG.md.
 
 const VERSIONS := [
+	["0.21", "2026-11-12", "Tirs et campagnes", ["Les projectiles partent du bout du canon de chaque unité et défense", "Bouton RÉINITIALISER dans la campagne : progression d'une faction remise à zéro, avec confirmation"]],
 	["0.20", "2026-11-12", "Accueil désert", ["Écran d'accueil : dunes en couches, deux lunes, voie lactée, étoiles, étoile filante", "Noms de faction centrés, capacité des mineurs exacte (160)"]],
 	["0.19", "2026-11-12", "Escarmouche paramétrable", ["Fenêtre de paramètres : 1 ou 2 adversaires, faction adverse, taille de carte, ressources, difficulté", "Adversaires indiqués dans les missions de campagne", "Difficulté croissante de 1 à 10, objectifs plus longs, finale à trois camps"]],
 	["0.18", "2026-11-12", "Journal, victoire et circulation", ["Journal des versions cliquable (menu principal, pause, F2)", "Une mission n'est gagnée que si tous ses objectifs sont remplis", "Circulation plus intelligente, ouvriers pleins toujours vers le dépôt", "Bouton central de la souris : glisser la carte"]],

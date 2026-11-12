@@ -1,6 +1,10 @@
 # Journal des versions — The Building of a Dynasty
 
-Version actuelle : **0.20**
+Version actuelle : **0.21**
+
+## 0.21 — Tirs et campagnes (2026-11-12)
+- Les projectiles partent du bout du canon de chaque unité et défense
+- Bouton RÉINITIALISER dans la campagne : progression d'une faction remise à zéro, avec confirmation
 
 ## 0.20 — Accueil désert (2026-11-12)
 - Écran d'accueil : dunes en couches, deux lunes, voie lactée, étoiles, étoile filante
