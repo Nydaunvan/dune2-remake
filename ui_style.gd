@@ -120,6 +120,17 @@ static func text(ci: CanvasItem, pos: Vector2, s: String, size: int, col: Color,
 	ci.draw_string(f, pos, s, align, width, size, col)
 
 
+## Texte centré dans un rectangle, horizontalement et verticalement (hauteur de capitales si `caps`).
+static func text_center(ci: CanvasItem, r: Rect2, s: String, size: int, col: Color, title := false, caps := false) -> void:
+	var f := title_font() if title else body_font()
+	var w := f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x
+	var cy := r.position.y + r.size.y * 0.5
+	var base := cy + (size * 0.36 if caps else (f.get_ascent(size) - f.get_descent(size)) * 0.5)
+	var pos := Vector2(r.position.x + (r.size.x - w) * 0.5, base)
+	ci.draw_string_outline(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, 4, Color(0, 0, 0, 0.75))
+	ci.draw_string(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, col)
+
+
 static func text_width(s: String, size: int, title := false) -> float:
 	var f := title_font() if title else body_font()
 	return f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x

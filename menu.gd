@@ -507,11 +507,14 @@ class FactionCard extends Control:
 		draw_rect(Rect2(3, 8, size.x - 6, 230), Color(col.r, col.g, col.b, 0.05 + 0.08 * lit))
 		_draw_embers(col, t, lit)
 		_draw_emblem(Vector2(size.x * 0.5, 125.0), col, t, lit)
-		# Nom et devise
-		UiStyle.text(self, Vector2(0, 258), String(f["name"]).to_upper(), 30, Color.WHITE, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
-		UiStyle.text(self, Vector2(0, 285), String(f["tagline"]), 17, acc, false, HORIZONTAL_ALIGNMENT_CENTER, size.x)
-		draw_line(Vector2(60, 302), Vector2(size.x - 60, 302), Color(col.r, col.g, col.b, 0.35), 1.2, true)
-		var y := 332.0
+		# Plaque du nom : nom et devise centrés horizontalement et verticalement
+		var plate := Rect2(26, 232, size.x - 52, 74)
+		draw_rect(plate, Color(col.r * 0.12, col.g * 0.12, col.b * 0.12, 0.55 + 0.25 * lit))
+		draw_line(plate.position, plate.position + Vector2(plate.size.x, 0), Color(col.r, col.g, col.b, 0.35 + 0.4 * lit), 1.2, true)
+		draw_line(plate.position + Vector2(0, plate.size.y), plate.end, Color(col.r, col.g, col.b, 0.35 + 0.4 * lit), 1.2, true)
+		UiStyle.text_center(self, Rect2(plate.position.x, plate.position.y + 4, plate.size.x, 42), String(f["name"]).to_upper(), 30, Color.WHITE, true, true)
+		UiStyle.text_center(self, Rect2(plate.position.x, plate.position.y + 46, plate.size.x, 24), String(f["tagline"]), 17, acc)
+		var y := 336.0
 		for l in String(f["desc"]).split("\n"):
 			UiStyle.text(self, Vector2(24, y), l, 15, Color(1, 1, 1, 0.88), false, HORIZONTAL_ALIGNMENT_CENTER, size.x - 48)
 			y += 23.0
