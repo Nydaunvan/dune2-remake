@@ -4,6 +4,7 @@ class_name Campaign
 
 const SAVE_PATH := "user://campaign.cfg"
 
+## (l'élimination d'une faction n'est jamais requise sauf si destroy_all figure dans les objectifs)
 ## Types d'objectifs : build, harvest, train, survive, destroy_all, outposts,
 ## escort, hold.
 const BASE := {"centrale": 1, "raffinerie": 1, "fonderie": 1, "usine": 1}
@@ -49,11 +50,11 @@ const CAMPAIGNS := {
 			"id": "sommet", "title": "Le sommet", "enemy": "kharn", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 3,
 			"zone": {"units": 4, "time": 75.0},
-			"objectives": [{"type": "hold"}, {"type": "destroy_all"}, {"type": "train", "count": 10}],
+			"objectives": [{"type": "hold"}, {"type": "kills", "count": 20}, {"type": "train", "count": 10}],
 			"ai": {"slowdown": 1.15, "grace": 360.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Tenez la zone centrale, formez 10 unités et détruisez les deux camps adverses",
-			"brief": "Le grand sommet réunit trois maisons et aucune n'a d'allié. {ENEMY} et {RIVAL} se battent aussi entre eux : tenez la zone centrale, bâtissez une armée et ne laissez personne debout.",
+			"obj": "Tenez la zone centrale, formez 10 unités et abattez 20 unités ennemies",
+			"brief": "Le grand sommet réunit trois maisons et aucune n'a d'allié. {ENEMY} et {RIVAL} se battent aussi entre eux : tenez la zone centrale, bâtissez une armée et faites payer chaque camp qui s'approche de la zone.",
 		},
 		{
 			"id": "laboratoire", "title": "Le laboratoire", "enemy": "vael", "size": 96, "credits": 3000, "ore": 3500,
@@ -139,11 +140,11 @@ const CAMPAIGNS := {
 		{
 			"id": "ecrasement", "title": "L'écrasement", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 3,
-			"objectives": [{"type": "destroy_all"}, {"type": "train", "count": 12}, {"type": "harvest", "amount": 5000}],
+			"objectives": [{"type": "kills", "count": 30}, {"type": "train", "count": 12}, {"type": "harvest", "amount": 5000}],
 			"ai": {"slowdown": 1.1, "grace": 360.0, "pause": 50.0, "max_army": 24, "wave": 6, "credits": 2500, "ore": 2800},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Détruisez les deux armées, formez 12 unités et récoltez 5000 Solaris",
-			"brief": "La campagne se joue ici et chacun pour soi : {ENEMY} et {RIVAL} s'entre-déchirent. Prenez-les l'un après l'autre, remplissez les caisses et ne laissez rien debout.",
+			"obj": "Abattez 30 unités ennemies, formez 12 unités et récoltez 5000 Solaris",
+			"brief": "La campagne se joue ici et chacun pour soi : {ENEMY} et {RIVAL} s'entre-déchirent. Écrasez leurs armées l'une après l'autre, mais gardez l'œil sur les caisses : la guerre se paie.",
 		},
 		{
 			"id": "blitz", "title": "Blitzkrieg", "enemy": "solis", "start_base": true, "enemy_base": true, "size": 80, "credits": 3000, "ore": 3000,
@@ -229,11 +230,11 @@ const CAMPAIGNS := {
 			"id": "braquage", "title": "Le grand braquage", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 3,
 			"zone": {"units": 3, "time": 45.0},
-			"objectives": [{"type": "hold"}, {"type": "destroy_all"}, {"type": "harvest", "amount": 4000}],
+			"objectives": [{"type": "hold"}, {"type": "kills", "count": 25}, {"type": "harvest", "amount": 4000}],
 			"ai": {"slowdown": 1.15, "grace": 360.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Prenez la zone centrale 45 s, amassez 4000 Solaris et éliminez les deux camps adverses",
-			"brief": "Le coup du siècle : le coffre central de {ENEMY} intéresse aussi {RIVAL}. Prenez-le avant eux, remplissez les caisses, puis détruisez tout ce qui reste.",
+			"obj": "Prenez la zone centrale 45 s, amassez 4000 Solaris et abattez 25 unités ennemies",
+			"brief": "Le coup du siècle : le coffre central de {ENEMY} intéresse aussi {RIVAL}. Prenez-le avant eux, remplissez les caisses et abattez ceux qui vous barrent la route.",
 		},
 		{
 			"id": "marche", "title": "Le marché noir", "enemy": "solis", "size": 96, "credits": 2000, "ore": 2200,
@@ -360,12 +361,6 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 		d["rival"] = true
 		if d.get("rival", false):
 			d["third_base"] = true
-		var has_all := false
-		for o in d["objectives"]:
-			if o["type"] == "destroy_all":
-				has_all = true
-		if not has_all:
-			d["objectives"].append({"type": "destroy_all"})
 	# Objectifs plus longs et plus exigeants avec le niveau (jusqu'à plusieurs fois la durée de base)
 	for o in d["objectives"]:
 		match o["type"]:
