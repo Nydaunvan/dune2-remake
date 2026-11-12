@@ -161,9 +161,15 @@ func radius_px() -> float:
 	return maxf(cell_size.x, cell_size.y) * tile * 0.5
 
 
+var last_attacker_team := -1
+var demolished := false
+
+
 func take_damage(raw: float, wpn: String, attacker = null) -> void:
 	if not alive:
 		return
+	if is_instance_valid(attacker) and attacker.team != team:
+		last_attacker_team = attacker.team
 	var dmg := raw * GameData.mult(wpn, armor)
 	# Amortissement des dégâts concentrés (voir GameData.SOAK_*) : estimation du taux sur ~1 s
 	var now: float = game.game_time
@@ -174,6 +180,10 @@ func take_damage(raw: float, wpn: String, attacker = null) -> void:
 		dmg *= pow(_soak_acc / thr, GameData.SOAK_EXP - 1.0)
 	_soak_acc += dmg
 	hp -= dmg
+	if is_instance_valid(attacker) and attacker.team == 0 and team != 0:
+		game.stats.dmg_dealt += minf(dmg, hp + dmg)
+	elif team == 0:
+		game.stats.dmg_taken += minf(dmg, hp + dmg)
 	queue_redraw()
 	game.notify_attack(self)
 	if weapon != "" and _target == null and is_instance_valid(attacker) and attacker.alive:

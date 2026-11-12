@@ -68,6 +68,7 @@ var over := false
 var mission := {}          # mission de campagne en cours (vide en escarmouche)
 var earned := 0            # Solaris récoltés par le joueur
 var ore_earned := 0        # minerai récolté par le joueur
+var stats := GameStats.new()
 var kills := 0             # unités hostiles détruites
 var destroyed := {}        # id de bâtiment hostile -> nombre détruit
 var _obj_t := 0.0
@@ -723,6 +724,7 @@ func _spawn_worm(target) -> void:
 		worm_cooldown = 30.0 # la proie est isolée sur une zone de sable trop petite : le ver ne peut pas venir
 		return
 	sfx.play_ui("worm", -2.0)
+	stats.worm_apparitions += 1
 	worm = Worm.new()
 	worm.setup(self, start, target)
 	add_child(worm)
@@ -913,6 +915,16 @@ func shake(amp: float, dur: float) -> void:
 
 
 func on_unit_lost(u: Unit) -> void:
+	if u.id != "mcv":
+		if u.team == 0:
+			GameStats.inc(stats.units_lost, u.id)
+			if u.eaten:
+				GameStats.inc(stats.units_eaten, u.id)
+		elif hostile(u.team, 0):
+			if u.eaten:
+				GameStats.inc(stats.foes_eaten, u.id)
+			elif u.last_attacker_team == 0:
+				GameStats.inc(stats.foes_killed, u.id)
 	if hostile(u.team, 0) and u.id != "mcv":
 		kills += 1
 	units.erase(u)
@@ -1146,6 +1158,10 @@ func notify_attack(b: Building) -> void:
 func on_building_destroyed(b: Building) -> void:
 	if hostile(b.team, 0):
 		destroyed[b.id] = int(destroyed.get(b.id, 0)) + 1
+		if b.last_attacker_team == 0:
+			GameStats.inc(stats.b_foe, b.id)
+	elif b.team == 0 and not b.demolished:
+		GameStats.inc(stats.b_lost, b.id)
 	buildings.erase(b)
 	for c in b.cells():
 		occupied.erase(c)
@@ -1210,6 +1226,11 @@ func _process(delta: float) -> void:
 			if not mission.is_empty():
 				_update_objectives(0.5)
 			_building_effects(0.5)
+			var army := 0
+			for uu in units:
+				if uu.team == 0 and uu.alive and uu.weapon != "":
+					army += 1
+			stats.max_army = maxi(stats.max_army, army)
 			_check_end()
 	_separate_units()
 	_update_production(delta)
@@ -1925,6 +1946,8 @@ func demolish_building(b: Building) -> void:
 		selected_building = null
 	if inspected == b:
 		inspected = null
+	b.demolished = true
+	stats.b_demolished += 1
 	on_building_destroyed(b)
 	b.queue_free()
 
@@ -2161,6 +2184,7 @@ func _tick_upgrades(delta: float) -> void:
 				b.up_left = 0.0
 				b.upgrade()
 				if b.team == 0:
+					stats.upgrades += 1
 					sfx.play_ui("upgrade")
 					ui.toast("%s — niveau %d" % [GameData.dname(b.id), b.level], GameData.GOLD)
 			else:
@@ -2179,6 +2203,7 @@ func _tick_upgrades(delta: float) -> void:
 			if u.tech_left <= 0.0:
 				u.apply_tech()
 				if u.team == 0:
+					stats.techs += 1
 					sfx.play_ui("upgrade")
 					popup(u.position, "▲ Modernisée", GameData.GOLD)
 			else:
@@ -2340,11 +2365,15 @@ func _update_production(delta: float) -> void:
 			if cat == "unit":
 				credits -= int(ro[1])
 				ore -= int(rs[1])
+				stats.spent_sol += int(ro[1])
+				stats.spent_ore += int(rs[1])
 				p["paid_sol"] = int(p["paid_sol"]) + int(rs[1])
 				p["acc_s"] = rs[2]
 			else:
 				ore -= int(ro[1])
 				credits -= int(rs[1])
+				stats.spent_sol += int(rs[1])
+				stats.spent_ore += int(ro[1])
 				p["paid_sol"] = int(p["paid_sol"]) + int(rs[1])
 				p["acc_s"] = rs[2]
 			p["paid"] = int(p["paid"]) + int(ro[1])
@@ -2399,6 +2428,8 @@ func _place_building(id: String, cell: Vector2i, team := 0, with_worker := true)
 	b.init_combat(self, team)
 	add_child(b)
 	buildings.append(b)
+	if team == 0 and game_time > 1.0:
+		GameStats.inc(stats.b_built, id)
 	if team != 0: # jamais visible avant d'être repéré (brouillard)
 		b.visible = false
 		b.seen = false
@@ -2748,6 +2779,7 @@ func objectives_status() -> Array:
 
 
 func _spawn_produced_unit(id: String) -> void:
+	GameStats.inc(stats.units_built, id)
 	spawn_for(id, 0)
 
 
@@ -2924,7 +2956,7 @@ func _collect_state() -> Dictionary:
 	return {
 		"seed": map_seed, "faction": faction_id, "mode": GameSession.mode, "mission": GameSession.mission,
 		"team_factions": team_factions, "third_hostile": third_hostile, "game_time": game_time,
-		"credits": credits, "ore": ore, "earned": earned, "ore_earned": ore_earned, "kills": kills, "destroyed": destroyed,
+		"credits": credits, "ore": ore, "earned": earned, "ore_earned": ore_earned, "kills": kills, "destroyed": destroyed, "stats": stats.to_dict(),
 		"production": production.duplicate(true),
 		"units": us, "buildings": bs, "resource": res, "ais": ai_state,
 		"fog_seen": fog_seen, "worm_cooldown": worm_cooldown,
@@ -2996,6 +3028,7 @@ func _apply_state() -> void:
 	earned = int(d["earned"])
 	ore_earned = int(d.get("ore_earned", 0))
 	kills = int(d.get("kills", 0))
+	stats.from_dict(d.get("stats", {}))
 	destroyed = d.get("destroyed", {})
 	production = d["production"]
 	game_time = float(d["game_time"])

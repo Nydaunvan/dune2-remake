@@ -17,6 +17,7 @@ var _em_dur := 1.0
 var _em_from := Vector2.ZERO
 var _em_to := Vector2.ZERO
 var _em_goal := Vector2.INF
+var last_attacker_team := -1
 var eaten := false   # en train d'être englouti par un ver
 var cargo_units: Array = []
 var slots := 0
@@ -373,7 +374,14 @@ func _heal_tick(delta: float) -> void:
 func take_damage(raw: float, wpn: String, attacker = null) -> void:
 	if not alive:
 		return
-	hp -= raw * GameData.mult(wpn, armor)
+	var dm: float = raw * GameData.mult(wpn, armor)
+	hp -= dm
+	if is_instance_valid(attacker) and attacker.team != team:
+		last_attacker_team = attacker.team
+		if attacker.team == 0:
+			game.stats.dmg_dealt += minf(dm, hp + dm)
+	if team == 0:
+		game.stats.dmg_taken += maxf(minf(dm, hp + dm), 0.0)
 	queue_redraw()
 	if hp <= 0.0:
 		if is_instance_valid(attacker) and attacker is Unit and attacker.alive and attacker.team != team:
@@ -411,12 +419,17 @@ func apply_tech() -> void:
 ## Éliminations -> rang (Recrue, Vétéran, Élite) : +15 % de dégâts et de PV par rang.
 func add_kill() -> void:
 	kills += 1
+	if team == 0 and kills > game.stats.top_kills:
+		game.stats.top_kills = kills
+		game.stats.top_id = id
 	var r := 0
 	for i in GameData.RANKS.size():
 		if kills >= int(GameData.RANKS[i]["kills"]):
 			r = i
 	if r > rank:
 		rank = r
+		if team == 0:
+			game.stats.promotions += 1
 		var old := max_hp
 		max_hp = base_max_hp * (1.0 + GameData.RANK_HP * rank)
 		hp += max_hp - old

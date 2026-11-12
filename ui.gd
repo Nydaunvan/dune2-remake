@@ -256,12 +256,12 @@ func show_end(victory: bool, reason := "") -> void:
 	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	dim.add_child(cc)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 26)
+	vb.add_theme_constant_override("separation", 14)
 	cc.add_child(vb)
 	var l := Label.new()
 	l.text = "VICTOIRE" if victory else "DÉFAITE"
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	l.add_theme_font_size_override("font_size", 110)
+	l.add_theme_font_size_override("font_size", 72)
 	var col: Color = GameData.GREEN if victory else GameData.RED
 	l.add_theme_color_override("font_color", col)
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
@@ -270,33 +270,134 @@ func show_end(victory: bool, reason := "") -> void:
 	var sub := Label.new()
 	sub.text = reason if reason != "" else ("Mission accomplie." if victory else "Mission échouée.")
 	sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	sub.add_theme_font_size_override("font_size", 26)
+	sub.add_theme_font_size_override("font_size", 22)
 	sub.add_theme_color_override("font_color", GameData.CREAM)
 	vb.add_child(sub)
+	vb.add_child(_recap_panel(col))
+	var btns := HBoxContainer.new()
+	btns.alignment = BoxContainer.ALIGNMENT_CENTER
+	btns.add_theme_constant_override("separation", 24)
+	vb.add_child(btns)
 	if not game.mission.is_empty():
 		var m: int = GameSession.mission
 		var go := NeonButton.new("")
 		go.accent = col
-		go.custom_minimum_size = Vector2(320, 60)
+		go.custom_minimum_size = Vector2(300, 52)
 		if victory and m + 1 < Campaign.count(game.faction_id):
 			go.text = "MISSION SUIVANTE"
 			go.pressed.connect(func() -> void:
 				GameSession.mission = m + 1
 				get_tree().change_scene_to_file("res://main.tscn"))
-			vb.add_child(go)
+			btns.add_child(go)
 		elif not victory:
 			go.text = "RECOMMENCER"
 			go.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://main.tscn"))
-			vb.add_child(go)
+			btns.add_child(go)
 		else:
 			sub.text = "Campagne terminée : Arrakis est à vous."
 	var b := NeonButton.new("RETOUR AU MENU")
 	b.accent = col
-	b.custom_minimum_size = Vector2(320, 60)
+	b.custom_minimum_size = Vector2(300, 52)
 	b.pressed.connect(func() -> void: get_tree().change_scene_to_file("res://menu.tscn"))
-	vb.add_child(b)
+	btns.add_child(b)
 	var tw := create_tween()
 	tw.tween_property(dim, "color:a", 0.6, 1.2)
+
+
+## Tableau récapitulatif (statistiques, unités, bâtiments) affiché sur l'écran de fin.
+func _recap_panel(col: Color) -> Control:
+	var st: GameStats = game.stats
+	var fac: String = game.faction_id
+	var mins := int(game.game_time) / 60
+	var secs := int(game.game_time) % 60
+	var gen: Array = [
+		["Durée", "%d min %02d s" % [mins, secs]],
+		["Solaris gagnés / dépensés", "%d / %d" % [game.earned, st.spent_sol]],
+		["Minerai récolté / dépensé", "%d / %d" % [game.ore_earned, st.spent_ore]],
+		["Dégâts infligés", str(int(st.dmg_dealt))],
+		["Dégâts subis", str(int(st.dmg_taken))],
+		["Ennemis abattus", str(GameStats.total(st.foes_killed))],
+		["Ennemis dévorés par les vers", str(GameStats.total(st.foes_eaten))],
+		["Vos unités dévorées par les vers", str(GameStats.total(st.units_eaten))],
+		["Apparitions / morsures de vers", "%d / %d" % [st.worm_apparitions, st.worm_bites]],
+		["Promotions", str(st.promotions)],
+		["Modernisations / améliorations", "%d / %d" % [st.techs, st.upgrades]],
+		["Bâtiments démolis", str(st.b_demolished)],
+		["Armée maximale", str(st.max_army)],
+	]
+	if st.top_id != "":
+		gen.append(["Unité la plus décorée", "%s (%d)" % [GameData.name_of(st.top_id, fac), st.top_kills]])
+	var urows: Array = [["Unité", "Prod.", "Perdues", "Vers", "Abattus"]]
+	var ids := {}
+	for d in [st.units_built, st.units_lost, st.foes_killed, st.foes_eaten]:
+		for k in d:
+			ids[k] = true
+	for k in ids:
+		urows.append([GameData.name_of(k, fac), int(st.units_built.get(k, 0)), int(st.units_lost.get(k, 0)),
+				int(st.units_eaten.get(k, 0)), int(st.foes_killed.get(k, 0)) + int(st.foes_eaten.get(k, 0))])
+	var brows: Array = [["Bâtiment", "Const.", "Perdus", "Détruits"]]
+	var bids := {}
+	for d in [st.b_built, st.b_lost, st.b_foe]:
+		for k in d:
+			bids[k] = true
+	for k in bids:
+		brows.append([GameData.name_of(k, fac), int(st.b_built.get(k, 0)), int(st.b_lost.get(k, 0)), int(st.b_foe.get(k, 0))])
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 14)
+	hb.add_child(_recap_col("STATISTIQUES", gen, col, 440))
+	hb.add_child(_recap_col("UNITÉS", urows, col, 470))
+	hb.add_child(_recap_col("BÂTIMENTS", brows, col, 400))
+	return hb
+
+
+func _recap_col(title: String, rows: Array, col: Color, w: int) -> Control:
+	var pc := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.03, 0.09, 0.85)
+	sb.border_color = col
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(6)
+	sb.set_content_margin_all(12)
+	pc.add_theme_stylebox_override("panel", sb)
+	pc.custom_minimum_size = Vector2(w, 410)
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 6)
+	pc.add_child(v)
+	var t := Label.new()
+	t.text = title
+	t.add_theme_font_size_override("font_size", 20)
+	t.add_theme_color_override("font_color", col)
+	v.add_child(t)
+	var sc := ScrollContainer.new()
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	v.add_child(sc)
+	var g := GridContainer.new()
+	g.columns = (rows[0] as Array).size()
+	g.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	g.add_theme_constant_override("h_separation", 12)
+	g.add_theme_constant_override("v_separation", 3)
+	sc.add_child(g)
+	var ncol := g.columns
+	if rows.size() <= 1:
+		var e := Label.new()
+		e.text = "Rien à signaler."
+		e.add_theme_color_override("font_color", GameData.CREAM)
+		v.add_child(e)
+	var first_header := ncol > 2
+	for ri in rows.size():
+		for ci in ncol:
+			var c := Label.new()
+			c.text = str(rows[ri][ci])
+			c.add_theme_font_size_override("font_size", 15)
+			var head: bool = first_header and ri == 0
+			c.add_theme_color_override("font_color", GameData.AMBER if head else (GameData.CREAM if ci == 0 else Color.WHITE))
+			if ci == 0:
+				c.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			else:
+				c.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+			g.add_child(c)
+	return pc
 
 
 # --- Objectif de mission ------------------------------------------------------

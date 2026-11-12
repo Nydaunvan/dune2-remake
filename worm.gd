@@ -120,6 +120,7 @@ func _lunge(delta: float) -> void:
 	if lean >= 1.0 and not _bit:
 		_bit = true
 		bites += 1
+		game.stats.worm_bites += 1
 		_victims.clear()
 		var mouth := position + head_offset()
 		for u in game.units.duplicate():
