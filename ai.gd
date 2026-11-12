@@ -55,6 +55,8 @@ var air_wave: Array = []
 var air_ended := 0.0
 var _hp_seen := {}      # PV de nos bâtiments à la dernière analyse (détecte une attaque)
 var _alert_until := 0.0
+var _w_hp := {}         # PV des ouvriers à la dernière analyse (détecte une attaque)
+var stage_of := {}      # point d'attente propre à chaque unité (manœuvre de flanc)
 
 ## Adoucissement global : l'IA doit laisser le temps de s'organiser.
 const EASE_SLOW := 1.3     # construit et produit plus lentement
@@ -114,6 +116,7 @@ func _process(delta: float) -> void:
 		_think_tech()
 		_watch_base()
 		_think_army()
+		_think_tactics()
 		_think_raid()
 		_think_air()
 
@@ -737,6 +740,80 @@ func _think_army() -> void:
 			_retreat(now)
 
 
+## Micro-gestion : focalisation des tirs, repli des blessés, secours des ouvriers attaqués.
+func _think_tactics() -> void:
+	if skill < 0.45:
+		return
+	var foes := _foe_units().filter(func(u) -> bool: return u.weapon != "")
+	var army := _army()
+	var home_cell: Vector2i = Vector2i(home.round())
+	# 1. Les blessés se replient (et ne rejoignent pas une vague avant d'être réparés)
+	for u in army:
+		var frac: float = u.hp / maxf(u.max_hp, 1.0)
+		if u.has_meta("ai_hurt"):
+			if frac > 0.6:
+				u.remove_meta("ai_hurt")
+			continue
+		if frac < 0.28 and skill >= 0.5 and (u in squad or u.state == "attack"):
+			# on ne fuit que s'il reste de quoi tenir : sinon il vend chèrement sa peau
+			var menace := false
+			for f in foes:
+				if f.position.distance_to(u.position) < 9.0 * game.TILE:
+					menace = true
+					break
+			if menace:
+				u.set_meta("ai_hurt", true)
+				squad.erase(u)
+				stage_of.erase(u)
+				u.order_path(game.path_to(u.position, game._find_free_cell(home_cell + Vector2i(0, 0))))
+	# 2. Focalisation : tout le monde tire sur l'ennemi le plus fragile à portée
+	if skill >= 0.55:
+		var fighters := army.filter(func(u: Unit) -> bool: return (u.state == "attack" or u.state == "amove") and not u.has_meta("ai_hurt"))
+		for u in fighters:
+			var cur = u.target
+			if cur != null and is_instance_valid(cur) and cur is Unit and cur.alive and cur.weapon != "":
+				continue
+			var best = null
+			var best_s := INF
+			for f in foes:
+				if f.air and not GameData.can_hit_air(u.id):
+					continue
+				var d: float = f.position.distance_to(u.position)
+				if d > u.w_range * 1.15:
+					continue
+				var s: float = f.hp + d * 0.2 - float(f.dps) * 4.0
+				if s < best_s:
+					best_s = s
+					best = f
+			if best != null:
+				u.order_attack(best)
+	# 3. Un ouvrier attaqué : l'armée au repos accourt
+	var now: float = game.game_time
+	for w in game.units:
+		if w.team != team or not w.alive or not w.is_worker():
+			continue
+		var key: int = w.get_instance_id()
+		var hurt: bool = _w_hp.has(key) and w.hp < float(_w_hp[key]) - 1.0
+		_w_hp[key] = w.hp
+		if not hurt:
+			continue
+		var att = null
+		for f in foes:
+			if f.position.distance_to(w.position) < 9.0 * game.TILE:
+				att = f
+				break
+		if att == null:
+			continue
+		_alert_until = maxf(_alert_until, now + 8.0)
+		var sent := 0
+		for u in army:
+			if sent >= 6:
+				break
+			if (u.state == "idle" or u.state == "amove") and not (u in squad) and not u.has_meta("ai_hurt"):
+				u.order_attack(att) if not att.air or GameData.can_hit_air(u.id) else u.order_amove(game.world_to_cell(w.position))
+				sent += 1
+
+
 func squad_alive() -> Array:
 	return squad.filter(func(u) -> bool: return is_instance_valid(u) and u.alive)
 
@@ -750,14 +827,22 @@ func _rally_cell() -> Vector2i:
 
 
 func _muster(army: Array, now: float) -> void:
-	var idle := army.filter(func(u: Unit) -> bool: return u.state == "idle" and not (u in raid))
+	var idle := army.filter(func(u: Unit) -> bool: return u.state == "idle" and not (u in raid) and not u.has_meta("ai_hurt"))
 	# Les unités au repos se placent au rassemblement (skill : sinon elles restent où elles sont apparues)
 	if skill >= 0.3:
 		var rc := _rally_cell()
 		for u in idle:
 			if u.position.distance_to(game._cell_to_world(rc)) > 7.0 * game.TILE:
 				u.order_amove(rc)
-	if now < wave_grace or now - wave_ended < wave_pause or idle.size() < wave_size:
+	var need := wave_size
+	var pause := wave_pause
+	if skill >= 0.5 and now >= wave_grace * 0.7:
+		# Contre-attaque : l'adversaire a peu d'armée, on frappe sans attendre
+		var fa := _foe_units().filter(func(u) -> bool: return u.weapon != "" and not u.is_worker())
+		if _power(idle) > 1.8 * _power(fa) and idle.size() >= 4:
+			need = 4
+			pause = wave_pause * 0.3
+	if now < wave_grace * (0.7 if need < wave_size else 1.0) or now - wave_ended < pause or idle.size() < need:
 		return
 	# Force engagée contre ce que l'on va affronter : on n'attaque pas à perte
 	var tgt = _pick_target()
@@ -782,8 +867,16 @@ func _muster(army: Array, now: float) -> void:
 		var v: Vector2 = (Vector2(from) - Vector2(tc))
 		var off := Vector2(tc) + (v.normalized() * 11.0 if v.length() > 0.1 else Vector2.ZERO)
 		stage_cell = game._find_free_cell(Vector2i(off.round()))
+		stage_of.clear()
+		if skill >= 0.7 and squad.size() >= 8:
+			# Manœuvre en tenaille : la moitié du groupe se place sur chaque flanc de la cible
+			var perp := v.normalized().orthogonal() * 8.0
+			var ca: Vector2i = game._find_free_cell(Vector2i((off + perp).round()))
+			var cb: Vector2i = game._find_free_cell(Vector2i((off - perp).round()))
+			for i in squad.size():
+				stage_of[squad[i]] = ca if i % 2 == 0 else cb
 		for u in squad:
-			u.order_amove(stage_cell)
+			u.order_amove(stage_of.get(u, stage_cell))
 		mode = "stage"
 	else:
 		for u in squad:
@@ -792,15 +885,28 @@ func _muster(army: Array, now: float) -> void:
 	assaulting = true
 
 
+## Force adverse armée autour du centre du groupe.
+func _squad_threat(alive: Array) -> float:
+	var cen := Vector2.ZERO
+	for u in alive:
+		cen += u.position
+	cen /= maxf(float(alive.size()), 1.0)
+	return _power(_defenders_near(cen, 11.0 * game.TILE))
+
+
 func _stage(now: float) -> void:
 	var alive := squad_alive()
+	if skill >= 0.4 and not alive.is_empty() and _squad_threat(alive) > 1.8 * _power(alive):
+		mode = "retreat"
+		_mode_t = 0.0
+		return
 	if alive.size() < squad_start * 0.5:
 		mode = "retreat"
 		_mode_t = 0.0
 		return
 	var near := 0
-	var sc: Vector2 = game._cell_to_world(stage_cell)
 	for u in alive:
+		var sc: Vector2 = game._cell_to_world(stage_of.get(u, stage_cell))
 		if u.position.distance_to(sc) < 7.0 * game.TILE:
 			near += 1
 	# Attaque quand la plupart des unités sont groupées (ou après trop d'attente)
@@ -834,6 +940,10 @@ func _attack(now: float) -> void:
 		_order_attack(alive)
 		return
 	# Rapport de force local défavorable : repli pour se refaire
+	if skill >= 0.4 and _mode_t > 6.0 and _squad_threat(alive) > 2.0 * _power(alive):
+		mode = "retreat"
+		_mode_t = 0.0
+		return
 	if skill >= 0.4:
 		var def := _power(_defenders_near(target_b.world_center(), 9.0 * game.TILE))
 		if def > 1.6 * _power(alive) and _mode_t > 15.0:
