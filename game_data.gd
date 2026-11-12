@@ -114,8 +114,53 @@ const SOAK_FRAC := 0.025
 const SOAK_EXP := 0.65
 
 
+## Noms propres à chaque faction pour les bâtiments et engins communs (mêmes règles, autre identité).
+const FACTION_NAMES := {
+	"chantier": {"solis": "Atelier de conception", "kharn": "Forteresse de commandement", "vael": "Camp de base", "conclave": "Noyau cristallin"},
+	"centrale": {"solis": "Centrale solaire", "kharn": "Chaudière de guerre", "vael": "Dynamo du désert", "conclave": "Cuve d'énergie vive"},
+	"raffinerie": {"solis": "Raffinerie solaire", "kharn": "Raffinerie lourde", "vael": "Comptoir de raffinage", "conclave": "Alambic de cristal"},
+	"fonderie": {"solis": "Fonderie de précision", "kharn": "Haut fourneau", "vael": "Forge nomade", "conclave": "Creuset d'obsidienne"},
+	"usine": {"solis": "Usine d'assemblage", "kharn": "Arsenal", "vael": "Atelier ambulant", "conclave": "Matrice de cristal"},
+	"tourelle": {"solis": "Tourelle de garde", "kharn": "Casemate", "vael": "Poste d'embuscade", "conclave": "Sentinelle de cristal"},
+	"mur": {"solis": "Mur de plastacier", "kharn": "Mur de béton", "vael": "Mur de sable", "conclave": "Mur de pierre noire"},
+	"silo": {"solis": "Réservoir d'épice", "kharn": "Silo blindé", "vael": "Entrepôt d'épice", "conclave": "Urne d'épice"},
+	"silo_minerai": {"solis": "Réservoir de minerai", "kharn": "Soute à minerai", "vael": "Entrepôt de minerai", "conclave": "Géode de stockage"},
+	"radar": {"solis": "Centre de veille", "kharn": "Poste d'écoute", "vael": "Vigie nomade", "conclave": "Œil de cristal"},
+	"reparation": {"solis": "Baie de réparation", "kharn": "Garage de campagne", "vael": "Rebouteux", "conclave": "Bassin de régénération"},
+	"reacteur": {"solis": "Réacteur solaire", "kharn": "Réacteur lourd", "vael": "Réacteur de contrebande", "conclave": "Cœur de cristal"},
+	"batterie": {"solis": "Rampe de roquettes", "kharn": "Batterie de roquettes", "vael": "Salve du désert", "conclave": "Batterie d'éclats"},
+	"aerodrome": {"solis": "Aérodrome", "kharn": "Piste de guerre", "vael": "Piste de fortune", "conclave": "Plateforme d'envol"},
+	"recolteur": {"solis": "Moissonneuse", "kharn": "Récolteur blindé", "vael": "Pilleur d'épice", "conclave": "Collecteur flottant"},
+	"mineur": {"solis": "Foreuse", "kharn": "Mineur lourd", "vael": "Fouilleur", "conclave": "Foreur de cristal"},
+	"mcv": {"solis": "Engin de déploiement", "kharn": "Engin de siège", "vael": "Chariot de camp", "conclave": "Germe de base"},
+	"convoi": {"solis": "Convoi d'épice", "kharn": "Convoi blindé", "vael": "Caravane d'épice", "conclave": "Convoi flottant"},
+}
+
+
+## Nom affiché d'un bâtiment ou d'une unité pour une faction donnée.
+static func name_of(id: String, faction: String) -> String:
+	if FACTION_NAMES.has(id) and FACTION_NAMES[id].has(faction):
+		return FACTION_NAMES[id][faction]
+	if BUILDINGS.has(id):
+		return BUILDINGS[id]["name"]
+	if UNITS.has(id):
+		return UNITS[id]["name"]
+	return id
+
+
+## Nom affiché pour la faction jouée (contexte du joueur : messages, info-bulles).
+static func dname(id: String) -> String:
+	return name_of(id, GameSession.faction)
+
+
 ## Teinte d'un mur (dessiné à plat par Building, icône de l'interface).
-static func wall_color(id: String) -> Color:
+static func wall_color(id: String, faction := "") -> Color:
+	if id == "mur":
+		match faction:
+			"solis": return Color(0.6, 0.65, 0.74)
+			"kharn": return Color(0.4, 0.4, 0.42)
+			"vael": return Color(0.72, 0.6, 0.4)
+			"conclave": return Color(0.24, 0.19, 0.34)
 	match id:
 		"mur_acier": return Color(0.5, 0.52, 0.6)
 		"mur_cristal": return Color(0.5, 0.34, 0.78)

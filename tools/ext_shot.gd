@@ -30,9 +30,13 @@ func _draw_sheet() -> void:
 	var x := 60.0
 	var y := 70.0
 	var ids: Array = []
-	for id in GameData.FACTIONS[fac]["units"] + GameData.FACTIONS[fac]["air"]:
-		if ModelsExt.has(id):
-			ids.append(id)
+	var shared := OS.has_environment("SHARED")
+	if shared:
+		ids = ["recolteur", "mineur", "mcv", "convoi"]
+	else:
+		for id in GameData.FACTIONS[fac]["units"] + GameData.FACTIONS[fac]["air"]:
+			if ModelsExt.has(id):
+				ids.append(id)
 	for id in ids:
 		var key := "%s|%s" % [id, fac]
 		if not bank.has(key):
@@ -48,7 +52,10 @@ func _draw_sheet() -> void:
 	x = 90.0
 	y = maxf(y + 150.0, 470.0)
 	for id in GameData.buildings_for(fac):
-		if not ModelsExt.has(id) or GameData.def(id).get("faction", "") != fac:
+		if shared:
+			if not ModelsFac.has(id, fac) or id.ends_with("_tete"):
+				continue
+		elif not ModelsExt.has(id) or GameData.def(id).get("faction", "") != fac:
 			continue
 		var key := "%s|%s" % [id, fac]
 		if not bank.has(key):

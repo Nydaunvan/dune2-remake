@@ -475,19 +475,19 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 	if d.has("convoy"):
 		d["convoy"]["ambushes"] = int(d["convoy"]["ambushes"]) + int(i / 3)
 		d["convoy"]["ambush_size"] = int(d["convoy"]["ambush_size"]) + int(i / 3)
-	d["obj"] = _obj_short(d)
+	d["obj"] = _obj_short(d, faction)
 	return d
 
 
 ## Résumé court des objectifs (cartes de mission, guide).
-static func _obj_short(d: Dictionary) -> String:
+static func _obj_short(d: Dictionary, faction: String) -> String:
 	var parts: PackedStringArray = []
 	for o in d["objectives"]:
 		match o["type"]:
 			"build":
 				var names: PackedStringArray = []
 				for id in o["ids"]:
-					names.append(String(GameData.BUILDINGS[id]["name"]).to_lower())
+					names.append(GameData.name_of(id, faction).to_lower())
 				parts.append("bâtir " + ", ".join(names))
 			"harvest": parts.append("récolter %d Solaris" % int(o["amount"]))
 			"train": parts.append("former %d unités" % int(o["count"]))
@@ -496,9 +496,9 @@ static func _obj_short(d: Dictionary) -> String:
 			"outposts": parts.append("raser les avant-postes")
 			"hold": parts.append("tenir la zone %s" % _mins(float(d["zone"]["time"])))
 			"destroy_all": parts.append("détruire tous les adversaires" if d.get("rival", false) else "détruire l'adversaire")
-			"upgrade": parts.append("%s niveau %d" % [String(GameData.def(o["id"])["name"]).to_lower(), int(o["level"])])
+			"upgrade": parts.append("%s niveau %d" % [GameData.name_of(o["id"], faction).to_lower(), int(o["level"])])
 			"kills": parts.append("%d victimes" % int(o["count"]))
-			"destroy_type": parts.append("détruire %d %s" % [int(o["count"]), String(GameData.def(o["id"])["name"]).to_lower()])
+			"destroy_type": parts.append("détruire %d %s" % [int(o["count"]), GameData.name_of(o["id"], faction).to_lower()])
 			"ore": parts.append("récolter %d minerai" % int(o["amount"]))
 			"power": parts.append("%d d'énergie" % int(o["power"] if o.has("power") else o["amount"]))
 			"air": parts.append("%d appareils volants" % int(o["count"]))
@@ -602,7 +602,7 @@ static func objective_lines(faction: String, m: int, d: Dictionary) -> Array:
 			"build":
 				var parts: PackedStringArray = []
 				for id in o["ids"]:
-					parts.append("%s ×%d" % [GameData.BUILDINGS[id]["name"], int(o["ids"][id])])
+					parts.append("%s ×%d" % [GameData.name_of(id, faction), int(o["ids"][id])])
 				obj.append("Construire : " + ", ".join(parts))
 			"harvest":
 				obj.append("Récolter %d Solaris au total" % int(o["amount"]))
@@ -624,11 +624,11 @@ static func objective_lines(faction: String, m: int, d: Dictionary) -> Array:
 				else:
 					obj.append("Détruire toutes les unités et structures de %s" % enemy)
 			"upgrade":
-				obj.append("Améliorer : %s au niveau %d" % [GameData.def(o["id"])["name"], int(o["level"])])
+				obj.append("Améliorer : %s au niveau %d" % [GameData.name_of(o["id"], faction), int(o["level"])])
 			"kills":
 				obj.append("Détruire %d unités ennemies" % int(o["count"]))
 			"destroy_type":
-				obj.append("Détruire %d %s ennemi(s)" % [int(o["count"]), String(GameData.def(o["id"])["name"]).to_lower()])
+				obj.append("Détruire %d %s ennemi(s)" % [int(o["count"]), GameData.name_of(o["id"], faction).to_lower()])
 			"ore":
 				obj.append("Récolter %d minerai au total" % int(o["amount"]))
 			"power":
@@ -666,7 +666,7 @@ static func details(faction: String, m: int) -> Array:
 	if not su.is_empty():
 		var names: PackedStringArray = []
 		for id in resolve_units(faction, su):
-			names.append(String(GameData.UNITS[id]["name"]))
+			names.append(GameData.name_of(id, faction))
 		sit.append("Escorte de départ : " + ", ".join(names))
 	sit.append(foes_text(faction, m))
 	if rival_of(faction, m) != "":
@@ -692,18 +692,18 @@ static func details(faction: String, m: int) -> Array:
 	for id in GameData.buildings_for(faction):
 		var bd: Dictionary = GameData.BUILDINGS[id]
 		if int(bd.get("unlock", 0)) == m and m > 0:
-			nb.append(String(bd["name"]))
+			nb.append(GameData.name_of(id, faction))
 	if m > 0:
 		tech.append("Nouveaux bâtiments : " + (", ".join(nb) if not nb.is_empty() else "aucun"))
 	else:
-		tech.append("Bâtiments : Centrale, Raffinerie, Fonderie, Usine, Tourelle")
+		tech.append("Bâtiments : " + ", ".join(PackedStringArray(["centrale", "raffinerie", "fonderie", "usine", "tourelle"].map(func(i: String) -> String: return GameData.name_of(i, faction)))))
 	var un: PackedStringArray = []
 	for id in fd["units"]:
-		un.append("%s (Usine niv. %d)" % [GameData.UNITS[id]["name"], int(GameData.UNITS[id].get("level", 1))])
+		un.append("%s (Usine niv. %d)" % [GameData.name_of(id, faction), int(GameData.UNITS[id].get("level", 1))])
 	tech.append("Unités : " + ", ".join(un))
 	var ua: PackedStringArray = []
 	for id in fd["air"]:
-		ua.append("%s (Usine niv. %d)" % [GameData.UNITS[id]["name"], int(GameData.UNITS[id].get("level", 1))])
+		ua.append("%s (Usine niv. %d)" % [GameData.name_of(id, faction), int(GameData.UNITS[id].get("level", 1))])
 	tech.append("Unités volantes (Aérodrome, dès la mission 3) : " + ", ".join(ua))
 	tech.append("Les unités plus puissantes demandent d'améliorer l'Usine")
 	out.append(["TECHNOLOGIE", tech])

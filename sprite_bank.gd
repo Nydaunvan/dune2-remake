@@ -35,7 +35,7 @@ func setup(p_game, faction_ids: Array) -> void:
 		var accent: Color = GameData.FACTIONS[f]["color"]
 		var ids: Array = ["recolteur", "mineur", "mcv", "convoi"] + GameData.FACTIONS[f]["units"] + GameData.FACTIONS[f]["air"]
 		for id in ids:
-			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "angles": ANGLES,
+			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": ANGLES,
 					"frame": UNIT_FRAME, "extra": UNIT_EXTRA})
 		var bids: Array = ["chantier", "centrale", "raffinerie", "fonderie", "usine", "tourelle"]
 		for id in GameData.buildings_for(f):
@@ -46,15 +46,15 @@ func setup(p_game, faction_ids: Array) -> void:
 				continue
 			var cs: Vector2i = GameData.def(id)["size"]
 			var fr := Vector2(cs * 32) + Vector2(BUILDING_MARGIN, BUILDING_MARGIN)
-			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "angles": 1,
+			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": 1,
 					"frame": fr, "extra": BUILDING_EXTRA})
 			if id == "radar":
-				_jobs.append({"key": "radar_tete|%s" % f, "id": "radar_tete", "accent": accent,
+				_jobs.append({"key": "radar_tete|%s" % f, "id": "radar_tete", "accent": accent, "faction": f,
 						"angles": 32, "frame": Vector2(96, 96), "extra": 60.0})
 			if id != "tourelle" and GameData.def(id).has("weapon"):
-				_jobs.append({"key": "%s_tete|%s" % [id, f], "id": "%s_tete" % id, "accent": accent,
+				_jobs.append({"key": "%s_tete|%s" % [id, f], "id": "%s_tete" % id, "accent": accent, "faction": f,
 						"angles": ANGLES, "frame": Vector2(96, 96), "extra": 60.0})
-		_jobs.append({"key": "tourelle_tete|%s" % f, "id": "tourelle_tete", "accent": accent, "angles": ANGLES,
+		_jobs.append({"key": "tourelle_tete|%s" % f, "id": "tourelle_tete", "accent": accent, "faction": f, "angles": ANGLES,
 				"frame": Vector2(96, 96), "extra": 60.0})
 	_bake_all()
 
@@ -172,7 +172,7 @@ func _bake(job: Dictionary) -> void:
 	var view_h: float = frame_px.y * cos(TILT) + float(job["extra"])
 	_vp.size = Vector2i(int(ceil(frame_px.x * SS)), int(ceil(view_h * SS)))
 	_cam.size = view_h
-	var model := Models.build(job["id"], job["accent"])
+	var model := Models.build(job["id"], job["accent"], job.get("faction", ""))
 	_holder.add_child(model)
 	var out: Array = []
 	var rects: Array = []

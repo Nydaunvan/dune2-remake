@@ -1603,7 +1603,7 @@ func building_block(id: String, team := 0) -> String:
 	var rl: Dictionary = d.get("req_level", {})
 	for rid in rl:
 		if best_level(rid, team) < int(rl[rid]):
-			return "%s niv. %d" % [GameData.def(rid)["name"], int(rl[rid])]
+			return "%s niv. %d" % [GameData.dname(rid), int(rl[rid])]
 	var mx := int(d.get("max", 0))
 	if mx > 0:
 		var n := count_buildings(id, team)
@@ -1871,7 +1871,7 @@ func upgrade_building(b: Building) -> bool:
 	b.up_cost = float(upgrade_cost(b)) # prélevé progressivement pendant les travaux
 	b.up_acc = 0.0
 	sfx.play_ui("click")
-	ui.toast("%s : amélioration en cours (%d s)" % [GameData.def(b.id)["name"], int(b.up_total)], GameData.AMBER)
+	ui.toast("%s : amélioration en cours (%d s)" % [GameData.dname(b.id), int(b.up_total)], GameData.AMBER)
 	return true
 
 
@@ -1901,7 +1901,7 @@ func upgrade_unit(u: Unit) -> bool:
 	u.tech_left = u.tech_total
 	u.queue_redraw()
 	sfx.play_ui("click")
-	ui.toast("%s : modernisation en cours (%d s)" % [GameData.def(u.id)["name"], int(u.tech_total)], GameData.AMBER)
+	ui.toast("%s : modernisation en cours (%d s)" % [GameData.dname(u.id), int(u.tech_total)], GameData.AMBER)
 	return true
 
 
@@ -1917,7 +1917,7 @@ func demolish_building(b: Building) -> void:
 	b.repairing = false
 	Fx.explosion(self, b.world_center(), 1.4)
 	sfx.play_ui("error", -8.0)
-	ui.toast("%s démoli (+%d minerai, +%d Solaris)" % [GameData.def(b.id)["name"], refund, refund_sol], GameData.AMBER)
+	ui.toast("%s démoli (+%d minerai, +%d Solaris)" % [GameData.dname(b.id), refund, refund_sol], GameData.AMBER)
 	if selected_building == b:
 		selected_building = null
 	if inspected == b:
@@ -1953,7 +1953,7 @@ func toggle_repair(b: Building) -> void:
 		return
 	b.repairing = not b.repairing
 	sfx.play_ui("click")
-	ui.toast("Réparation en cours : %s" % GameData.def(b.id)["name"] if b.repairing else "Réparation interrompue", GameData.AMBER)
+	ui.toast("Réparation en cours : %s" % GameData.dname(b.id) if b.repairing else "Réparation interrompue", GameData.AMBER)
 	b.queue_redraw()
 
 
@@ -1998,7 +1998,7 @@ func repair_unit(u: Unit) -> bool:
 		return false
 	u.order_repair(find_repair_site(0, u.position))
 	sfx.play_ui("click")
-	ui.toast("%s : retour à l'atelier" % GameData.def(u.id)["name"], GameData.AMBER)
+	ui.toast("%s : retour à l'atelier" % GameData.dname(u.id), GameData.AMBER)
 	return true
 
 
@@ -2039,7 +2039,7 @@ func _tick_repairs(dt: float) -> void:
 			b.hp = b.max_hp
 			b.repairing = false
 			sfx.play_ui("ready", -4.0)
-			ui.toast("%s réparé" % GameData.def(b.id)["name"], GameData.GREEN)
+			ui.toast("%s réparé" % GameData.dname(b.id), GameData.GREEN)
 
 
 ## Collisions entre unités terrestres : elles ne se superposent pas et ne se traversent pas.
@@ -2159,7 +2159,7 @@ func _tick_upgrades(delta: float) -> void:
 				b.upgrade()
 				if b.team == 0:
 					sfx.play_ui("upgrade")
-					ui.toast("%s — niveau %d" % [GameData.def(b.id)["name"], b.level], GameData.GOLD)
+					ui.toast("%s — niveau %d" % [GameData.dname(b.id), b.level], GameData.GOLD)
 			else:
 				b.queue_redraw()
 	for u in units:
@@ -2246,7 +2246,7 @@ func on_item_clicked(id: String, button: int) -> void:
 				q.remove_at(i)
 				if i == 0 and placing_id == id:
 					placing_id = ""
-				ui.toast("%s annulé — remboursé" % d["name"], GameData.AMBER)
+				ui.toast("%s annulé — remboursé" % GameData.dname(id), GameData.AMBER)
 				return
 		return
 	if button != MOUSE_BUTTON_LEFT:
@@ -2257,18 +2257,18 @@ func on_item_clicked(id: String, button: int) -> void:
 		return
 	if not is_unlocked(id):
 		if mission.is_empty():
-			ui.toast("%s : améliorez le Chantier au niveau %d" % [d["name"], chantier_needed(id)], GameData.AMBER)
+			ui.toast("%s : améliorez le Chantier au niveau %d" % [GameData.dname(id), chantier_needed(id)], GameData.AMBER)
 		else:
-			ui.toast("%s : débloqué après la mission %d de la campagne" % [d["name"], int(d.get("unlock", 0))], GameData.AMBER)
+			ui.toast("%s : débloqué après la mission %d de la campagne" % [GameData.dname(id), int(d.get("unlock", 0))], GameData.AMBER)
 		return
 	if worker_block(id) != "":
-		ui.toast("%s : %d maximum avec ce niveau de Chantier — améliorez le Chantier pour en avoir plus" % [d["name"], worker_cap(id)], GameData.AMBER)
+		ui.toast("%s : %d maximum avec ce niveau de Chantier — améliorez le Chantier pour en avoir plus" % [GameData.dname(id), worker_cap(id)], GameData.AMBER)
 		return
 	if unit_level_block(id) != "":
 		if GameData.BUILDINGS.has(id):
-			ui.toast("%s : %s requis" % [d["name"], unit_level_block(id)], GameData.AMBER)
+			ui.toast("%s : %s requis" % [GameData.dname(id), unit_level_block(id)], GameData.AMBER)
 		else:
-			ui.toast("%s : améliorez l'Usine au niveau %d" % [d["name"], int(d["level"])], GameData.AMBER)
+			ui.toast("%s : améliorez l'Usine au niveau %d" % [GameData.dname(id), int(d["level"])], GameData.AMBER)
 		return
 	if not is_available(id):
 		ui.toast("Prérequis manquant", GameData.RED)
@@ -2320,7 +2320,7 @@ func _update_production(delta: float) -> void:
 				ro = _pay_part(cost_t, dp, float(p["acc"]), ore)
 				rs = _pay_part(sol_t, dp, float(p["acc_s"]), credits)
 			if not (ro[0] and rs[0]):
-				_warn_funds(String(GameData.def(p["id"])["name"]))
+				_warn_funds(String(GameData.dname(p["id"])))
 				continue
 			if cat == "unit":
 				credits -= int(ro[1])
@@ -2334,7 +2334,7 @@ func _update_production(delta: float) -> void:
 		p["progress"] += dp
 		if p["progress"] >= 1.0:
 			p["progress"] = 1.0
-			var item_name: String = GameData.def(p["id"])["name"]
+			var item_name: String = GameData.dname(p["id"])
 			if cat == "unit":
 				q.pop_front()
 				if has_building(GameData.def(p["id"])["from"]):
@@ -2677,7 +2677,7 @@ func objective_info(i: int) -> Dictionary:
 		"upgrade":
 			var lv: int = best_level(o["id"]) if has_building(o["id"]) else 0
 			var need_l: int = o["level"]
-			return {"text": "%s niveau %d : %d/%d" % [GameData.def(o["id"])["name"], need_l, mini(lv, need_l), need_l],
+			return {"text": "%s niveau %d : %d/%d" % [GameData.dname(o["id"]), need_l, mini(lv, need_l), need_l],
 					"frac": clampf(float(lv) / need_l, 0.0, 1.0)}
 		"kills":
 			var nk: int = o["count"]
@@ -2685,7 +2685,7 @@ func objective_info(i: int) -> Dictionary:
 		"destroy_type":
 			var nd: int = o["count"]
 			var got := int(destroyed.get(o["id"], 0))
-			return {"text": "Structure ennemie « %s » détruite : %d/%d" % [GameData.def(o["id"])["name"], mini(got, nd), nd],
+			return {"text": "Structure ennemie « %s » détruite : %d/%d" % [GameData.dname(o["id"]), mini(got, nd), nd],
 					"frac": clampf(float(got) / nd, 0.0, 1.0)}
 		"ore":
 			var ao: int = o["amount"]

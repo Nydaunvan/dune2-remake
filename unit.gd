@@ -542,7 +542,7 @@ func order_load(t) -> void:
 	if role != "transport" or not _valid(t) or t.air or t.carried or t == self:
 		return
 	if cargo_units.size() >= slots:
-		game.ui.toast("%s : soute pleine" % GameData.def(id)["name"], GameData.AMBER)
+		game.ui.toast("%s : soute pleine" % GameData.dname(id), GameData.AMBER)
 		return
 	target = null
 	forced = false

@@ -132,9 +132,9 @@ func _k(s: String) -> String:
 
 func _name(id: String) -> String:
 	if GameData.BUILDINGS.has(id):
-		return GameData.BUILDINGS[id]["name"]
+		return GameData.name_of(id, faction)
 	if GameData.UNITS.has(id):
-		return GameData.UNITS[id]["name"]
+		return GameData.name_of(id, faction)
 	return id
 
 
@@ -191,11 +191,11 @@ En cas de [color=#ff7777][b]manque d'énergie[/b][/color] : les Raffineries n'en
 func _p_buildings() -> String:
 	var s := _h("Bâtiments de " + GameData.FACTIONS[faction]["name"])
 	s += "Coût en minerai (et Solaris), énergie : [color=#66ff99]+[/color] produit / [color=#ff9966]−[/color] consomme.\n\n"
-	s += "[b]Chantier[/b] — Cœur de la base (issu de l'engin de chantier). Construit tout le reste ; ses niveaux ajoutent des places dans la file.\n\n"
+	s += "[b]%s[/b] — Cœur de la base (issu de %s). Construit tout le reste ; ses niveaux ajoutent des places dans la file.\n\n" % [GameData.name_of("chantier", faction), GameData.name_of("mcv", faction).to_lower()]
 	for id in GameData.buildings_for(faction):
 		var d: Dictionary = GameData.BUILDINGS[id]
 		var pw := int(d["power"])
-		var line := "[b]%s[/b] — %d minerai" % [d["name"], int(d["cost"])]
+		var line := "[b]%s[/b] — %d minerai" % [GameData.name_of(id, faction), int(d["cost"])]
 		if GameData.sol_cost(id) > 0:
 			line += " + %d Solaris" % GameData.sol_cost(id)
 		line += ", énergie " + ("[color=#66ff99]+%d[/color]" % pw if pw > 0 else ("[color=#ff9966]%d[/color]" % pw if pw < 0 else "0"))
@@ -219,7 +219,7 @@ func _p_units() -> String:
 	s += "Les unités se produisent dans l'Usine (terrestres) ou l'Aérodrome (volantes). Certaines exigent une Usine de niveau 2 ou 3. Une fois par type, la [b]modernisation[/b] (Usine niveau 2) apporte des bonus permanents.\n"
 	for id in GameData.units_for(faction):
 		var d: Dictionary = GameData.UNITS[id]
-		var line := "\n[b]%s[/b]%s — %d Solaris" % [d["name"], " (volant)" if d.get("air", false) else "", int(d["cost"])]
+		var line := "\n[b]%s[/b]%s — %d Solaris" % [GameData.name_of(id, faction), " (volant)" if d.get("air", false) else "", int(d["cost"])]
 		line += "\n    PV %d, vitesse %d" % [int(d["hp"]), int(d["speed"])]
 		if d.has("dps"):
 			line += ", dégâts %d/s, portée %d" % [int(d["dps"]), int(d["range"])]

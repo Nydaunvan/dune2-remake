@@ -801,7 +801,7 @@ class InfoPanel extends GlassPanel:
 		var y := 152.0
 		for id in counts:
 			UiStyle.text(self, Vector2(x, y), "%d ×" % counts[id], 15, UiStyle.GOLD)
-			UiStyle.text(self, Vector2(x + 34, y), String(GameData.def(id)["name"]), 15, UiStyle.TEXT)
+			UiStyle.text(self, Vector2(x + 34, y), GameData.dname(id), 15, UiStyle.TEXT)
 			y += 22.0
 			if y > 228.0:
 				y = 152.0
@@ -820,7 +820,7 @@ class InfoPanel extends GlassPanel:
 		var d := GameData.def(u.id)
 		var mine: bool = u.team == 0
 		var rank_tag := String(GameData.RANKS[u.rank]["name"]).to_upper() if u.role == "combat" else ""
-		_hp_block(String(d["name"]), String(d.get("desc", "")), u.hp, u.max_hp, mine, rank_tag)
+		_hp_block(GameData.name_of(u.id, game.faction_id_of(u.team)), String(d.get("desc", "")), u.hp, u.max_hp, mine, rank_tag)
 		if u.role == "mcv" or u.role == "convoy":
 			UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 			var yr := 152.0
@@ -898,7 +898,7 @@ class InfoPanel extends GlassPanel:
 	func _draw_building(b: Building) -> void:
 		var d := GameData.def(b.id)
 		var mine: bool = b.team == 0
-		_hp_block(String(d["name"]), "Structure alliée" if mine else "Structure ennemie", b.hp, b.max_hp, mine,
+		_hp_block(GameData.name_of(b.id, game.faction_id_of(b.team)), "Structure alliée" if mine else "Structure ennemie", b.hp, b.max_hp, mine,
 				"NIVEAU %d/%d" % [b.level, GameData.MAX_LEVEL])
 		UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 		var rows: Array = []
@@ -1060,7 +1060,7 @@ class BuildIcon extends Control:
 		_sb.set_border_width_all(2)
 		_sb.anti_aliasing = true
 		var d := GameData.def(id)
-		var tip := "%s — %s" % [d["name"], game.cost_label(id)]
+		var tip := "%s — %s" % [GameData.name_of(id, game.faction_id), game.cost_label(id)]
 		if not GameData.UNITS.has(id) and not d.get("wall", false):
 			var pw: int = int(d.get("power", 0))
 			tip += "\nÉnergie : " + ("produit +%d" % pw if pw > 0 else ("consomme %d" % -pw if pw < 0 else "aucune consommation"))
@@ -1155,8 +1155,11 @@ class BuildIcon extends Control:
 			draw_arc(c, 38.0, 0.0, TAU, 48, GameData.GREEN, 4.0, true)
 
 		var tc := UiStyle.TEXT if avail else Color(0.5, 0.45, 0.55)
-		UiStyle.text(self, Vector2(0, 104), String(d["name"]).to_upper(), 12, tc, true,
-				HORIZONTAL_ALIGNMENT_CENTER, size.x)
+		var nm := GameData.name_of(id, game.faction_id).to_upper()
+		var nsz := 12
+		while nsz > 8 and UiStyle.text_width(nm, nsz, true) > size.x - 6.0:
+			nsz -= 1 # les noms longs rétrécissent pour tenir dans la carte
+		UiStyle.text(self, Vector2(0, 104), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		if ready:
 			UiStyle.text(self, Vector2(0, 122), "PRÊT — CLIC", 12, Color(0.5, 1.0, 0.7, 0.6 + 0.4 * pulse), true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
@@ -1217,7 +1220,7 @@ class BuildIcon extends Control:
 			_draw_baked_icon(c, avail)
 			return
 		if GameData.def(id).get("wall", false):
-			var wc := GameData.wall_color(id)
+			var wc := GameData.wall_color(id, game.faction_id)
 			if not avail:
 				wc = wc.darkened(0.4)
 			for i in 3:

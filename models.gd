@@ -14,8 +14,11 @@ const GLOW_VIOLET := Color(0.72, 0.42, 1.0)
 const OBSIDIAN := Color(0.16, 0.12, 0.24)
 
 
-static func build(id: String, accent: Color) -> Node3D:
+static func build(id: String, accent: Color, faction := "") -> Node3D:
 	var r := Node3D.new()
+	# Bâtiments et engins communs : chaque faction a sa propre silhouette (Solis garde le modèle de base)
+	if faction != "" and ModelsFac.build(r, id, faction, accent):
+		return r
 	var body := accent.darkened(0.3)
 	var hi := accent.lightened(0.25)
 	match id:

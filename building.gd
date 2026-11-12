@@ -440,10 +440,10 @@ func center_cell() -> Vector2:
 
 ## Mur : dessiné à plat dans sa case, pour que les segments s'alignent parfaitement.
 func _draw_wall(s: Vector2) -> void:
-	var steel: bool = id == "mur_acier" or id == "mur_titane"
-	var crystal: bool = id == "mur_cristal" or id == "mur_obsidienne"
-	var base := GameData.wall_color(id)
 	var fid: String = game.faction_id_of(team) if game != null else ""
+	var steel: bool = id == "mur_acier" or id == "mur_titane" or (id == "mur" and fid == "kharn")
+	var crystal: bool = id == "mur_cristal" or id == "mur_obsidienne" or (id == "mur" and fid == "conclave")
+	var base := GameData.wall_color(id, fid)
 	var acc: Color = GameData.FACTIONS[fid]["color"] if GameData.FACTIONS.has(fid) else Color.WHITE
 	draw_rect(Rect2(Vector2.ZERO, s), base.darkened(0.35))                       # flanc
 	draw_rect(Rect2(Vector2.ZERO, Vector2(s.x, s.y - 7.0)), base)                 # dessus
