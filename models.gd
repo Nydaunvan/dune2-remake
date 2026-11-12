@@ -61,6 +61,48 @@ static func build(id: String, accent: Color) -> Node3D:
 	return r
 
 
+# --- Bouches de tir ----------------------------------------------------------
+## Position (x avant, y hauteur, z côté) de la bouche de chaque arme dans le repère du modèle.
+## Les projectiles partent de là : même point que le bout du canon dessiné ci-dessous.
+const MUZZLES := {
+	"sentinelle": [Vector3(17, 14, 0)],
+	"egide": [Vector3(24, 16.5, 0)],
+	"resonateur": [Vector3(13, 23, 0)],
+	"belier": [Vector3(12, 15.5, 0)],
+	"brute": [Vector3(31, 22, 0)],
+	"salve": [Vector3(4.7, 19.9, -4.5), Vector3(4.7, 19.9, 0), Vector3(4.7, 19.9, 4.5)],
+	"faucon": [Vector3(17, 9.5, 0)],
+	"vipere": [Vector3(23, 14.5, 0)],
+	"mirage": [Vector3(9, 14, 0)],
+	"libellule": [Vector3(22, 10, 5), Vector3(22, 10, -5)],
+	"aigrette": [Vector3(22, 10, 5), Vector3(22, 10, -5)],
+	"guepe": [Vector3(24, 10, 5), Vector3(24, 10, -5)],
+	"faucheur": [Vector3(13, 9, 9), Vector3(13, 9, -9)],
+	"marteau": [Vector3(3, 7, 0)],
+	"frelon": [Vector3(3, 7, 0)],
+	"tourelle_tete": [Vector3(31, 22, 4), Vector3(31, 22, -4)],
+	"batterie_tete": [Vector3(37, 22, -7), Vector3(37, 22, 0), Vector3(37, 22, 7)],
+	"tour_sonique_tete": [Vector3(18, 34, 0)],
+	"bunker_tete": [Vector3(43, 28, 0)],
+	"tour_acide_tete": [Vector3(35, 20, 0)],
+}
+
+
+## Décalage 2D (monde, depuis le centre) de la bouche n° `idx` pour un modèle orienté `rot`.
+## Même projection oblique que SpriteBank : la hauteur monte à l'écran de y·tan(TILT).
+## Renvoie Vector2.INF si le modèle n'a pas de bouche définie.
+static func muzzle_offset(id: String, rot: float, idx := 0) -> Vector2:
+	if not MUZZLES.has(id):
+		return Vector2.INF
+	var arr: Array = MUZZLES[id]
+	var m: Vector3 = arr[idx % arr.size()]
+	return Vector2(m.x, m.z).rotated(rot) + Vector2(0.0, -m.y * tan(deg_to_rad(30.0)))
+
+
+static func muzzle_count(id: String) -> int:
+	return (MUZZLES[id] as Array).size() if MUZZLES.has(id) else 1
+
+
 # --- Primitives ---------------------------------------------------------------
 
 static func _mat(col: Color, emit := 0.0) -> StandardMaterial3D:

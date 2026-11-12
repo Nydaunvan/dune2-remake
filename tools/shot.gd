@@ -47,6 +47,26 @@ func _process(_d: float) -> bool:
 	if f == 5 and OS.has_environment("SHOT_GUIDE"):
 		var g = Guide.open(node, GameSession.faction)
 		g._show(OS.get_environment("SHOT_GUIDE"))
+	if f == 8 and OS.has_environment("SHOT_MUZZLE"):
+		# Rangée d'unités armées orientées de plusieurs façons ; un point rouge marque la bouche de tir calculée
+		var fd: Dictionary = GameData.FACTIONS[node.faction_id]
+		var ids: Array = Array(fd["units"]) + Array(fd["air"]).slice(0, 5)
+		var angs := [0.0, PI / 2.0, PI, -PI / 2.0 + 0.3]
+		var base: Vector2i = Vector2i(node.start_cell) + Vector2i(-6, 8)
+		for r in angs.size():
+			for i in ids.size():
+				var u = node._spawn_unit(ids[i], base + Vector2i(i * 3, r * 3), 0)
+				u.rotation = angs[r]
+				u.visible = true
+				var dot := Node2D.new()
+				dot.top_level = true
+				dot.z_index = 100
+				var mo: Vector2 = Models.muzzle_offset(ids[i], angs[r], 0)
+				dot.position = u.position + mo + (Vector2(0, -46) if u.air else Vector2.ZERO)
+				dot.set_script(load("res://tools/dot.gd"))
+				node.add_child(dot)
+		node.center_camera(Vector2(base) * 32.0 + Vector2(250, 150))
+		node.camera.zoom = Vector2(2.6, 2.6)
 	if f == 5 and OS.has_environment("SHOT_CHANGELOG"):
 		Changelog.open(node)
 	if f == 5 and OS.has_environment("SHOT_OVERLAY"):

@@ -31,6 +31,7 @@ var armor := "building"
 var weapon := ""
 var dps := 0.0
 var w_range := 0.0 # px
+var _muzzle_i := 0
 var cooldown := 0.0
 var aim := 0.0
 var _scan := 0.0
@@ -159,7 +160,16 @@ func _physics_process(delta: float) -> void:
 	if cooldown <= 0.0 and absf(angle_difference(aim, want)) < 0.2:
 		var wd: Dictionary = GameData.WEAPONS[weapon]
 		cooldown = wd["cd"]
-		game.fire(self, _target, weapon, dps * float(wd["cd"]), world_center() + Vector2.from_angle(aim) * 22.0)
+		var from := world_center() + Vector2.from_angle(aim) * 22.0
+		var hk := "%s_tete" % id
+		if not Models.MUZZLES.has(hk):
+			hk = "tourelle_tete"
+		if game.bank != null and game.bank.has("%s|%s" % [hk, game.faction_id_of(team)]):
+			# bout du canon de la tête de tourelle, à l'angle exact de l'image affichée
+			var snapped: float = game.bank.snap_angle("%s|%s" % [hk, game.faction_id_of(team)], aim)
+			from = world_center() + Models.muzzle_offset(hk, snapped, _muzzle_i)
+			_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(hk)
+		game.fire(self, _target, weapon, dps * float(wd["cd"]), from)
 
 
 func _draw_sprite(s: Vector2) -> bool:

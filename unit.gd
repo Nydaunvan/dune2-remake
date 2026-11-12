@@ -64,6 +64,7 @@ var state := "idle" # idle | move | amove | attack | seek | harvest | return | f
 var path := PackedVector2Array()
 var work_cell := Vector2i(-1, -1)
 var _blocked_t := 0.0 # temps passé bloqué derrière un autre véhicule
+var _muzzle_i := 0   # canon utilisé au prochain tir
 var _detours := 0     # contournements récents (pour ne pas se battre avec le même voisin)
 var _detour_clock := 0.0
 var _pause_t := 0.0   # courte pause après plusieurs contournements : on laisse l'autre passer
@@ -588,6 +589,11 @@ func _shoot(t) -> void:
 		ctrl = true
 		special_t = 20.0
 	var from := position + Vector2.from_angle(rotation) * 16.0
+	# Le projectile part du bout du canon dessiné (alterné entre les canons s'il y en a plusieurs)
+	var mo := Models.muzzle_offset(id, rotation, _muzzle_i)
+	if mo != Vector2.INF and game.bank != null and game.bank.has(_sprite_key()):
+		from = position + mo + (Vector2(0, -AIR_LIFT) if air else Vector2.ZERO)
+		_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(id)
 	game.fire(self, t, weapon, dps * float(wd["cd"]) * (1.0 + GameData.RANK_DMG * rank), from, ctrl)
 
 
