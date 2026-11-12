@@ -1073,12 +1073,18 @@ func _check_end() -> void:
 			won = not _foes_alive()
 		else:
 			_update_objectives(0.0)
-			won = not _foes_alive()
-			if not won:
-				won = true
-				for i in mission["objectives"].size():
-					if not obj_state[i]["done"] and mission["objectives"][i]["type"] != "protect_ally":
-						won = false
+			# Mission : TOUS les objectifs doivent être remplis (détruire l'adversaire ne suffit pas).
+			# Seule exception : « victimes » / « structure ciblée » ne peuvent plus progresser
+			# quand il ne reste plus aucun ennemi, ils sont alors considérés comme remplis.
+			var foes_left := _foes_alive()
+			won = true
+			for i in mission["objectives"].size():
+				var ty: String = mission["objectives"][i]["type"]
+				if ty == "protect_ally" or obj_state[i]["done"]:
+					continue
+				if not foes_left and (ty == "kills" or ty == "destroy_type"):
+					continue
+				won = false
 	if not lost and not won and not mission.is_empty() and mission.has("time_limit") \
 			and game_time >= float(mission["time_limit"]):
 		lost = true
