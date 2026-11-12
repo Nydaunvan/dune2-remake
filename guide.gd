@@ -262,6 +262,7 @@ func _p_factions() -> String:
 func _p_campaign() -> String:
 	var s := _h("Les campagnes")
 	s += "Chaque faction a sa propre campagne de %d missions, avec ses adversaires et son style : défense et précision pour Solis, offensive pour Kharn, vitesse et commerce pour Vael. Une mission terminée débloque la suivante et de nouveaux bâtiments.\n" % Campaign.count(faction)
+	s += "\n[b]La difficulté monte de 1 à 10[/b] : adversaires plus rapides, plus nombreux et plus agressifs, objectifs plus longs et délais plus exigeants. Les premières missions se jouent en une dizaine de minutes ; les dernières peuvent durer une heure ou plus, et la dixième oppose trois camps déjà installés.\n"
 	s += "\nTypes d'objectifs : construire, récolter Solaris ou minerai, produire des unités, une flotte aérienne ou de l'énergie, améliorer des bâtiments, survivre, abattre un nombre d'ennemis, détruire des bâtiments précis, des avant-postes ou tout l'ennemi, escorter un convoi, tenir une zone, protéger un allié.
 Certaines missions imposent un [b]temps limite[/b], démarrent avec une [b]base déjà bâtie[/b] (la vôtre, celle de l'ennemi, ou les deux), ou déchaînent les vers de sable.\nCertaines missions ont [b]2, 3 objectifs ou plus[/b], à remplir tous ; d'autres opposent trois camps où chacun est l'ennemi de tous.\n"
 	s += _h("Missions de " + GameData.FACTIONS[faction]["name"])

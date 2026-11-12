@@ -35,7 +35,7 @@ const CAMPAIGNS := {
 			"ai": {"slowdown": 1.5, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"ally_ai": {"slowdown": 1.8, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 5, "credits": 1200, "ore": 1500},
 			"obj": "Survivez 10 minutes sans perdre la base alliée",
-			"brief": "{ALLY} a besoin de notre bouclier. {ENEMY} va déferler en force : fortifiez-vous, tenez dix minutes et protégez notre allié.",
+			"brief": "{ALLY} a besoin de notre bouclier. {ENEMY} va déferler en force : fortifiez-vous, tenez la durée exigée et protégez notre allié.",
 		},
 		{
 			"id": "cristaux", "title": "Convoi de cristaux", "enemy": "kharn", "size": 96, "credits": 2000, "ore": 2200,
@@ -63,7 +63,7 @@ const CAMPAIGNS := {
 					{"type": "upgrade", "id": "centrale", "level": 3}, {"type": "build", "label": "le complexe", "ids": {"radar": 1, "reacteur": 1}}],
 			"ai": {"slowdown": 1.9, "grace": 420.0, "pause": 70.0, "max_army": 10, "wave": 5, "credits": 1500, "ore": 1800},
 			"obj": "Portez Chantier, Usine et Centrale à leur niveau cible et bâtissez radar et réacteur",
-			"brief": "Le conseil de Solis veut une vitrine : un campement entièrement modernisé. Montez le Chantier au niveau 3, l'Usine au niveau 2 et la Centrale au niveau 3, puis ajoutez radar et réacteur. Pendant les travaux un bâtiment ne produit plus : échelonnez les chantiers pendant que {ENEMY} observe de loin.",
+			"brief": "Le conseil de Solis veut une vitrine : un campement entièrement modernisé. Montez le Chantier, l'Usine et la Centrale aux niveaux demandés, puis ajoutez radar et réacteur. Pendant les travaux un bâtiment ne produit plus : échelonnez les chantiers pendant que {ENEMY} observe de loin.",
 		},
 		{
 			"id": "tempete", "title": "Tempête d'épice", "enemy": "kharn", "size": 96, "credits": 2000, "ore": 2200,
@@ -80,7 +80,7 @@ const CAMPAIGNS := {
 					{"type": "destroy_type", "id": "fonderie", "count": 1}],
 			"ai": {"slowdown": 1.6, "grace": 360.0, "pause": 60.0, "max_army": 12, "wave": 5, "credits": 2000, "ore": 2200},
 			"obj": "Détruisez la centrale, la raffinerie et la fonderie de l'ennemi en 15 minutes",
-			"brief": "La base de {ENEMY} est déjà là, en ordre de marche. Précision d'abord : coupez son énergie, sa récolte et son minerai en moins d'un quart d'heure. Chaque minute perdue lui laisse le temps de se fortifier.",
+			"brief": "La base de {ENEMY} est déjà là, en ordre de marche. Précision d'abord : coupez son énergie, sa récolte et son minerai avant la fin du temps imparti. Chaque minute perdue lui laisse le temps de se fortifier.",
 		},
 		{
 			"id": "pont", "title": "Pont aérien", "enemy": "kharn", "size": 112, "credits": 3500, "ore": 3500,
@@ -89,7 +89,7 @@ const CAMPAIGNS := {
 					{"type": "air", "count": 4}, {"type": "kills", "count": 15}],
 			"ai": {"slowdown": 1.3, "grace": 300.0, "pause": 50.0, "max_army": 16, "wave": 6, "credits": 2200, "ore": 2400},
 			"obj": "Bâtissez un aérodrome, alignez 4 appareils et abattez 15 unités ennemies",
-			"brief": "L'avenir de Solis est dans le ciel. Construisez un aérodrome, formez une escadre de quatre appareils et prouvez sa valeur en détruisant quinze unités de {ENEMY}. Leurs batteries antiaériennes sont rares mais redoutables.",
+			"brief": "L'avenir de Solis est dans le ciel. Construisez un aérodrome, formez une escadre et prouvez sa valeur en détruisant les unités de {ENEMY}. Leurs batteries antiaériennes sont rares mais redoutables.",
 		},
 		{
 			"id": "aiguille", "title": "L'Aiguille", "enemy": "kharn", "start_base": true, "size": 112, "credits": 3000, "ore": 3000,
@@ -126,7 +126,7 @@ const CAMPAIGNS := {
 			"ai": {"slowdown": 1.5, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Tenez la zone centrale, formez 8 unités et récoltez 2500 Solaris",
-			"brief": "Le col central attire aussi {RIVAL}, qui n'est l'ami de personne. Occupez-le avec cinq unités face à {ENEMY} et aux pillards, sans négliger la récolte.",
+			"brief": "Le col central attire aussi {RIVAL}, qui n'est l'ami de personne. Occupez-le avec une troupe solide face à {ENEMY} et aux pillards, sans négliger la récolte.",
 		},
 		{
 			"id": "guerre", "title": "Convoi de guerre", "enemy": "vael", "ally": true, "size": 96, "credits": 2000, "ore": 2200,
@@ -153,7 +153,7 @@ const CAMPAIGNS := {
 			"objectives": [{"type": "destroy_all"}, {"type": "kills", "count": 15}],
 			"ai": {"slowdown": 2.0, "grace": 900.0, "pause": 90.0, "max_army": 8, "wave": 4, "credits": 1200, "ore": 1500},
 			"obj": "Rasez toute la présence ennemie en 12 minutes",
-			"brief": "Pas de préparatifs : la base est prête, les blindés aussi. {ENEMY} n'a pas fini de s'installer. Douze minutes pour tout raser avant que ses renforts n'arrivent.",
+			"brief": "Pas de préparatifs : la base est prête, les blindés aussi. {ENEMY} n'a pas fini de s'installer. Le temps est compté : tout raser avant que ses renforts n'arrivent.",
 		},
 		{
 			"id": "forge", "title": "La forge de guerre", "enemy": "vael", "size": 96, "credits": 2500, "ore": 2500,
@@ -162,7 +162,7 @@ const CAMPAIGNS := {
 					{"type": "build", "label": "les défenses", "ids": {"tourelle": 4}}, {"type": "power", "amount": 250}],
 			"ai": {"slowdown": 1.6, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Récoltez 5000 minerai, alignez 14 unités, 4 tourelles et 250 d'énergie",
-			"brief": "La Légion forge ses armes dans le minerai. Alimentez les fournaises : 5000 de minerai, une armée de quatorze machines, quatre tourelles et assez d'énergie pour tout faire tourner. {ENEMY} tentera de saboter l'effort.",
+			"brief": "La Légion forge ses armes dans le minerai. Alimentez les fournaises : des tonnes de minerai, une armée de machines, des tourelles et assez d'énergie pour tout faire tourner. {ENEMY} tentera de saboter l'effort.",
 		},
 		{
 			"id": "pluie", "title": "Pluie d'acier", "enemy": "vael", "enemy_base": true, "size": 112, "credits": 3500, "ore": 3500,
@@ -170,7 +170,7 @@ const CAMPAIGNS := {
 			"objectives": [{"type": "air", "count": 5}, {"type": "destroy_all"}],
 			"ai": {"slowdown": 1.3, "grace": 420.0, "pause": 60.0, "max_army": 16, "wave": 6, "credits": 2200, "ore": 2400},
 			"obj": "Alignez 5 appareils et détruisez la base ennemie en 25 minutes",
-			"brief": "La Légion apprend à frapper d'en haut. Bâtissez un aérodrome, montez une escadre de cinq appareils puis écrasez la forteresse de {ENEMY} avec l'appui du ciel. Le temps est compté.",
+			"brief": "La Légion apprend à frapper d'en haut. Bâtissez un aérodrome, montez une escadre puis écrasez la forteresse de {ENEMY} avec l'appui du ciel. Le temps est compté.",
 		},
 		{
 			"id": "disputees", "title": "Terres disputées", "enemy": "solis", "rival": true, "size": 112, "outposts": 3, "credits": 2500, "ore": 2500,
@@ -189,7 +189,7 @@ const CAMPAIGNS := {
 			"ai": {"slowdown": 1.2, "grace": 300.0, "pause": 50.0, "max_army": 20, "wave": 6, "credits": 2600, "ore": 2800},
 			"third_ai": {"slowdown": 1.4, "grace": 360.0, "pause": 60.0, "max_army": 16, "wave": 6, "credits": 2200, "ore": 2400},
 			"obj": "Tenez le trône avec 8 unités pendant 2 minutes, détruisez 40 unités, Chantier niveau 3, 400 d'énergie, 20 unités",
-			"brief": "Le trône de fer est au centre du monde et {ENEMY} comme {RIVAL} le veulent. Montez votre empire : chantier au sommet, énergie en abondance, vingt machines, puis posez huit unités sur le trône et gardez-le deux minutes. Quarante victimes feront taire les prétendants.",
+			"brief": "Le trône de fer est au centre du monde et {ENEMY} comme {RIVAL} le veulent. Montez votre empire : chantier au sommet, énergie en abondance, une armée nombreuse, puis posez vos unités sur le trône et gardez-le. Les victimes feront taire les prétendants.",
 		},
 	],
 	# --- Cartel Vael : vitesse, ruse, commerce ---
@@ -199,7 +199,7 @@ const CAMPAIGNS := {
 			"objectives": [{"type": "build", "label": "la base", "ids": BASE}, {"type": "harvest", "amount": 4000}],
 			"ai": {"slowdown": 2.4, "grace": 900.0, "pause": 120.0, "max_army": 6, "wave": 4, "credits": 1000, "ore": 1200},
 			"obj": "Bâtissez la base et récoltez 4000 Solaris",
-			"brief": "Le Cartel ouvre un comptoir clandestin. Posez la base, lancez la récolte et amassez 4000 Solaris : l'argent est la première arme. {ENEMY} n'est pas encore au courant.",
+			"brief": "Le Cartel ouvre un comptoir clandestin. Posez la base, lancez la récolte et amassez des Solaris : l'argent est la première arme. {ENEMY} n'est pas encore au courant.",
 		},
 		{
 			"id": "coup", "title": "Le coup de main", "enemy": "solis", "size": 96, "credits": 1800, "ore": 2000,
@@ -217,7 +217,7 @@ const CAMPAIGNS := {
 			"ai": {"slowdown": 1.4, "grace": 240.0, "pause": 50.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"ally_ai": {"slowdown": 1.8, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 5, "credits": 1200, "ore": 1500},
 			"obj": "Survivez 7 minutes sans perdre la base de l'allié",
-			"brief": "{ALLY} nous paie pour tenir les assauts de {ENEMY}. Sept minutes : assez pour toucher la prime, pas assez pour laisser sa base tomber.",
+			"brief": "{ALLY} nous paie pour tenir les assauts de {ENEMY}. Le temps convenu : assez pour toucher la prime, pas assez pour laisser sa base tomber.",
 		},
 		{
 			"id": "entrepots", "title": "Les entrepôts", "rival": true, "enemy": "solis", "size": 112, "outposts": 4, "credits": 2000, "ore": 2200,
@@ -253,7 +253,7 @@ const CAMPAIGNS := {
 			"objectives": [{"type": "kills", "count": 30}, {"type": "train", "count": 10}, {"type": "harvest", "amount": 2000}],
 			"ai": {"slowdown": 1.4, "grace": 200.0, "pause": 45.0, "max_army": 16, "wave": 6, "credits": 2000, "ore": 2200},
 			"obj": "Détruisez 30 unités ennemies en 14 minutes, formez 10 unités et récoltez 2000 Solaris",
-			"brief": "{ENEMY} a mis sa tête à prix, et nous touchons à chaque blindé abattu. Trente victimes en quatorze minutes : harcelez, repliez-vous, recommencez. Quelques Solaris au passage ne feront pas de mal.",
+			"brief": "{ENEMY} a mis sa tête à prix, et nous touchons à chaque blindé abattu. Un maximum de victimes dans le temps imparti : harcelez, repliez-vous, recommencez. Quelques Solaris au passage ne feront pas de mal.",
 		},
 		{
 			"id": "fragile", "title": "Alliance fragile", "enemy": "solis", "ally": true, "size": 112, "credits": 2500, "ore": 2500,
@@ -273,7 +273,7 @@ const CAMPAIGNS := {
 			"ai": {"slowdown": 1.6, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"third_ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1700, "ore": 1900},
 			"obj": "Détruisez les deux chantiers ennemis, tenez 10 minutes, récoltez 3500 Solaris et abattez 20 unités",
-			"brief": "{ENEMY} et {RIVAL} se détestent : laissez-les s'user. Tenez dix minutes, remplissez les caisses et frappez l'instant venu : il faut décapiter les deux camps en détruisant leurs chantiers.",
+			"brief": "{ENEMY} et {RIVAL} se détestent : laissez-les s'user. Tenez la durée convenue, remplissez les caisses et frappez l'instant venu : il faut décapiter les deux camps en détruisant leurs chantiers.",
 		},
 		{
 			"id": "roi", "title": "Roi du désert", "enemy": "solis", "rival": true, "start_base": true, "enemy_base": true, "third_base": true,
@@ -297,11 +297,13 @@ const FLAVOR := {
 
 
 static func missions(faction: String) -> Array:
-	return CAMPAIGNS[faction]
+	_ensure()
+	return _scaled[faction]
 
 
 static func mission(faction: String, m: int) -> Dictionary:
-	return CAMPAIGNS[faction][m]
+	_ensure()
+	return _scaled[faction][m]
 
 
 static func count(faction := "solis") -> int:
@@ -309,35 +311,154 @@ static func count(faction := "solis") -> int:
 
 
 static func title_of(faction: String, m: int) -> String:
-	return CAMPAIGNS[faction][m]["title"]
+	return mission(faction, m)["title"]
 
 
 static func enemy_of(faction: String, m: int) -> String:
-	return CAMPAIGNS[faction][m]["enemy"]
+	return mission(faction, m)["enemy"]
+
+
+# --- Courbe de difficulté : de la mission 1 (tranquille) à la mission 10 (épreuve finale) ---
+
+## IA de l'adversaire par niveau de mission (0..9) : lenteur de construction, délai du premier
+## assaut, répit entre vagues, taille de l'armée et des vagues, réserves de départ.
+const AI_CURVE := [
+	{"slowdown": 2.4, "grace": 900.0, "pause": 120.0, "max_army": 6, "wave": 4, "credits": 1000, "ore": 1200},
+	{"slowdown": 2.1, "grace": 600.0, "pause": 100.0, "max_army": 8, "wave": 4, "credits": 1200, "ore": 1500},
+	{"slowdown": 1.8, "grace": 480.0, "pause": 85.0, "max_army": 11, "wave": 5, "credits": 1500, "ore": 1800},
+	{"slowdown": 1.6, "grace": 420.0, "pause": 75.0, "max_army": 14, "wave": 6, "credits": 1800, "ore": 2000},
+	{"slowdown": 1.4, "grace": 360.0, "pause": 65.0, "max_army": 18, "wave": 7, "credits": 2200, "ore": 2400},
+	{"slowdown": 1.25, "grace": 300.0, "pause": 55.0, "max_army": 23, "wave": 9, "credits": 2800, "ore": 3000},
+	{"slowdown": 1.12, "grace": 240.0, "pause": 45.0, "max_army": 29, "wave": 11, "credits": 3500, "ore": 3800},
+	{"slowdown": 1.0, "grace": 200.0, "pause": 38.0, "max_army": 36, "wave": 13, "credits": 4500, "ore": 4800},
+	{"slowdown": 0.9, "grace": 160.0, "pause": 30.0, "max_army": 44, "wave": 16, "credits": 6000, "ore": 6000},
+	{"slowdown": 0.8, "grace": 120.0, "pause": 22.0, "max_army": 55, "wave": 20, "credits": 8000, "ore": 8000},
+]
+
+static var _scaled := {}
+
+
+static func _ensure() -> void:
+	if not _scaled.is_empty():
+		return
+	for f in CAMPAIGNS:
+		var arr: Array = []
+		for i in CAMPAIGNS[f].size():
+			arr.append(_scale(f, i, CAMPAIGNS[f][i].duplicate(true)))
+		_scaled[f] = arr
+
+
+## Applique la difficulté du niveau i à une mission : IA, objectifs plus longs, délais, embuscades.
+static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
+	var g := float(i) / 9.0
+	d["ai"] = AI_CURVE[i].duplicate()
+	var a: Dictionary = d["ai"]
+	# Second adversaire / allié : même courbe, en un peu plus faible
+	d["third_ai"] = {"slowdown": float(a["slowdown"]) * 1.3, "grace": float(a["grace"]) * 1.3, "pause": float(a["pause"]) * 1.3,
+			"max_army": int(int(a["max_army"]) * 0.6), "wave": maxi(int(int(a["wave"]) * 0.7), 3),
+			"credits": int(int(a["credits"]) * 0.7), "ore": int(int(a["ore"]) * 0.7)}
+	if d.get("ally", false):
+		d["ally_ai"] = d["third_ai"]
+	# Les dernières missions : adversaire déjà installé, et la finale oppose trois camps
+	if i >= 7:
+		d["enemy_base"] = true
+	if i == 9:
+		if not d.get("ally", false):
+			d["rival"] = true
+		if d.get("rival", false):
+			d["third_base"] = true
+		var has_all := false
+		for o in d["objectives"]:
+			if o["type"] == "destroy_all":
+				has_all = true
+		if not has_all:
+			d["objectives"].append({"type": "destroy_all"})
+	# Objectifs plus longs et plus exigeants avec le niveau (jusqu'à plusieurs fois la durée de base)
+	for o in d["objectives"]:
+		match o["type"]:
+			"harvest", "ore", "power":
+				o["amount"] = _round_to(float(o["amount"]) * (1.0 + 1.5 * g), 100)
+			"survive":
+				o["time"] = _round_to(float(o["time"]) * (1.0 + 1.8 * g), 30)
+			"train", "air", "kills":
+				o["count"] = maxi(int(round(float(o["count"]) * (1.0 + 1.2 * g))), int(o["count"]))
+	if d.has("zone"):
+		d["zone"]["time"] = _round_to(float(d["zone"]["time"]) * (1.0 + 1.0 * g), 15)
+		d["zone"]["units"] = int(round(float(d["zone"]["units"]) * (1.0 + 0.6 * g)))
+	if d.has("time_limit"):
+		d["time_limit"] = _round_to(float(d["time_limit"]) * (1.0 + 2.0 * g), 60)
+	if d.has("convoy"):
+		d["convoy"]["ambushes"] = int(d["convoy"]["ambushes"]) + int(i / 3)
+		d["convoy"]["ambush_size"] = int(d["convoy"]["ambush_size"]) + int(i / 3)
+	d["obj"] = _obj_short(d)
+	return d
+
+
+## Résumé court des objectifs (cartes de mission, guide).
+static func _obj_short(d: Dictionary) -> String:
+	var parts: PackedStringArray = []
+	for o in d["objectives"]:
+		match o["type"]:
+			"build":
+				var names: PackedStringArray = []
+				for id in o["ids"]:
+					names.append(String(GameData.BUILDINGS[id]["name"]).to_lower())
+				parts.append("bâtir " + ", ".join(names))
+			"harvest": parts.append("récolter %d Solaris" % int(o["amount"]))
+			"train": parts.append("former %d unités" % int(o["count"]))
+			"survive": parts.append("tenir %s" % _mins(float(o["time"])))
+			"escort": parts.append("escorter le convoi")
+			"outposts": parts.append("raser les avant-postes")
+			"hold": parts.append("tenir la zone %s" % _mins(float(d["zone"]["time"])))
+			"destroy_all": parts.append("détruire tous les adversaires" if d.get("rival", false) else "détruire l'adversaire")
+			"protect_ally": parts.append("protéger l'allié")
+			"upgrade": parts.append("%s niveau %d" % [String(GameData.def(o["id"])["name"]).to_lower(), int(o["level"])])
+			"kills": parts.append("%d victimes" % int(o["count"]))
+			"destroy_type": parts.append("détruire %d %s" % [int(o["count"]), String(GameData.def(o["id"])["name"]).to_lower()])
+			"ore": parts.append("récolter %d minerai" % int(o["amount"]))
+			"power": parts.append("%d d'énergie" % int(o["power"] if o.has("power") else o["amount"]))
+			"air": parts.append("%d appareils volants" % int(o["count"]))
+	var t := ", ".join(parts)
+	if d.has("time_limit"):
+		t += " — en %s" % _mins(float(d["time_limit"]))
+	return t.substr(0, 1).to_upper() + t.substr(1)
+
+
+static func _round_to(v: float, step: int) -> float:
+	return float(int(round(v / float(step))) * step)
+
+
+## Niveau de difficulté affiché (1 à 10).
+static func level_of(m: int) -> int:
+	return m + 1
 
 
 ## Troisième faction de la mission (allié ou rival), "" s'il n'y en a pas.
 static func third_of(faction: String, m: int) -> String:
-	var d: Dictionary = CAMPAIGNS[faction][m]
+	var d: Dictionary = mission(faction, m)
 	if not (d.get("ally", false) or d.get("rival", false)):
 		return ""
+	return _third(faction, d)
+
+
+static func _third(faction: String, d: Dictionary) -> String:
 	for k in GameData.FACTIONS.keys():
-		if k != faction and k != enemy_of(faction, m):
+		if k != faction and k != d["enemy"]:
 			return k
 	return ""
 
 
 static func ally_of(faction: String, m: int) -> String:
-	return third_of(faction, m) if CAMPAIGNS[faction][m].get("ally", false) else ""
+	return third_of(faction, m) if mission(faction, m).get("ally", false) else ""
 
 
 ## Second adversaire (chacun pour soi) : la troisième faction est hostile à tous.
 static func rival_of(faction: String, m: int) -> String:
-	return third_of(faction, m) if CAMPAIGNS[faction][m].get("rival", false) else ""
+	return third_of(faction, m) if mission(faction, m).get("rival", false) else ""
 
 
 static func briefing(faction: String, m: int) -> String:
-	var t: String = CAMPAIGNS[faction][m]["brief"]
+	var t: String = mission(faction, m)["brief"]
 	t = t.replace("{ENEMY}", GameData.FACTIONS[enemy_of(faction, m)]["name"])
 	var ally := ally_of(faction, m)
 	t = t.replace("{ALLY}", GameData.FACTIONS[ally]["name"] if ally != "" else "")
@@ -369,13 +490,8 @@ static func foes_text(faction: String, m: int) -> String:
 
 
 ## Fiche détaillée d'une mission : liste de [titre, [lignes]].
-static func details(faction: String, m: int) -> Array:
-	var d: Dictionary = CAMPAIGNS[faction][m]
-	var fd: Dictionary = GameData.FACTIONS[faction]
-	var enemy: String = GameData.FACTIONS[enemy_of(faction, m)]["name"]
-	var ally := ally_of(faction, m)
-	var out: Array = []
-	# Objectifs
+static func objective_lines(faction: String, m: int, d: Dictionary) -> Array:
+	var enemy: String = GameData.FACTIONS[d["enemy"]]["name"]
 	var obj: Array = []
 	for o in d["objectives"]:
 		match o["type"]:
@@ -399,8 +515,8 @@ static func details(faction: String, m: int) -> Array:
 				var z: Dictionary = d["zone"]
 				obj.append("Tenir la zone centrale avec %d unités pendant %s" % [int(z["units"]), _mins(float(z["time"]))])
 			"destroy_all":
-				if rival_of(faction, m) != "":
-					obj.append("Détruire toutes les unités et structures de %s et de %s" % [enemy, GameData.FACTIONS[rival_of(faction, m)]["name"]])
+				if d.get("rival", false):
+					obj.append("Détruire toutes les unités et structures de %s et de %s" % [enemy, GameData.FACTIONS[_third(faction, d)]["name"]])
 				else:
 					obj.append("Détruire toutes les unités et structures de %s" % enemy)
 			"protect_ally":
@@ -417,6 +533,17 @@ static func details(faction: String, m: int) -> Array:
 				obj.append("Produire %d d'énergie" % int(o["amount"]))
 			"air":
 				obj.append("Aligner %d appareils volants de combat" % int(o["count"]))
+	return obj
+
+
+static func details(faction: String, m: int) -> Array:
+	var d: Dictionary = mission(faction, m)
+	var fd: Dictionary = GameData.FACTIONS[faction]
+	var enemy: String = GameData.FACTIONS[enemy_of(faction, m)]["name"]
+	var ally := ally_of(faction, m)
+	var out: Array = []
+	# Objectifs
+	var obj: Array = objective_lines(faction, m, d)
 	if d.has("time_limit"):
 		obj.append("Défaite : si les objectifs ne sont pas remplis en %s" % _mins(float(d["time_limit"])))
 	obj.append("Défaite : perdre toute votre base et vos unités")
