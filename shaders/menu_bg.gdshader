@@ -31,10 +31,19 @@ float fbm(vec2 p) {
 	return v;
 }
 
-// Profil de dune : collines douces, un peu asymétriques
+// Bruit 1D à interpolation quintique : pente continue, donc des courbes bien arrondies
+float snoise(float x, float k) {
+	float i = floor(x);
+	float f = fract(x);
+	f = f * f * f * (f * (f * 6.0 - 15.0) + 10.0);
+	return mix(hash(vec2(i, k)), hash(vec2(i + 1.0, k)), f);
+}
+
+// Profil de dune : grandes ondulations lisses et rondes, crêtes adoucies
 float dune(float x, float k) {
-	float h = 0.62 * vnoise(vec2(x * 0.9, k)) + 0.30 * vnoise(vec2(x * 2.1, k + 3.0)) + 0.08 * vnoise(vec2(x * 4.4, k + 7.0));
-	return h;
+	float h = 0.66 * snoise(x * 0.75, k) + 0.28 * snoise(x * 1.5 + 5.0, k + 3.0) + 0.06 * snoise(x * 2.6 + 9.0, k + 7.0);
+	// arrondit les sommets et étale les creux (dos de dune plus pleins)
+	return h * h * (3.0 - 2.0 * h);
 }
 
 // Une étoile dans la cellule : halo gaussien, scintillement, teinte
@@ -52,7 +61,11 @@ vec3 star_layer(vec2 p, float scale, float density, float t, float seed) {
 	float core = exp(-dot(d, d) / (sz * sz * 0.55));
 	float halo = exp(-dot(d, d) / (sz * sz * 9.0)) * 0.22;
 	float tw = 0.65 + 0.35 * sin(t * (1.5 + 4.0 * hash(id + 9.1)) + h * 40.0);
+	// une étoile sur six « respire » lentement, une sur dix change légèrement de teinte
+	float breathe = step(0.84, hash(id + seed * 11.0));
+	tw *= mix(1.0, 0.45 + 0.75 * (0.5 + 0.5 * sin(t * 0.7 + h * 60.0)), breathe);
 	float tint = hash(id + seed * 7.7);
+	tint = clamp(tint + step(0.9, hash(id + seed * 13.0)) * 0.25 * sin(t * 0.5 + h * 30.0), 0.0, 1.0);
 	vec3 c = mix(vec3(0.70, 0.82, 1.0), vec3(1.0, 0.86, 0.68), tint);
 	return c * (core + halo) * tw * (0.55 + 0.9 * hash(id + 2.2));
 }
@@ -70,7 +83,8 @@ vec3 flare_star(vec2 p, float scale, float t, float seed) {
 	float tw = 0.7 + 0.3 * sin(t * 2.0 + hash(id) * 30.0);
 	float core = exp(-r * r * 900.0);
 	float glow = exp(-r * 22.0) * 0.35;
-	float cross = (exp(-abs(d.x) * 140.0) * exp(-abs(d.y) * 9.0) + exp(-abs(d.y) * 140.0) * exp(-abs(d.x) * 9.0)) * 0.7;
+	float pulse = 0.55 + 0.45 * sin(t * 0.9 + hash(id + 3.0) * 20.0); // les croisillons s'allongent et se rétractent
+	float cross = (exp(-abs(d.x) * 140.0) * exp(-abs(d.y) * (7.0 + 9.0 * (1.0 - pulse))) + exp(-abs(d.y) * 140.0) * exp(-abs(d.x) * (7.0 + 9.0 * (1.0 - pulse)))) * 0.7;
 	return vec3(1.0, 0.95, 0.88) * (core + glow + cross) * tw;
 }
 
@@ -115,11 +129,11 @@ void fragment() {
 
 	// Étoiles : trois couches de profondeur, plus denses dans la voie lactée
 	float fade = smoothstep(0.95, 0.35, h);
-	vec3 stars = star_layer(p, 55.0, 0.93 - band * 0.05, t, 1.0) * 0.9
-			+ star_layer(p + 0.3, 105.0, 0.945 - band * 0.06, t, 2.0) * 0.75
-			+ star_layer(p + 0.7, 190.0, 0.955 - band * 0.07, t, 3.0) * 0.6
-			+ flare_star(p, 9.0, t, 4.0) * 1.1
-			+ flare_star(p + 0.4, 17.0, t, 5.0) * 0.8;
+	vec3 stars = star_layer(p + vec2(t * 0.0006, 0.0), 55.0, 0.93 - band * 0.05, t, 1.0) * 0.9
+			+ star_layer(p + vec2(t * 0.0006, 0.0) + 0.3, 105.0, 0.945 - band * 0.06, t, 2.0) * 0.75
+			+ star_layer(p + vec2(t * 0.0006, 0.0) + 0.7, 190.0, 0.955 - band * 0.07, t, 3.0) * 0.6
+			+ flare_star(p + vec2(t * 0.0006, 0.0), 9.0, t, 4.0) * 1.1
+			+ flare_star(p + vec2(t * 0.0006, 0.0) + 0.4, 17.0, t, 5.0) * 0.8;
 	col += stars * fade;
 
 	// Étoile filante (toutes les ~9 s)
@@ -153,28 +167,29 @@ void fragment() {
 	for (int i = 0; i < 5; i++) {
 		float fi = float(i);
 		float depth = fi / 4.0; // 0 = lointain, 1 = premier plan
-		float spd = 0.004 + 0.012 * depth;
-		float x = uv.x * (1.6 + depth * 1.8) * ar + t * spd + fi * 3.7;
+		float x = uv.x * (1.6 + depth * 1.8) * ar + fi * 3.7; // dunes immobiles : seul le vent bouge
 		float base = horizon + 0.035 + depth * 0.40 - 0.02 * fi;
 		float amp = 0.035 + 0.075 * depth;
 		float ridge = base - amp * dune(x, fi * 5.0);
 		float e = 0.012;
 		float slope = (dune(x + e, fi * 5.0) - dune(x - e, fi * 5.0)) / (2.0 * e) * amp * (1.6 + depth * 1.8) * ar;
-		if (uv.y > ridge) {
+		float aa = SCREEN_PIXEL_SIZE.y * 1.6;
+		if (uv.y > ridge - aa) {
 			// éclairage : côté tourné vers le soleil (à droite) éclairé
 			float below = uv.y - ridge;
 			// seule la zone proche de la crête montre le relief ; plus bas, un dégradé doux
-			float slope_lit = clamp(0.5 + slope * 5.0, 0.0, 1.0);
+			float slope_lit = smoothstep(0.0, 1.0, clamp(0.5 + slope * 3.2, 0.0, 1.0));
 			float lit = mix(0.55, slope_lit, exp(-below * (30.0 - 10.0 * depth)));
 			vec3 shade_c = mix(vec3(0.24, 0.07, 0.13), vec3(0.10, 0.035, 0.08), depth);
 			vec3 lit_c = mix(vec3(0.98, 0.54, 0.36), vec3(0.62, 0.27, 0.20), depth);
 			vec3 sand = mix(shade_c, lit_c, lit);
 			// ondulations du sable : rides larges, douces, qui suivent la dune
-			float rip = vnoise(vec2(x * 14.0 + below * 6.0, below * (30.0 + 40.0 * depth)));
-			sand *= 0.90 + 0.18 * rip;
-			sand *= 0.97 + 0.06 * hash(floor(uv * vec2(900.0, 500.0)));
+			// (les rides glissent très lentement avec le vent)
+			float rip = vnoise(vec2(x * 9.0 + below * 4.0 - t * (0.05 + 0.08 * depth), below * (26.0 + 30.0 * depth)));
+			sand *= 0.92 + 0.14 * rip;
+			sand *= 0.985 + 0.03 * hash(floor(uv * vec2(900.0, 500.0)));
 			// arête éclairée
-			float rim = smoothstep(0.016 + 0.008 * depth, 0.0, below) * slope_lit;
+			float rim = smoothstep(0.03 + 0.012 * depth, 0.0, below) * slope_lit * 0.75;
 			sand += vec3(1.0, 0.72, 0.45) * rim * (0.5 + 0.4 * (1.0 - depth));
 			// assombrissement vers le bas de l'écran (lisibilité de l'interface)
 			sand *= mix(1.0, 0.45, smoothstep(0.62, 1.0, uv.y));
@@ -182,13 +197,16 @@ void fragment() {
 			float fog = (1.0 - depth) * 0.62 + 0.04;
 			fog *= exp(-below * 9.0) * 0.7 + 0.3;
 			sand = mix(sand, haze * (0.6 + 0.4 * lit), clamp(fog, 0.0, 0.85));
-			// ombre portée au pied de la couche
-			col = sand;
+			// panache de sable soulevé de la crête par le vent, qui file vers la gauche
+			float plume = fbm(vec2(x * 5.0 + t * (0.55 + 0.5 * depth), below * 22.0 - t * 0.04));
+			float plume_m = smoothstep(0.42, 0.8, plume) * exp(-below * (20.0 - 8.0 * depth)) * (0.5 + 0.5 * sin(t * 0.35 + fi * 2.0 + x * 1.7));
+			sand += vec3(1.0, 0.66, 0.42) * plume_m * (0.20 + 0.16 * depth);
+			col = mix(col, sand, smoothstep(ridge - aa, ridge + aa, uv.y));
 		}
 	}
 
 	// Traînées de sable chassées par le vent sur les crêtes
-	float wind = fbm(vec2(uv.x * 7.0 - t * 0.35, uv.y * 30.0)) * smoothstep(0.55, 0.9, uv.y) * smoothstep(1.0, 0.7, uv.y);
+	float wind = fbm(vec2(uv.x * 5.0 + t * 0.28, uv.y * 24.0 + sin(t * 0.2) * 0.6)) * smoothstep(0.55, 0.9, uv.y) * smoothstep(1.0, 0.7, uv.y);
 	col += vec3(1.0, 0.7, 0.5) * pow(wind, 3.0) * 0.28;
 
 	// Poussière en suspension : petits grains lumineux emportés par le vent

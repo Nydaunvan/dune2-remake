@@ -360,7 +360,7 @@ const UNITS := {
 		"hp": 950, "dps": 36, "speed": 65.0, "range": 6,
 	},
 	"salve": {
-		"aa": true, "name": "Salve", "role": "combat", "desc": "Lance-missiles, anti-aérien de référence",
+		"aa": true, "name": "Salve", "role": "combat", "desc": "Lance-missiles anti-aérien",
 		"armor": "light", "weapon": "rocket",
 		"cost": 540, "time": 9.0, "level": 2, "requires": ["usine", "radar"], "from": "usine",
 		"hp": 260, "dps": 38, "speed": 80.0, "range": 11, "vision": 9,
