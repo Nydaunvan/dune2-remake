@@ -51,6 +51,14 @@ func setup(p_game) -> void:
 	guide.custom_minimum_size = Vector2(160, 56)
 	guide.pressed.connect(func() -> void: Guide.open(game, game.faction_id))
 	hb.add_child(guide)
+	var fps := GameUI.NeonButton.new(DisplayCfg.label())
+	fps.accent = GameData.GREEN
+	fps.custom_minimum_size = Vector2(230, 56)
+	fps.pressed.connect(func() -> void:
+		DisplayCfg.toggle()
+		fps.text = DisplayCfg.label()
+		fps.queue_redraw())
+	hb.add_child(fps)
 	var vers := GameUI.NeonButton.new("v%s" % ChangelogData.current())
 	vers.accent = GameData.GOLD
 	vers.custom_minimum_size = Vector2(110, 56)
