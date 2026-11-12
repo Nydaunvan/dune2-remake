@@ -193,6 +193,7 @@ func _ready() -> void:
 		_setup_mission()
 	if not _save.is_empty():
 		_apply_state()
+	_update_fog() # les bases non découvertes restent cachées dès la 1re image
 	_load_terrain = 1.0
 	if loading != null:
 		while not bank.ready_all:
@@ -2148,6 +2149,9 @@ func _place_building(id: String, cell: Vector2i, team := 0, with_worker := true)
 	b.init_combat(self, team)
 	add_child(b)
 	buildings.append(b)
+	if hostile(team, 0): # jamais visible avant d'être repéré (brouillard)
+		b.visible = false
+		b.seen = false
 	if sfx != null and game_time > 1.0:
 		sfx.play("place", b.world_center(), -3.0)
 	for c in b.cells():
@@ -2519,6 +2523,9 @@ func _spawn_unit(id: String, cell: Vector2i, team := 0) -> Unit:
 	u.position = _cell_to_world(cell)
 	add_child(u)
 	units.append(u)
+	if hostile(team, 0):
+		u.visible = false
+		u.seen = false
 	return u
 
 
