@@ -1,12 +1,18 @@
 class_name SkirmishAI
 extends Node
-## Adversaire d'escarmouche : même économie et mêmes règles que le joueur.
-## Il construit sa base, récolte, produit une armée et lance des vagues d'assaut
-## de plus en plus grosses, en défendant sa base si elle est menacée.
+## Adversaire d'escarmouche et de campagne : même économie et mêmes règles que le joueur.
+##
+## Il suit un PLAN par étapes (économie -> défense -> armée -> expansion -> technologie), choisit ses
+## unités selon ce que le joueur aligne (contre-mesures), modernise et améliore, puis conduit la guerre
+## de façon organisée :
+##   - assaut groupé : rassemblement, approche, attaque d'une cible choisie (valeur / défenses), repli si ça tourne mal ;
+##   - raids : petit groupe rapide qui harcèle les récolteurs mal défendus ;
+##   - escadrille aérienne : bombardiers contre les cibles sans anti-aérien ;
+##   - défense : toute l'armée répond à une attaque sur la base.
+## `skill` (0..1) règle la finesse de tout cela : les premières missions restent simples, les dernières jouent bien.
 
 const THINK := 1.0
-const BUILD_ORDER := ["centrale", "raffinerie", "fonderie", "usine", "centrale",
-		"tourelle", "usine", "tourelle", "centrale", "tourelle", "tourelle"]
+const BASE_SEQ := ["centrale", "raffinerie", "fonderie", "usine"]
 
 var game # le nœud principal (main.gd)
 var team := 1
@@ -18,9 +24,11 @@ var fdata := {}
 var credits := 1500
 var ore := 1500
 var active := true
+var skill := 0.6             # finesse de jeu (0..1)
 
 var build_q := {}
 var unit_q := {}
+var air_q := {}
 var wave_size := 6
 var max_army := 22
 var slowdown := 1.4     # l'IA construit et produit un peu plus lentement que le joueur
@@ -29,8 +37,24 @@ var wave_pause := 60.0  # répit minimum entre deux assauts
 var assaulting := false
 var wave_started := 0.0
 var wave_ended := 0.0
+var goal_text := ""     # objectif courant (lisible dans les tests / le débogage)
 var _think_t := 3.0
 
+# Guerre organisée
+var mode := "muster"    # muster | stage | attack | retreat
+var squad: Array = []
+var squad_start := 0
+var target_b = null
+var stage_cell := Vector2i(-1, -1)
+var _mode_t := 0.0
+var raid: Array = []
+var raid_target = null
+var raid_ended := 0.0
+var _raid_t := 0.0
+var air_wave: Array = []
+var air_ended := 0.0
+var _hp_seen := {}      # PV de nos bâtiments à la dernière analyse (détecte une attaque)
+var _alert_until := 0.0
 
 ## Adoucissement global : l'IA doit laisser le temps de s'organiser.
 const EASE_SLOW := 1.3     # construit et produit plus lentement
@@ -56,7 +80,7 @@ func setup(p_game, p_faction: String, p_team := 1) -> void:
 	fdata = GameData.FACTIONS[p_faction]
 
 
-## Réglages de mission (campagne).
+## Réglages de mission (campagne) ou de difficulté (escarmouche).
 func configure(p: Dictionary) -> void:
 	slowdown = float(p.get("slowdown", slowdown / EASE_SLOW)) * EASE_SLOW
 	wave_grace = float(p.get("grace", wave_grace / EASE_GRACE)) * EASE_GRACE
@@ -65,6 +89,7 @@ func configure(p: Dictionary) -> void:
 	wave_size = maxi(int(int(p.get("wave", int(wave_size / EASE_WAVE))) * EASE_WAVE), 3)
 	credits = int(int(p.get("credits", int(credits / EASE_MONEY))) * EASE_MONEY)
 	ore = int(int(p.get("ore", int(ore / EASE_MONEY))) * EASE_MONEY)
+	skill = clampf(float(p.get("skill", skill)), 0.0, 1.0)
 
 
 func add_income(kind: String, amount: int) -> void:
@@ -86,7 +111,11 @@ func _process(delta: float) -> void:
 		_think_t = THINK
 		_think_build()
 		_think_units()
+		_think_tech()
+		_watch_base()
 		_think_army()
+		_think_raid()
+		_think_air()
 
 
 ## Déploie l'engin de chantier peu après le début (près de sa position de départ).
@@ -99,7 +128,133 @@ func _try_deploy() -> void:
 			return
 
 
-# --- Production ---------------------------------------------------------------
+# --- Outils d'analyse -----------------------------------------------------------
+
+func _foe_units() -> Array:
+	var out := []
+	for u in game.units:
+		if u.alive and not u.carried and game.hostile(u.team, team):
+			out.append(u)
+	return out
+
+
+func _count(id: String) -> int:
+	var n := 0
+	for b in game.buildings:
+		if b.team == team and b.id == id and b.alive:
+			n += 1
+	for u in game.units:
+		if u.team == team and u.id == id and u.alive:
+			n += 1
+	return n
+
+
+func _cost(id: String) -> int:
+	var c := float(GameData.def(id)["cost"])
+	if GameData.UNITS.has(id):
+		c *= float(fdata["unit_cost_mult"])
+	return int(round(c))
+
+
+func _available(id: String) -> bool:
+	if game.unit_level_block(id, team) != "":
+		return false
+	for r in GameData.def(id)["requires"]:
+		if not game.has_building(r, team):
+			return false
+	var fac: String = GameData.def(id).get("faction", "")
+	return fac == "" or fac == faction_id
+
+
+## Puissance de combat d'un groupe (racine du produit PV x dégâts : loi de Lanchester).
+func _power(list: Array) -> float:
+	var hp := 0.0
+	var dps := 0.0
+	for e in list:
+		hp += float(e.hp)
+		if e.weapon != "":
+			dps += float(e.dps)
+	return sqrt(maxf(hp, 1.0) * maxf(dps, 0.5))
+
+
+## Défenses ennemies (unités armées + bâtiments armés) autour d'un point, en pixels.
+func _defenders_near(pos: Vector2, radius: float) -> Array:
+	var out := []
+	for u in game.units:
+		if u.alive and not u.carried and game.hostile(u.team, team) and u.weapon != "" and u.position.distance_to(pos) < radius:
+			out.append(u)
+	for b in game.buildings:
+		if b.alive and game.hostile(b.team, team) and b.weapon != "" and not b.offline and b.world_center().distance_to(pos) < radius:
+			out.append(b)
+	return out
+
+
+func _aa_near(pos: Vector2, radius: float) -> int:
+	var n := 0
+	for e in _defenders_near(pos, radius):
+		if GameData.can_hit_air(e.id):
+			n += 1
+	return n
+
+
+func _army() -> Array:
+	var out := []
+	for u in game.units:
+		if u.team == team and u.alive and u.role == "combat" and not u.guard and not u.air and u.control_timer <= 0.0:
+			out.append(u)
+	return out
+
+
+func _air_units() -> Array:
+	var out := []
+	for u in game.units:
+		if u.team == team and u.alive and u.role == "combat" and u.air and u.control_timer <= 0.0:
+			out.append(u)
+	return out
+
+
+func _enemy_air() -> int:
+	var n := 0
+	for u in _foe_units():
+		if u.air and u.weapon != "":
+			n += 1
+	return n
+
+
+# --- Plan d'ensemble --------------------------------------------------------------
+
+## Étape courante du plan, dans l'ordre : on ne passe à la suivante que lorsque la précédente est remplie.
+func _plan_goal() -> String:
+	var harv := _count("recolteur")
+	var miners := _count("mineur")
+	if harv < 2 or miners < 1 or not game.has_building("usine", team):
+		return "économie"
+	if _count_defenses() < mini(2, 1 + int(skill * 2.0)):
+		return "défense"
+	if _army().size() < wave_size:
+		return "armée"
+	if skill >= 0.25 and (_count("raffinerie") < 2 or _count("usine") < 2 or harv < 3):
+		return "expansion"
+	return "technologie"
+
+
+func _count_defenses() -> int:
+	var n := 0
+	for b in game.buildings:
+		if b.team == team and b.alive and b.weapon != "":
+			n += 1
+	return n
+
+
+func _special_tower() -> String:
+	for id in GameData.BUILDINGS.keys():
+		var d: Dictionary = GameData.BUILDINGS[id]
+		if d.get("faction", "") == faction_id and d.has("weapon"):
+			return id
+	return ""
+
+
+# --- Construction -------------------------------------------------------------------
 
 func _progress(delta: float) -> void:
 	var factor := (1.0 if game.power_produced(team) >= game.power_used(team) else 0.5) / slowdown
@@ -116,36 +271,71 @@ func _progress(delta: float) -> void:
 		if unit_q["progress"] >= 1.0:
 			game.spawn_for(unit_q["id"], team)
 			unit_q = {}
+	if not air_q.is_empty() and not game.producer_busy("unit", air_q["id"], team):
+		air_q["progress"] += delta * ufactor / air_q["time"]
+		if air_q["progress"] >= 1.0:
+			game.spawn_for(air_q["id"], team)
+			air_q = {}
 
 
-func _cost(id: String) -> int:
-	var c := float(GameData.def(id)["cost"])
-	if GameData.UNITS.has(id):
-		c *= float(fdata["unit_cost_mult"])
-	return int(round(c))
+## Prochain bâtiment voulu selon le plan, l'âge de la partie et la finesse de l'IA.
+func _next_building() -> String:
+	var t: float = game.game_time
+	for id in BASE_SEQ:
+		if _count(id) < 1:
+			return id
+	var defs := _count_defenses()
+	var tower := _defense_id()
+	if defs < 1:
+		return tower
+	var harv := _count("recolteur")
+	if skill >= 0.2 and _count("raffinerie") < 2 and t > 150.0 and harv >= 2:
+		return "raffinerie"
+	if defs < 2:
+		return tower
+	if skill >= 0.4 and _count("radar") < 1 and t > 240.0:
+		return "radar"
+	if skill >= 0.35 and _count("usine") < 2 and t > 300.0:
+		return "usine"
+	# Le joueur a des appareils : on s'équipe en anti-aérien
+	if skill >= 0.4 and _enemy_air() >= 2 and _count_aa_defenses() < 1 + mini(_enemy_air() / 2, 3):
+		return "batterie" if _available("batterie") else "tourelle"
+	var tower_goal := mini(1 + int(skill * 3.0 + t / 360.0), 7)
+	if defs < tower_goal:
+		return tower
+	if skill >= 0.5 and _count("silo") < 2 and _storage_pressure():
+		return "silo"
+	if skill >= 0.55 and t > 540.0 and _count("aerodrome") < 1:
+		return "aerodrome"
+	if skill >= 0.6 and t > 700.0 and _count("reparation") < 1:
+		return "reparation"
+	if skill >= 0.7 and t > 900.0 and _count("fonderie") < 2:
+		return "fonderie"
+	return ""
 
 
-func _count(id: String) -> int:
+func _count_aa_defenses() -> int:
 	var n := 0
 	for b in game.buildings:
-		if b.team == team and b.id == id:
-			n += 1
-	for u in game.units:
-		if u.team == team and u.id == id:
+		if b.team == team and b.alive and b.weapon != "" and GameData.can_hit_air(b.id):
 			n += 1
 	return n
 
 
-func _available(id: String) -> bool:
-	if game.unit_level_block(id, team) != "":
-		return false
-	for r in GameData.def(id)["requires"]:
-		if not game.has_building(r, team):
-			return false
-	return true
+func _storage_pressure() -> bool:
+	return credits > 0.8 * game.storage_cap("spice", team) or ore > 0.8 * game.storage_cap("ore", team)
+
+
+## Défenses : alternance tourelle / tour de faction quand elle est disponible.
+func _defense_id() -> String:
+	var sp := _special_tower()
+	if sp != "" and skill >= 0.45 and _available(sp) and _count(sp) <= _count("tourelle"):
+		return sp
+	return "tourelle"
 
 
 func _think_build() -> void:
+	goal_text = _plan_goal()
 	if not build_q.is_empty():
 		return
 	var want := ""
@@ -153,12 +343,9 @@ func _think_build() -> void:
 	if game.power_produced(team) - game.power_used(team) < 30:
 		want = "centrale"
 	else:
-		var seen := {}
-		for id in BUILD_ORDER:
-			seen[id] = int(seen.get(id, 0)) + 1
-			if _count(id) < int(seen[id]):
-				want = id
-				break
+		if _priority_upgrade():
+			return
+		want = _next_building()
 	if want == "":
 		_try_upgrade()
 		return
@@ -173,40 +360,45 @@ func _think_build() -> void:
 			"time": float(GameData.def(want)["time"]) * float(fdata["build_time_mult"])}
 
 
+## Améliorations qui débloquent des unités et des bâtiments : prioritaires dès que leur heure est venue.
+func _priority_upgrade() -> bool:
+	var t: float = game.game_time
+	var plan: Array = []
+	if skill >= 0.2:
+		plan.append(["usine", 2, 150.0])
+	if skill >= 0.3:
+		plan.append(["chantier", 2, 280.0])
+	if skill >= 0.45:
+		plan.append(["usine", 3, 520.0])
+		plan.append(["centrale", 2, 400.0])
+	for step in plan:
+		if t < float(step[2]):
+			continue
+		for b in game.buildings:
+			if b.team != team or b.id != step[0] or not b.alive or b.level >= int(step[1]):
+				continue
+			var why: String = game.upgrade_block(b, ore)
+			if why == "" and ore >= game.upgrade_cost(b) + 100:
+				ore -= game.upgrade_cost(b)
+				game.begin_upgrade(b)
+				return true
+			# faute de minerai : on met de côté plutôt que de le dépenser ailleurs
+			return why == "Minerai insuffisant" or (why == "" and ore < game.upgrade_cost(b) + 100)
+	return false
+
+
 ## Une fois la base construite, l'IA améliore ses bâtiments quand elle a du minerai en réserve.
 func _try_upgrade() -> void:
-	for id in ["usine", "chantier", "centrale", "tourelle", "raffinerie", "fonderie"]:
+	var order := ["usine", "chantier", "centrale", "raffinerie", "fonderie", "tourelle", "radar"]
+	var reserve := 400 if skill < 0.5 else 250
+	for id in order:
 		for b in game.buildings:
-			if b.team != team or b.id != id:
+			if b.team != team or b.id != id or not b.alive:
 				continue
-			if game.upgrade_block(b, ore) == "" and ore >= game.upgrade_cost(b) + 400:
+			if game.upgrade_block(b, ore) == "" and ore >= game.upgrade_cost(b) + reserve:
 				ore -= game.upgrade_cost(b)
 				game.begin_upgrade(b)
 				return
-
-
-func _think_units() -> void:
-	if not unit_q.is_empty():
-		return
-	var want := ""
-	var harvesters := _count("recolteur")
-	var miners := _count("mineur")
-	if game.has_building("raffinerie", team) and harvesters < 2:
-		want = "recolteur"
-	elif game.has_building("fonderie", team) and miners < 1:
-		want = "mineur"
-	elif game.has_building("usine", team) and _army().size() < max_army:
-		# Armée variée : on prend un type au hasard, légèrement pondéré
-		var ids: Array = fdata["units"].filter(func(i: String) -> bool: return _available(i))
-		if ids.is_empty():
-			return
-		want = ids[randi() % ids.size()]
-		if randf() < 0.3:
-			want = ids[0]
-	if want == "" or not _available(want) or credits < _cost(want):
-		return
-	credits -= _cost(want)
-	unit_q = {"id": want, "progress": 0.0, "time": float(GameData.def(want)["time"])}
 
 
 ## Place le bâtiment terminé ; renvoie false s'il n'y a pas de place.
@@ -214,24 +406,31 @@ func _place(id: String) -> bool:
 	var base: Vector2 = home
 	var toward: Vector2 = foe
 	var size: Vector2i = GameData.BUILDINGS[id]["size"]
-	var best := Vector2i(-1, -1)
-	var best_s := INF
-	for dx in range(-11, 12):
-		for dy in range(-11, 12):
-			var cell := Vector2i(base) + Vector2i(dx, dy)
-			if not game._can_place(id, cell, team) or not _has_gap(cell, size):
-				continue
-			var center := Vector2(cell) + Vector2(size) / 2.0
-			# Défenses vers l'ennemi, le reste près de la base
-			var s := center.distance_to(toward) * 0.5 + center.distance_to(base) if id == "tourelle" \
-					else center.distance_to(base)
-			if s < best_s:
-				best_s = s
-				best = cell
-	if best.x < 0:
-		return false
-	game._place_building(id, best, team)
-	return true
+	var armed: bool = GameData.BUILDINGS[id].has("weapon")
+	for reach in [11, 16]:
+		var best := Vector2i(-1, -1)
+		var best_s := INF
+		for dx in range(-reach, reach + 1):
+			for dy in range(-reach, reach + 1):
+				var cell := Vector2i(base) + Vector2i(dx, dy)
+				if not game._can_place(id, cell, team) or not _has_gap(cell, size):
+					continue
+				var center := Vector2(cell) + Vector2(size) / 2.0
+				# Défenses vers l'ennemi, silo/radar à l'abri, le reste près de la base
+				var s: float
+				if armed:
+					s = center.distance_to(toward) * 0.5 + center.distance_to(base)
+				elif id == "radar" or id == "silo":
+					s = center.distance_to(base) - center.distance_to(toward) * 0.2
+				else:
+					s = center.distance_to(base)
+				if s < best_s:
+					best_s = s
+					best = cell
+		if best.x >= 0:
+			game._place_building(id, best, team)
+			return true
+	return false
 
 
 ## Garde une case libre autour du bâtiment pour que les unités circulent.
@@ -243,77 +442,479 @@ func _has_gap(cell: Vector2i, size: Vector2i) -> bool:
 	return true
 
 
-# --- Armée --------------------------------------------------------------------
+# --- Production d'unités --------------------------------------------------------------
 
-func _army() -> Array:
-	var out := []
+func _think_units() -> void:
+	var harv := _count("recolteur")
+	var miners := _count("mineur")
+	var harv_goal := 2 + (1 if _count("raffinerie") >= 2 else 0) + (1 if skill > 0.6 and game.game_time > 600.0 else 0)
+	var miner_goal := 1 + (1 if skill > 0.4 and game.game_time > 400.0 else 0)
+	if unit_q.is_empty():
+		var want := ""
+		if game.has_building("raffinerie", team) and harv < harv_goal:
+			want = "recolteur"
+		elif game.has_building("fonderie", team) and miners < miner_goal:
+			want = "mineur"
+		elif game.has_building("usine", team) and _army().size() < max_army:
+			want = _pick_ground_unit()
+		if want != "" and _available(want) and credits >= _cost(want):
+			credits -= _cost(want)
+			unit_q = {"id": want, "progress": 0.0, "time": float(GameData.def(want)["time"])}
+	# Aérodrome : escadrille de bombardiers / chasseurs (finesse élevée)
+	if air_q.is_empty() and skill >= 0.5 and game.has_building("aerodrome", team) and _air_units().size() < 3 + int(skill * 6.0):
+		var aid := _pick_air_unit()
+		if aid != "" and _available(aid) and credits >= _cost(aid) + 200:
+			credits -= _cost(aid)
+			air_q = {"id": aid, "progress": 0.0, "time": float(GameData.def(aid)["time"])}
+
+
+## Choisit le prochain char selon ce que le joueur aligne : efficacité de l'arme contre ses blindages,
+## anti-aérien s'il a des appareils, rapport efficacité/prix, et un peu de variété.
+func _pick_ground_unit() -> String:
+	var ids: Array = fdata["units"].filter(func(i: String) -> bool: return _available(i))
+	if ids.is_empty():
+		return ""
+	if skill < 0.3:
+		var r: String = ids[randi() % ids.size()]
+		return ids[0] if randf() < 0.3 else r
+	var armor_count := {"light": 0, "medium": 0, "heavy": 0, "building": 0}
+	var total := 0
+	for u in _foe_units():
+		if u.weapon != "" and not u.air:
+			armor_count[u.armor] = int(armor_count.get(u.armor, 0)) + 1
+			total += 1
+	var enemy_air := _enemy_air()
+	var mine := {}
+	for u in _army():
+		mine[u.id] = int(mine.get(u.id, 0)) + 1
+	var best := ""
+	var best_w := -1.0
+	for id in ids:
+		var d: Dictionary = GameData.UNITS[id]
+		var w := 1.0
+		var c := float(_cost(id))
+		w = sqrt(maxf(float(d["hp"]) * float(d["dps"]) / (c * c) * 1000.0, 1.0))
+		if total > 0:
+			var eff := 0.0
+			for a in armor_count:
+				eff += float(armor_count[a]) * GameData.mult(String(d["weapon"]), a)
+			w *= pow(eff / total, 2.0)
+		if GameData.can_hit_air(id) and d.get("aa", false):
+			w *= 3.0 if enemy_air >= 2 else (0.8 if enemy_air == 0 else 1.6)
+		w /= 1.0 + 0.18 * float(mine.get(id, 0))
+		w *= 0.75 + randf() * 0.5
+		if w > best_w:
+			best_w = w
+			best = id
+	return best
+
+
+func _pick_air_unit() -> String:
+	var ids: Array = []
+	for id in fdata["air"]:
+		if GameData.UNITS[id].get("role", "") == "combat" and _available(id):
+			ids.append(id)
+	if ids.is_empty():
+		return ""
+	var enemy_air := _enemy_air()
+	var best := ""
+	var best_w := -1.0
+	for id in ids:
+		var d: Dictionary = GameData.UNITS[id]
+		var w := 1.0 + randf()
+		if d.get("aa", false) and enemy_air >= 1:
+			w *= 3.0       # chasseurs contre les appareils adverses
+		elif not d.get("aa", false):
+			w *= 1.6       # bombardiers : ils frappent le sol
+		if w > best_w:
+			best_w = w
+			best = id
+	return best
+
+
+## Modernise des unités de combat quand l'Usine niveau 2 est là et qu'il reste de l'argent.
+func _think_tech() -> void:
+	if skill < 0.4 or game.best_level("usine", team) < 2:
+		return
 	for u in game.units:
-		if u.team == team and u.role == "combat" and not u.guard and u.control_timer <= 0.0:
-			out.append(u)
-	return out
+		if u.team != team or not u.alive or u.role != "combat" or u.tech > 0 or u.tech_left > 0.0:
+			continue
+		if not GameData.UNIT_TECH.has(u.id):
+			continue
+		var cost := GameData.tech_cost(u.id)
+		if credits < cost + 400:
+			return
+		credits -= cost
+		u.tech_cost = 0.0
+		u.tech_total = GameData.tech_time(u.id)
+		u.tech_left = u.tech_total
+		return
 
+
+# --- Surveillance de la base ----------------------------------------------------------
+
+## Repère une attaque (bâtiment qui perd des PV ou intrus proche) et mémorise le moment.
+func _watch_base() -> void:
+	var now: float = game.game_time
+	for b in game.buildings:
+		if b.team != team or not b.alive:
+			continue
+		var key: int = b.get_instance_id()
+		if _hp_seen.has(key) and b.hp < float(_hp_seen[key]) - 1.0:
+			_alert_until = now + 20.0
+		_hp_seen[key] = b.hp
+	var base_world: Vector2 = home * game.TILE
+	for u in _foe_units():
+		if u.weapon != "" and u.position.distance_to(base_world) < 13.0 * game.TILE:
+			_alert_until = now + 20.0
+			return
+
+
+func _intruder():
+	var base_world: Vector2 = home * game.TILE
+	var best = null
+	var best_d := INF
+	for u in _foe_units():
+		var d: float = u.position.distance_to(base_world)
+		if d < 14.0 * game.TILE and d < best_d and (u.weapon != "" or best == null):
+			best_d = d
+			best = u
+	return best
+
+
+# --- Armée : assauts organisés ----------------------------------------------------------
 
 func _think_army() -> void:
 	var army := _army()
+	assaulting = mode == "stage" or mode == "attack"
 	if army.is_empty():
 		if assaulting:
 			wave_ended = game.game_time
+		mode = "muster"
+		squad.clear()
 		assaulting = false
 		return
+	var now: float = game.game_time
 	var base_world: Vector2 = home * game.TILE
+	_mode_t += THINK
 
-	# Défense : des unités du joueur près de nos bâtiments
-	var intruder = null
-	for u in game.units:
-		if game.hostile(u.team, team) and u.position.distance_to(base_world) < 12.0 * game.TILE:
-			intruder = u
-			break
-	if intruder != null and not assaulting:
-		for u in army:
-			if u.state == "idle":
-				u.order_amove(game.world_to_cell(intruder.position))
-		return
-
-	var idle := army.filter(func(u: Unit) -> bool: return u.state == "idle")
-	if not assaulting:
-		if game.game_time >= wave_grace and game.game_time - wave_ended >= wave_pause \
-				and idle.size() >= wave_size:
-			assaulting = true
-			wave_started = game.game_time
-			wave_size = mini(wave_size + 1, 12)
-		else:
+	# Défense : toute l'armée disponible répond à l'attaque de la base
+	var intruder = _intruder()
+	if intruder != null or now < _alert_until:
+		var tgt := Vector2i(-1, -1)
+		if intruder != null:
+			tgt = game.world_to_cell(intruder.position)
+		var threat := _power(_defenders_near(base_world, 14.0 * game.TILE))
+		var mine := _power(army)
+		# On ne rappelle un assaut que si la base est vraiment menacée
+		var recall := assaulting and threat > 0.7 * _power(squad_alive()) and skill >= 0.3
+		if (not assaulting or recall) and tgt.x >= 0:
+			for u in army:
+				if u.state == "idle" or recall or u.state == "amove":
+					u.order_amove(tgt)
+			if recall:
+				mode = "muster"
+				squad.clear()
+				wave_ended = now
 			return
-	elif game.game_time - wave_started > 150.0 and idle.size() >= army.size():
-		assaulting = false # vague terminée
-		wave_ended = game.game_time
-		return
-	var goal := _attack_goal()
-	if goal.x < 0:
-		return
-	for u in idle:
-		u.order_amove(goal)
+		if not assaulting:
+			return
+
+	match mode:
+		"muster":
+			_muster(army, now)
+		"stage":
+			_stage(now)
+		"attack":
+			_attack(now)
+		"retreat":
+			_retreat(now)
 
 
-## Case d'assaut : bâtiment du joueur le plus proche de notre base.
-func _attack_goal() -> Vector2i:
+func squad_alive() -> Array:
+	return squad.filter(func(u) -> bool: return is_instance_valid(u) and u.alive)
+
+
+## Point de rassemblement : devant la base, côté ennemi, pour grouper les unités avant de partir.
+func _rally_cell() -> Vector2i:
+	var h: Vector2 = home
+	var dir: Vector2 = (foe - h).normalized() if foe.distance_to(h) > 1.0 else Vector2.DOWN
+	var c := Vector2i((h + dir * 11.0).round())
+	return game._find_free_cell(c)
+
+
+func _muster(army: Array, now: float) -> void:
+	var idle := army.filter(func(u: Unit) -> bool: return u.state == "idle" and not (u in raid))
+	# Les unités au repos se placent au rassemblement (skill : sinon elles restent où elles sont apparues)
+	if skill >= 0.3:
+		var rc := _rally_cell()
+		for u in idle:
+			if u.position.distance_to(game._cell_to_world(rc)) > 7.0 * game.TILE:
+				u.order_amove(rc)
+	if now < wave_grace or now - wave_ended < wave_pause or idle.size() < wave_size:
+		return
+	# Force engagée contre ce que l'on va affronter : on n'attaque pas à perte
+	var tgt = _pick_target()
+	if tgt == null:
+		return
+	var defend := _power(_defenders_near(tgt.world_center(), 9.0 * game.TILE))
+	var mine := _power(idle)
+	if skill >= 0.3 and mine < 0.75 * defend and now - wave_ended < wave_pause * 3.0:
+		return # trop faible : on attend du renfort
+	squad = idle.duplicate()
+	squad_start = squad.size()
+	target_b = tgt
+	wave_started = now
+	wave_size = mini(wave_size + 1, 12 + int(skill * 14.0))
+	_mode_t = 0.0
+	if skill >= 0.3:
+		# Approche groupée jusqu'à un point d'attente avant l'attaque
+		var from: Vector2i = game.world_to_cell(home * game.TILE)
+		var tc: Vector2i = game.world_to_cell(tgt.world_center())
+		var v: Vector2 = (Vector2(from) - Vector2(tc))
+		var off := Vector2(tc) + (v.normalized() * 11.0 if v.length() > 0.1 else Vector2.ZERO)
+		stage_cell = game._find_free_cell(Vector2i(off.round()))
+		for u in squad:
+			u.order_amove(stage_cell)
+		mode = "stage"
+	else:
+		for u in squad:
+			u.order_amove(game.dock_cell(tgt, game.world_to_cell(u.position)))
+		mode = "attack"
+	assaulting = true
+
+
+func _stage(now: float) -> void:
+	var alive := squad_alive()
+	if alive.size() < squad_start * 0.5:
+		mode = "retreat"
+		_mode_t = 0.0
+		return
+	var near := 0
+	var sc: Vector2 = game._cell_to_world(stage_cell)
+	for u in alive:
+		if u.position.distance_to(sc) < 7.0 * game.TILE:
+			near += 1
+	# Attaque quand la plupart des unités sont groupées (ou après trop d'attente)
+	if near >= maxi(int(alive.size() * 0.7), 1) or _mode_t > 70.0:
+		mode = "attack"
+		_mode_t = 0.0
+		_order_attack(alive)
+
+
+func _order_attack(units: Array) -> void:
+	if target_b == null or not is_instance_valid(target_b) or not target_b.alive:
+		target_b = _pick_target()
+	if target_b == null:
+		return
+	for u in units:
+		u.order_amove(game.dock_cell(target_b, game.world_to_cell(u.position)))
+
+
+func _attack(now: float) -> void:
+	var alive := squad_alive()
+	if alive.is_empty() or alive.size() < squad_start * 0.35 and skill >= 0.3:
+		mode = "retreat"
+		_mode_t = 0.0
+		return
+	# Cible détruite : on enchaîne sur la suivante la plus intéressante, sinon fin de vague
+	if target_b == null or not is_instance_valid(target_b) or not target_b.alive:
+		target_b = _pick_target(target_b.world_center() if is_instance_valid(target_b) else Vector2(-1, -1))
+		if target_b == null:
+			_end_wave(now)
+			return
+		_order_attack(alive)
+		return
+	# Rapport de force local défavorable : repli pour se refaire
+	if skill >= 0.4:
+		var def := _power(_defenders_near(target_b.world_center(), 9.0 * game.TILE))
+		if def > 1.6 * _power(alive) and _mode_t > 15.0:
+			mode = "retreat"
+			_mode_t = 0.0
+			return
+	# Les unités redevenues inactives repartent à l'attaque
+	var idle := alive.filter(func(u: Unit) -> bool: return u.state == "idle")
+	if not idle.is_empty():
+		_order_attack(idle)
+	if now - wave_started > 240.0 and idle.size() >= alive.size():
+		_end_wave(now)
+
+
+func _retreat(now: float) -> void:
+	var rc := _rally_cell()
+	for u in squad_alive():
+		u.order_amove(rc)
+	if _mode_t > 25.0:
+		_end_wave(now)
+
+
+func _end_wave(now: float) -> void:
+	mode = "muster"
+	squad.clear()
+	target_b = null
+	assaulting = false
+	wave_ended = now
+
+
+## Cible d'assaut : bâtiment ennemi au meilleur rapport valeur / défenses / distance.
+func _pick_target(near := Vector2(-1, -1)):
 	var best = null
-	var best_d := INF
+	var best_s := -INF
+	var home_px: Vector2 = home * game.TILE
 	for b in game.buildings:
-		if not game.hostile(b.team, team):
+		if not b.alive or not game.hostile(b.team, team):
 			continue
-		var d: float = b.world_center().distance_to(home * game.TILE)
-		if d < best_d:
-			best_d = d
+		var c: Vector2 = b.world_center()
+		var value := _value_of(b.id)
+		var s: float
+		if skill < 0.3:
+			s = -c.distance_to(home_px) # niveau simple : le plus proche
+		else:
+			var def := _power(_defenders_near(c, 9.0 * game.TILE))
+			var ref: Vector2 = near if near.x >= 0.0 else home_px
+			s = value * 100.0 / (1.0 + def * 0.15) - c.distance_to(ref) * 0.08
+		if s > best_s:
+			best_s = s
+			best = b
+	return best
+
+
+func _value_of(id: String) -> float:
+	match id:
+		"raffinerie", "fonderie":
+			return 3.0
+		"centrale", "reacteur", "relais_solaire":
+			return 3.0
+		"usine", "aerodrome":
+			return 2.6
+		"chantier":
+			return 2.2
+		"radar":
+			return 1.6
+		"mur", "mur_acier":
+			return 0.2
+	return 1.0
+
+
+# --- Raids sur les récolteurs ---------------------------------------------------------------
+
+## Petit groupe rapide qui harcèle les ouvriers ennemis mal défendus, puis rentre.
+func _think_raid() -> void:
+	if skill < 0.3:
+		return
+	var now: float = game.game_time
+	raid = raid.filter(func(u) -> bool: return is_instance_valid(u) and u.alive)
+	if not raid.is_empty():
+		_run_raid(now)
+		return
+	if now < wave_grace * 0.6 or now - raid_ended < 80.0 or mode == "attack":
+		return
+	var idle := _army().filter(func(u: Unit) -> bool: return u.state == "idle" and not (u in squad))
+	if idle.size() < 3:
+		return
+	idle.sort_custom(func(a: Unit, b: Unit) -> bool: return a.speed > b.speed)
+	var tgt = _raid_target_pick()
+	if tgt == null:
+		return
+	raid_target = tgt
+	raid = idle.slice(0, mini(3 + int(skill * 2.0), idle.size()))
+	_raid_t = 0.0
+	for u in raid:
+		u.order_attack(tgt)
+
+
+func _raid_target_pick():
+	var best = null
+	var best_s := INF
+	var home_px: Vector2 = home * game.TILE
+	for u in _foe_units():
+		if not u.is_worker():
+			continue
+		var def := _power(_defenders_near(u.position, 8.0 * game.TILE))
+		if def > 8.0:
+			continue # trop bien gardé
+		var s: float = u.position.distance_to(home_px) + def * 40.0
+		if s < best_s:
+			best_s = s
+			best = u
+	return best
+
+
+func _run_raid(now: float) -> void:
+	_raid_t += THINK
+	var done: bool = raid_target == null or not is_instance_valid(raid_target) or not raid_target.alive
+	var hurt := false
+	for u in raid:
+		if u.hp < u.max_hp * 0.4:
+			hurt = true
+	if done and _raid_t < 60.0 and not hurt:
+		# cible suivante dans les environs
+		var nxt = _raid_target_pick()
+		if nxt != null:
+			raid_target = nxt
+			for u in raid:
+				u.order_attack(nxt)
+			return
+	if done or hurt or _raid_t > 90.0:
+		var rc := _rally_cell()
+		for u in raid:
+			u.order_amove(rc)
+		raid.clear()
+		raid_target = null
+		raid_ended = now
+
+
+# --- Escadrille aérienne ------------------------------------------------------------------------
+
+func _think_air() -> void:
+	if skill < 0.5:
+		return
+	var now: float = game.game_time
+	air_wave = air_wave.filter(func(u) -> bool: return is_instance_valid(u) and u.alive)
+	var air := _air_units()
+	if not air_wave.is_empty():
+		var hurt := 0
+		for u in air_wave:
+			if u.hp < u.max_hp * 0.45:
+				hurt += 1
+		var all_idle := air_wave.all(func(u) -> bool: return u.state == "idle")
+		if hurt * 2 >= air_wave.size() or all_idle or now - air_ended > 120.0:
+			for u in air_wave:
+				u.order_amove(Vector2i(home.round()))
+			air_wave.clear()
+			air_ended = now
+		return
+	if now - air_ended < 60.0:
+		return
+	var idle := air.filter(func(u: Unit) -> bool: return u.state == "idle")
+	if idle.size() < 3:
+		return
+	# Cible : bâtiment de valeur sans anti-aérien à proximité ; sinon un ouvrier isolé
+	var best = null
+	var best_s := -INF
+	for b in game.buildings:
+		if not b.alive or not game.hostile(b.team, team):
+			continue
+		var c: Vector2 = b.world_center()
+		if _aa_near(c, 11.0 * game.TILE) > 0:
+			continue
+		var s := _value_of(b.id) * 100.0 - c.distance_to(home * game.TILE) * 0.05
+		if s > best_s:
+			best_s = s
 			best = b
 	if best == null:
-		return Vector2i(-1, -1)
-	return game.dock_cell(best, game.world_to_cell(home * game.TILE))
+		return
+	air_wave = idle
+	for u in air_wave:
+		u.order_amove(game.world_to_cell(best.world_center()))
 
-# --- Sauvegarde -----------------------------------------------------------------
+
+# --- Sauvegarde -----------------------------------------------------------------------------------
 
 func export_state() -> Dictionary:
 	return {"credits": credits, "ore": ore, "build_q": build_q.duplicate(true), "unit_q": unit_q.duplicate(true),
-			"wave_size": wave_size, "assaulting": assaulting, "wave_started": wave_started,
+			"air_q": air_q.duplicate(true), "skill": skill,
+			"wave_size": wave_size, "assaulting": false, "wave_started": wave_started,
 			"wave_ended": wave_ended, "think_t": _think_t, "deploy_at": deploy_at, "active": active}
 
 
@@ -322,8 +923,11 @@ func restore_state(s: Dictionary) -> void:
 	ore = int(s["ore"])
 	build_q = s["build_q"]
 	unit_q = s["unit_q"]
+	air_q = s.get("air_q", {})
+	skill = float(s.get("skill", skill))
 	wave_size = int(s["wave_size"])
-	assaulting = bool(s["assaulting"])
+	assaulting = false
+	mode = "muster"
 	wave_started = float(s["wave_started"])
 	wave_ended = float(s["wave_ended"])
 	_think_t = float(s["think_t"])

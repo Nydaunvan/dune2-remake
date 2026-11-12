@@ -350,10 +350,11 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 	var g := float(i) / 9.0
 	d["ai"] = AI_CURVE[i].duplicate()
 	var a: Dictionary = d["ai"]
+	a["skill"] = clampf(0.15 + 0.85 * g, 0.0, 1.0) # finesse de jeu de l'IA : de simple à redoutable
 	# Second adversaire : même courbe, en un peu plus faible
 	d["third_ai"] = {"slowdown": float(a["slowdown"]) * 1.3, "grace": float(a["grace"]) * 1.3, "pause": float(a["pause"]) * 1.3,
 			"max_army": int(int(a["max_army"]) * 0.6), "wave": maxi(int(int(a["wave"]) * 0.7), 3),
-			"credits": int(int(a["credits"]) * 0.7), "ore": int(int(a["ore"]) * 0.7)}
+			"credits": int(int(a["credits"]) * 0.7), "ore": int(int(a["ore"]) * 0.7), "skill": float(a["skill"]) * 0.8}
 	# Les dernières missions : adversaire déjà installé, et la finale oppose trois camps
 	if i >= 7:
 		d["enemy_base"] = true

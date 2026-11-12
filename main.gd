@@ -1277,9 +1277,9 @@ func _zoom(factor: float) -> void:
 
 var panning := false
 const SKIRMISH_DIFF := [
-	{"slowdown": 2.0, "grace": 420.0, "pause": 90.0, "max_army": 14, "wave": 4},
-	{},
-	{"slowdown": 1.1, "grace": 150.0, "pause": 40.0, "max_army": 30, "wave": 8},
+	{"slowdown": 2.0, "grace": 420.0, "pause": 90.0, "max_army": 14, "wave": 4, "skill": 0.25},
+	{"skill": 0.6},
+	{"slowdown": 1.1, "grace": 150.0, "pause": 40.0, "max_army": 30, "wave": 8, "skill": 0.95},
 ]
 
 
@@ -2329,7 +2329,7 @@ func _setup_sides() -> void:
 		a.foe = nearest_foe_home(t) if nearest_foe_home(t).x >= 0 else start_cell
 		if not mission.is_empty():
 			a.configure(mission["ai"] if t == 1 else mission.get("third_ai", mission["ai"]))
-		elif _save.is_empty() and GameSession.skirm_diff != 1:
+		elif _save.is_empty():
 			a.configure(SKIRMISH_DIFF[GameSession.skirm_diff])
 		add_child(a)
 		ais[t] = a

@@ -14,6 +14,8 @@ func _initialize() -> void:
 	GameSession.instant_bases = true
 	GameSession.faction = OS.get_environment("FACTION") if OS.has_environment("FACTION") else "solis"
 	GameSession.mode = "skirmish"
+	if OS.has_environment("DIFF"):
+		GameSession.skirm_diff = int(OS.get_environment("DIFF"))
 	if OS.has_environment("SCENARIO"):
 		scenario = OS.get_environment("SCENARIO")
 	if OS.has_environment("MINUTES"):
@@ -86,10 +88,22 @@ func _run_sim() -> bool:
 		for b in main.buildings:
 			if b.team == 0:
 				mine_hp += int(b.hp)
-		print("[t=%dmin%02d] IA $%d min%d | armée IA=%d joueur=%d | assaut=%s | bâtiments=%s | hp base joueur=%d | fini=%s" % [
+		print("[t=%dmin%02d] IA $%d min%d | armée IA=%d joueur=%d | assaut=%s mode=%s but=%s raid=%d air=%d q=%s%s | bâtiments=%s | hp base joueur=%d | fini=%s" % [
 				frame / 3600, (frame / 60) % 60, ai.credits, ai.ore, ai._army().size(),
-				_units_of(0, "combat").size(), str(ai.assaulting), str(names), mine_hp, str(main.over)])
+				_units_of(0, "combat").size(), str(ai.assaulting), ai.mode, ai.goal_text, ai.raid.size(), ai._air_units().size(), ai.unit_q.get("id", "-"), ai.build_q.get("id", "-"), str(names), mine_hp, str(main.over)])
+	if frame % 1800 == 0 and frame > 14000:
+		_dbg()
 	if main.over or frame >= minutes * 3600:
 		print("FIN SIM — fini=%s" % str(main.over))
 		return true
 	return false
+
+func _dbg() -> void:
+	var ai: SkirmishAI = main.ai
+	print("DBG pick=", ai._pick_ground_unit(), " harv=", ai._count("recolteur"), " miners=", ai._count("mineur"), " army=", ai._army().size(), "/", ai.max_army,
+		" usine?", main.has_building("usine", 1), " ore=", ai.ore, " blocks=", main.buildings.filter(func(b): return b.team == 1 and b.id == "usine").map(func(b): return "L%d %s cost%d" % [b.level, main.upgrade_block(b, ai.ore), main.upgrade_cost(b)]), " t=", int(main.game_time), " up_left=", main.buildings.filter(func(b): return b.team == 1 and b.id == "usine").map(func(b): return b.up_left),
+		" avail=", fdata_avail())
+
+func fdata_avail() -> Array:
+	var ai: SkirmishAI = main.ai
+	return ai.fdata["units"].map(func(i): return "%s:%s" % [i, ai._available(i)])
