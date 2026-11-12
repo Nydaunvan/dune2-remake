@@ -157,6 +157,16 @@ func _process(_d: float) -> bool:
 				node.selected_building = b
 				b.selected = true
 				node.ore = 3000
+	if f == 10 and OS.has_environment("SHOT_SELUNIT"):
+		for u in node.units:
+			if u.team == 0 and u.id == OS.get_environment("SHOT_SELUNIT"):
+				node.selected.clear()
+				node.selected.append(u)
+				u.selected = true
+				u.kills = 3
+				break
+	if f == 10 and OS.has_environment("SHOT_TOAST"):
+		node.ui.toast(OS.get_environment("SHOT_TOAST"))
 	if f == frames:
 		var out := OS.get_environment("SHOT_OUT") if OS.has_environment("SHOT_OUT") else "/tmp/shots/shot.png"
 		root.get_texture().get_image().save_png(out)

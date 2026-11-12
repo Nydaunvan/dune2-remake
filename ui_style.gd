@@ -131,6 +131,47 @@ static func text_center(ci: CanvasItem, r: Rect2, s: String, size: int, col: Col
 	ci.draw_string(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, col)
 
 
+## Coupe `s` en lignes qui tiennent dans `width` pixels (césure aux espaces, \n respectés).
+## Un mot plus long que la largeur est lui-même coupé.
+static func wrap_lines(s: String, size: int, width: float, title := false) -> Array:
+	var f := title_font() if title else body_font()
+	var out: Array = []
+	for para in s.split("\n"):
+		var cur := ""
+		for w in para.split(" ", false):
+			var cand: String = w if cur == "" else cur + " " + w
+			if f.get_string_size(cand, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x <= width:
+				cur = cand
+				continue
+			if cur != "":
+				out.append(cur)
+			cur = w
+			while f.get_string_size(cur, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x > width and cur.length() > 1:
+				var n := cur.length() - 1
+				while n > 1 and f.get_string_size(cur.substr(0, n), HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x > width:
+					n -= 1
+				out.append(cur.substr(0, n))
+				cur = cur.substr(n)
+		out.append(cur)
+	return out
+
+
+static func wrap_text(s: String, size: int, width: float, title := false) -> String:
+	return "\n".join(PackedStringArray(wrap_lines(s, size, width, title)))
+
+
+## Paragraphe à la ligne dans `width`. `pos` est la ligne de base de la 1re ligne.
+## Renvoie la position y de la ligne de base suivante.
+static func para(ci: CanvasItem, pos: Vector2, s: String, size: int, col: Color, width: float,
+		line_h := 0.0, title := false) -> float:
+	var lh := line_h if line_h > 0.0 else size * 1.35
+	var y := pos.y
+	for ln in wrap_lines(s, size, width, title):
+		text(ci, Vector2(pos.x, y), ln, size, col, title)
+		y += lh
+	return y
+
+
 static func text_width(s: String, size: int, title := false) -> float:
 	var f := title_font() if title else body_font()
 	return f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x

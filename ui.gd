@@ -53,7 +53,9 @@ func toast(text: String, color := GameData.CREAM) -> void:
 	if event_log != null:
 		event_log.add(text, color)
 	var l := Label.new()
-	l.text = text
+	var wrapped := UiStyle.wrap_lines(text, 22, 620.0, true)
+	l.text = "\n".join(PackedStringArray(wrapped))
+	var extra := 28.0 * (wrapped.size() - 1)
 	l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	l.add_theme_font_override("font", UiStyle.title_font())
 	l.add_theme_font_size_override("font_size", 22)
@@ -74,12 +76,12 @@ func toast(text: String, color := GameData.CREAM) -> void:
 	l.offset_left = -330.0
 	l.offset_right = 330.0
 	l.offset_top = 110.0
-	l.offset_bottom = 150.0
+	l.offset_bottom = 150.0 + extra
 	root.add_child(l)
 	var tw := create_tween()
 	tw.set_parallel(true)
 	tw.tween_property(l, "offset_top", 80.0, 2.2).from(110.0).set_ease(Tween.EASE_OUT)
-	tw.tween_property(l, "offset_bottom", 120.0, 2.2).from(150.0).set_ease(Tween.EASE_OUT)
+	tw.tween_property(l, "offset_bottom", 120.0 + extra, 2.2).from(150.0 + extra).set_ease(Tween.EASE_OUT)
 	tw.tween_property(l, "modulate:a", 0.0, 0.6).set_delay(1.8)
 	tw.chain().tween_callback(l.queue_free)
 
@@ -321,16 +323,20 @@ class EventLog extends Control:
 	func _draw() -> void:
 		UiStyle.section(self, Vector2(0, 14), size.x, "JOURNAL", UiStyle.GOLD)
 		var now := Time.get_ticks_msec() / 1000.0
-		var y := 36.0
+		var y := 34.0
+		var left := 5 # lignes disponibles
 		for l in lines:
+			if left <= 0:
+				break
 			var age := now - float(l[2])
 			var c: Color = l[1]
 			c.a = clampf(1.0 - age / 90.0, 0.35, 1.0)
-			var t := String(l[0])
-			while t.length() > 8 and UiStyle.text_width(t, 13, false) > size.x - 4.0:
-				t = t.substr(0, t.length() - 2)
-			UiStyle.text(self, Vector2(0, y), t, 13, c)
-			y += 17.0
+			var wl := UiStyle.wrap_lines(String(l[0]), 12, size.x - 12.0)
+			for i in mini(wl.size(), mini(2, left)):
+				UiStyle.text(self, Vector2(0 if i == 0 else 8, y), String(wl[i]), 12, c)
+				y += 14.0
+				left -= 1
+			y += 2.0
 		if lines.is_empty():
 			UiStyle.text(self, Vector2(0, y), "Aucun événement", 13, UiStyle.TEXT_DIM)
 
@@ -363,9 +369,14 @@ class ObjectivePanel extends GlassPanel:
 		game = p_game
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 
+	func _text_lines(o: Dictionary) -> Array:
+		return UiStyle.wrap_lines(String(o["text"]), 14, 450.0 - 42.0 - 20.0)
+
 	func _process(_delta: float) -> void:
-		var n: int = _items().size()
-		size = Vector2(450, 44 + 40 * n)
+		var h := 44.0
+		for o in _items():
+			h += 40.0 + 17.0 * (_text_lines(o).size() - 1)
+		size = Vector2(450, h)
 		pulse = move_toward(pulse, 0.0, _delta * 1.5)
 		queue_redraw()
 
@@ -386,9 +397,13 @@ class ObjectivePanel extends GlassPanel:
 					col if done else Color(col.r, col.g, col.b, 0.25))
 			draw_polyline(PackedVector2Array([c + Vector2(0, -6), c + Vector2(6, 0), c + Vector2(0, 6), c + Vector2(-6, 0), c + Vector2(0, -6)]),
 					col, 1.4)
-			UiStyle.text(self, Vector2(42, y), String(o["text"]), 14, UiStyle.TEXT if not done else GameData.GREEN)
-			UiStyle.seg_bar(self, Rect2(42, y + 8.0, size.x - 62.0, 6), float(o["frac"]), col, 8.0, 3.0)
-			y += 40.0
+			var yt := y
+			for ln in _text_lines(o):
+				UiStyle.text(self, Vector2(42, yt), String(ln), 14, UiStyle.TEXT if not done else GameData.GREEN)
+				yt += 17.0
+			yt -= 17.0
+			UiStyle.seg_bar(self, Rect2(42, yt + 8.0, size.x - 62.0, 6), float(o["frac"]), col, 8.0, 3.0)
+			y = yt + 40.0
 
 
 # --- Barre de ressources ------------------------------------------------------
@@ -732,9 +747,15 @@ class InfoPanel extends GlassPanel:
 			cmd_btns[1].active = game.command_mode == "move"
 			cmd_btns[2].active = game.command_mode == "attack"
 
-	func _row(x: float, y: float, label: String, value: String, vcol := UiStyle.TEXT) -> void:
+	## Ligne « LIBELLÉ  valeur » ; la valeur passe à la ligne si elle déborde. Renvoie la hauteur utilisée.
+	func _row(x: float, y: float, label: String, value: String, vcol := UiStyle.TEXT) -> float:
 		UiStyle.text(self, Vector2(x, y), label.to_upper(), 11, UiStyle.TEXT_DIM, true)
-		UiStyle.text(self, Vector2(x + 120, y), value, 15, vcol)
+		var yn := UiStyle.para(self, Vector2(x + 120, y), value, 15, vcol, COL2 - x - 120.0 - 14.0, 18.0)
+		return maxf(22.0, yn - y + 4.0)
+
+	## Texte de la 2e colonne, à la ligne dans 340 px. Renvoie la ligne de base suivante.
+	func _c2(y: float, s: String, size: int, col: Color) -> float:
+		return UiStyle.para(self, Vector2(COL2, y), s, size, col, 340.0, size + 5.0)
 
 	func _hp_block(name_s: String, sub: String, hp: float, hp_max: float, mine: bool, tag := "") -> void:
 		var col := Color.WHITE if mine else GameData.RED
@@ -743,9 +764,14 @@ class InfoPanel extends GlassPanel:
 			var w := UiStyle.text_width(name_s.to_upper(), 24, true)
 			UiStyle.text(self, Vector2(34 + w + 14, 58), tag, 14, UiStyle.GOLD, true)
 		if sub != "":
-			UiStyle.text(self, Vector2(34, 78), sub, 13, UiStyle.TEXT_DIM)
-		UiStyle.seg_bar(self, Rect2(34, 90, 340, 11), hp / maxf(hp_max, 1.0), GameData.GREEN if mine else GameData.RED, 8.0, 3.0)
-		UiStyle.text(self, Vector2(386, 100), "%d / %d" % [int(hp), int(hp_max)], 13, UiStyle.TEXT)
+			var sl := UiStyle.wrap_lines(sub, 13, 730.0)
+			for i in mini(sl.size(), 2):
+				var ln: String = sl[i]
+				if i == 1 and sl.size() > 2:
+					ln = ln.substr(0, maxi(ln.length() - 1, 1)) + "…"
+				UiStyle.text(self, Vector2(34, 76 + 15 * i), ln, 13, UiStyle.TEXT_DIM)
+		UiStyle.seg_bar(self, Rect2(34, 96, 340, 11), hp / maxf(hp_max, 1.0), GameData.GREEN if mine else GameData.RED, 8.0, 3.0)
+		UiStyle.text(self, Vector2(386, 106), "%d / %d" % [int(hp), int(hp_max)], 13, UiStyle.TEXT)
 
 	func _draw() -> void:
 		if _focus == null:
@@ -777,9 +803,9 @@ class InfoPanel extends GlassPanel:
 				y = 152.0
 				x += 190.0
 		UiStyle.section(self, Vector2(COL2, 128), 340, "ORDRES", UiStyle.GOLD)
-		UiStyle.text(self, Vector2(COL2, 154), "Clic droit : déplacer ou attaquer", 14, UiStyle.TEXT)
-		UiStyle.text(self, Vector2(COL2, 176), "ATTAQUER : avance en tirant", 14, UiStyle.TEXT)
-		UiStyle.text(self, Vector2(COL2, 198), "ARRÊT : annule les ordres", 14, UiStyle.TEXT)
+		var ym := _c2(154.0, "Clic droit : déplacer ou attaquer", 14, UiStyle.TEXT)
+		ym = _c2(ym + 3.0, "ATTAQUER : avance en tirant", 14, UiStyle.TEXT)
+		_c2(ym + 3.0, "ARRÊT : annule les ordres", 14, UiStyle.TEXT)
 
 	func _tech_line(u: Unit) -> String:
 		if not GameData.UNIT_TECH.has(u.id):
@@ -793,59 +819,51 @@ class InfoPanel extends GlassPanel:
 		_hp_block(String(d["name"]), String(d.get("desc", "")), u.hp, u.max_hp, mine, rank_tag)
 		if u.role == "mcv" or u.role == "convoy":
 			UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
-			_row(34, 152, "Blindage", ARMOR.get(u.armor, u.armor))
-			_row(34, 174, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
+			var yr := 152.0
+			yr += _row(34, yr, "Blindage", ARMOR.get(u.armor, u.armor))
+			_row(34, yr, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
 			UiStyle.section(self, Vector2(COL2, 128), 340, "RÔLE", UiStyle.GOLD)
 			if u.role == "mcv":
-				UiStyle.text(self, Vector2(COL2, 154), "Placez-le sur un sol rocheux dégagé", 14, UiStyle.TEXT)
-				UiStyle.text(self, Vector2(COL2, 176), "puis cliquez sur DÉPLOYER pour", 14, UiStyle.TEXT)
-				UiStyle.text(self, Vector2(COL2, 198), "créer votre Chantier (3x3 cases).", 14, UiStyle.TEXT)
+				_c2(154.0, "Placez-le sur un sol rocheux dégagé puis cliquez sur DÉPLOYER pour créer votre Chantier (3x3 cases).", 14, UiStyle.TEXT)
 			else:
-				UiStyle.text(self, Vector2(COL2, 154), "Cargaison à livrer au point cyan", 14, UiStyle.TEXT)
-				UiStyle.text(self, Vector2(COL2, 176), "indiqué sur la carte et le radar.", 14, UiStyle.TEXT)
+				_c2(154.0, "Cargaison à livrer au point cyan indiqué sur la carte et le radar.", 14, UiStyle.TEXT)
 			return
 		UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 		var y := 152.0
-		_row(34, y, "Blindage", ARMOR.get(u.armor, u.armor))
-		y += 22.0
-		_row(34, y, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
-		y += 22.0
+		y += _row(34, y, "Blindage", ARMOR.get(u.armor, u.armor))
+		y += _row(34, y, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
 		if u.weapon != "":
 			var mult := 1.0 + GameData.RANK_DMG * u.rank
-			_row(34, y, "Arme", String(WEAPON.get(u.weapon, u.weapon)) + (" — air + sol" if GameData.can_hit_air(u.id) else " — sol seulement"))
-			y += 22.0
+			y += _row(34, y, "Arme", String(WEAPON.get(u.weapon, u.weapon)) + (" — air + sol" if GameData.can_hit_air(u.id) else " — sol seulement"))
 			_row(34, y, "Dégâts", "%.0f /s    Portée %d cases" % [u.dps * mult, int(u.w_range / 32.0)])
 		elif u.role == "transport":
-			_row(34, y, "Soute", "%d / %d unités" % [u.cargo_units.size(), u.slots])
-			y += 22.0
+			y += _row(34, y, "Soute", "%d / %d unités" % [u.cargo_units.size(), u.slots])
 			_row(34, y, "Vol", "Ignore le terrain")
 		else:
-			_row(34, y, "Capacité", "%d  (%d en soute)" % [roundi(u.cargo_cap), roundi(u.cargo)])
-			y += 22.0
+			y += _row(34, y, "Capacité", "%d  (%d en soute)" % [roundi(u.cargo_cap), roundi(u.cargo)])
 			_row(34, y, "Rendement", "%d /s" % int(u.harvest_rate))
 		UiStyle.section(self, Vector2(COL2, 128), 340, "ÉVOLUTION" if u.role == "combat" else "RÔLE", UiStyle.GOLD)
+		var y2 := 154.0
 		if u.role == "combat":
 			var nxt := ""
 			if u.rank + 1 < GameData.RANKS.size():
 				nxt = "Prochain rang : %d éliminations" % GameData.RANKS[u.rank + 1]["kills"]
 			else:
 				nxt = "Rang maximum"
-			UiStyle.text(self, Vector2(COL2, 154), "%d éliminations — %s" % [u.kills, nxt.trim_prefix("Prochain rang : ")], 14, UiStyle.GOLD)
+			y2 = _c2(y2, "%d éliminations — %s" % [u.kills, nxt.trim_prefix("Prochain rang : ")], 14, UiStyle.GOLD)
 			if u.weapon == "control":
-				UiStyle.text(self, Vector2(COL2, 176), "Contrôle un char ennemi 15 s (toutes les 20 s)", 13, GameData.CYAN)
+				y2 = _c2(y2 + 2.0, "Contrôle un char ennemi 15 s (toutes les 20 s)", 13, GameData.CYAN)
 			elif u.weapon == "sonic":
-				UiStyle.text(self, Vector2(COL2, 176), "Dégâts de zone, touche aussi les alliés", 13, GameData.AMBER)
+				y2 = _c2(y2 + 2.0, "Dégâts de zone, touche aussi les alliés", 13, GameData.AMBER)
 			else:
-				UiStyle.text(self, Vector2(COL2, 176), "Chaque rang : +15 % dégâts et PV", 13, UiStyle.TEXT_DIM)
-			UiStyle.text(self, Vector2(COL2, 198), _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
+				y2 = _c2(y2 + 2.0, "Chaque rang : +15 % dégâts et PV", 13, UiStyle.TEXT_DIM)
 		elif u.role == "transport":
-			UiStyle.text(self, Vector2(COL2, 154), "Clic droit sur une unité : l'embarquer", 13, UiStyle.TEXT)
-			UiStyle.text(self, Vector2(COL2, 176), "Clic droit au sol : y aller et déposer (U)", 13, UiStyle.TEXT)
-			UiStyle.text(self, Vector2(COL2, 198), _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
+			y2 = _c2(y2, "Clic droit sur une unité : l'embarquer", 13, UiStyle.TEXT)
+			y2 = _c2(y2 + 2.0, "Clic droit au sol : y aller et déposer (U)", 13, UiStyle.TEXT)
 		else:
-			UiStyle.text(self, Vector2(COL2, 154), "Récolte automatiquement et rapporte", 14, UiStyle.TEXT)
-			UiStyle.text(self, Vector2(COL2, 176), "à la Raffinerie" if u.cargo_kind == "spice" else "à la Fonderie", 14, UiStyle.TEXT)
-			UiStyle.text(self, Vector2(COL2, 198), _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
+			y2 = _c2(y2, "Récolte automatiquement et rapporte à la " + ("Raffinerie" if u.cargo_kind == "spice" else "Fonderie") + ".", 14, UiStyle.TEXT)
+		if _tech_line(u) != "":
+			_c2(y2 + 2.0, _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
 
 	func _draw_building(b: Building) -> void:
 		var d := GameData.def(b.id)
@@ -894,8 +912,7 @@ class InfoPanel extends GlassPanel:
 			rows.append(["État", "HORS TENSION"])
 		var y := 152.0
 		for r in rows:
-			_row(34, y, r[0], r[1], GameData.RED if r[0] == "État" else UiStyle.TEXT)
-			y += 22.0
+			y += _row(34, y, r[0], r[1], GameData.RED if r[0] == "État" else UiStyle.TEXT)
 		if mine and not d.get("no_upgrade", false):
 			UiStyle.section(self, Vector2(COL2, 128), 340, "NIVEAU SUIVANT" if b.level < GameData.MAX_LEVEL else "ÉVOLUTION", UiStyle.GOLD)
 			if b.level < GameData.MAX_LEVEL:
@@ -905,11 +922,11 @@ class InfoPanel extends GlassPanel:
 				if dp < 0:
 					parts.append("consomme %d énergie de plus" % -dp)
 				for part in parts:
-					UiStyle.text(self, Vector2(COL2, yy), "◆ " + part, 13, GameData.AMBER if String(part).begins_with("consomme") else UiStyle.TEXT)
-					yy += 20.0
+					yy = UiStyle.para(self, Vector2(COL2, yy), "◆ " + part, 13,
+							GameData.AMBER if String(part).begins_with("consomme") else UiStyle.TEXT, 340.0, 17.0) + 3.0
 				var why: String = game.upgrade_block(b, game.ore)
 				if why != "":
-					UiStyle.text(self, Vector2(COL2, 230), why, 13, GameData.RED)
+					UiStyle.para(self, Vector2(COL2, maxf(yy, 214.0)), why, 13, GameData.RED, 340.0, 16.0)
 			else:
 				UiStyle.text(self, Vector2(COL2, 154), "Niveau maximum atteint", 15, UiStyle.GOLD)
 
@@ -960,13 +977,29 @@ class NeonButton extends Control:
 		var fs := 13
 		var tw := UiStyle.text_width(text, fs, true)
 		var gw := 22.0 if glyph != "" else 0.0
-		while fs > 9 and tw + gw > size.x - 14.0:
+		var avail_w := size.x - 14.0 - gw
+		while fs > 11 and tw > avail_w:
 			fs -= 1
 			tw = UiStyle.text_width(text, fs, true)
-		var x0 := (size.x - tw - gw) * 0.5
+		# Toujours trop long : retour à la ligne (2 lignes max.) plutôt que de déborder du bouton
+		var lines: Array = [text]
+		if tw > avail_w:
+			lines = UiStyle.wrap_lines(text, fs, avail_w, true)
+			if lines.size() > 2:
+				lines = [lines[0], String(" ".join(PackedStringArray(lines.slice(1))))]
+			fs = 10
+			while fs > 8 and lines.any(func(l) -> bool: return UiStyle.text_width(String(l), fs, true) > avail_w):
+				fs -= 1
+		var wmax := 0.0
+		for l in lines:
+			wmax = maxf(wmax, UiStyle.text_width(String(l), fs, true))
+		var x0 := (size.x - wmax - gw) * 0.5
 		if glyph != "":
 			UiStyle.glyph(self, glyph, Vector2(x0 + 8, size.y * 0.5), 12.0, col if enabled else tc)
-		UiStyle.text(self, Vector2(x0 + gw, size.y * 0.5 + 5.0), text, fs, tc, true)
+		for i in lines.size():
+			var ly := size.y * 0.5 + 5.0 + (i - (lines.size() - 1) * 0.5) * (fs + 3.0)
+			var lw := UiStyle.text_width(String(lines[i]), fs, true)
+			UiStyle.text(self, Vector2(x0 + gw + (wmax - lw) * 0.5, ly), String(lines[i]), fs, tc, true)
 
 
 # --- Carte de production ------------------------------------------------------
@@ -1001,7 +1034,7 @@ class BuildIcon extends Control:
 		var names := GameData.req_names(d)
 		if not names.is_empty():
 			tip += "\nNécessite : " + ", ".join(names)
-		tooltip_text = tip
+		tooltip_text = UiStyle.wrap_text(tip, 14, 360.0)
 		mouse_entered.connect(func() -> void: _hover = true)
 		mouse_exited.connect(func() -> void: _hover = false)
 
@@ -1014,6 +1047,15 @@ class BuildIcon extends Control:
 				and (event.button_index == MOUSE_BUTTON_LEFT or event.button_index == MOUSE_BUTTON_RIGHT):
 			clicked.emit(id, event.button_index)
 			accept_event()
+
+	## Mention orange sous l'icône : à la ligne (2 lignes max.) dans la largeur de la carte.
+	func _card_note(s: String, fs: int) -> void:
+		var wl := UiStyle.wrap_lines(s, fs, size.x - 16.0, true)
+		var n := mini(wl.size(), 2)
+		var y0 := 84.0 - (n - 1) * 6.0
+		for i in n:
+			UiStyle.text(self, Vector2(0, y0 + i * 13.0), String(wl[i]), fs, GameData.AMBER, true,
+					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 
 	func _draw() -> void:
 		var d := GameData.def(id)
@@ -1041,16 +1083,13 @@ class BuildIcon extends Control:
 		if avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
 			UiStyle.text(self, Vector2(12, 24), "ÉNERGIE", 11, GameData.RED, true)
 		if game.unit_level_block(id) != "" and (GameData.UNITS.has(id) or game.is_unlocked(id)):
-			UiStyle.text(self, Vector2(0, 84), String(game.unit_level_block(id)).to_upper(), 11, GameData.AMBER, true,
-					HORIZONTAL_ALIGNMENT_CENTER, size.x)
+			_card_note(String(game.unit_level_block(id)).to_upper(), 11)
 		elif GameData.UNITS.has(id) and not avail:
-			UiStyle.text(self, Vector2(0, 84), "BÂTIMENT REQUIS", 11, GameData.AMBER, true,
-					HORIZONTAL_ALIGNMENT_CENTER, size.x)
+			_card_note("BÂTIMENT REQUIS", 11)
 		if not GameData.UNITS.has(id) and not game.is_unlocked(id):
 			var lock_s := "CHANTIER NIV. %d" % game.chantier_needed(id) if game.mission.is_empty() \
 					else "MISSION %d" % int(d.get("unlock", 0))
-			UiStyle.text(self, Vector2(0, 84), lock_s, 12, GameData.AMBER, true,
-					HORIZONTAL_ALIGNMENT_CENTER, size.x)
+			_card_note(lock_s, 12)
 		elif d.has("faction") and not GameData.UNITS.has(id):
 			UiStyle.text(self, Vector2(12, 24), "FACTION", 10, game.fdata["color"] * 1.5, true)
 		if not GameData.UNITS.has(id) and game.is_unlocked(id) and not d.get("wall", false):
