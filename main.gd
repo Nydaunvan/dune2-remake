@@ -694,21 +694,20 @@ func _update_worm(delta: float) -> void:
 func _harvesters_on_sand() -> Array:
 	var out := []
 	for u in units:
-		if u.is_worker() and u.state == "harvest" and not u.carried and is_sand_at(u.position):
+		if u.is_worker() and u.state == "harvest" and not u.carried and worm_ok(u.position):
 			out.append(u)
 	return out
 
 
 func _spawn_worm(target) -> void:
+	# Le ver apparaît loin sur le sable (accessible par le sable uniquement) : plusieurs secondes de préavis
+	var start := worm_spawn_point(target.position, 20, 36)
+	if start.x < 0.0:
+		start = worm_spawn_point(target.position, 10, 20)
+	if start.x < 0.0:
+		worm_cooldown = 30.0 # la proie est isolée sur une zone de sable trop petite : le ver ne peut pas venir
+		return
 	sfx.play_ui("worm", -2.0)
-	var start: Vector2 = target.position + Vector2.RIGHT * 640.0
-	for i in 16:
-		var p: Vector2 = target.position + Vector2.from_angle(randf() * TAU) * 640.0
-		p = p.clamp(Vector2(40, 40), world_size - Vector2(40, 40))
-		if is_sand_at(p):
-			start = p
-			break
-	start = start.clamp(Vector2(40, 40), world_size - Vector2(40, 40))
 	worm = Worm.new()
 	worm.setup(self, start, target)
 	add_child(worm)
@@ -717,6 +716,85 @@ func _spawn_worm(target) -> void:
 	add_child(_worm_zone)
 	worm.finished.connect(_on_worm_finished)
 	alert_worm()
+
+
+## Le ver ne circule que sur le sable et dans les champs d'épice ou de minerai, jamais sur la roche.
+func worm_ok_cell(c: Vector2i) -> bool:
+	if c.x < 0 or c.y < 0 or c.x >= map_w or c.y >= map_h:
+		return false
+	var t: int = terrain[c.x][c.y]
+	return t == T.SAND or t == T.SPICE or t == T.ORE
+
+
+func worm_ok(world: Vector2) -> bool:
+	return worm_ok_cell(_world_to_cell(world))
+
+
+const _N8 := [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1),
+		Vector2i(1, 1), Vector2i(-1, -1), Vector2i(1, -1), Vector2i(-1, 1)]
+
+
+## Chemin du ver entre deux points, uniquement sur du terrain praticable pour lui (vide si inaccessible).
+func worm_path(from: Vector2, to: Vector2) -> PackedVector2Array:
+	var a := _world_to_cell(from)
+	var b := _world_to_cell(to)
+	var out := PackedVector2Array()
+	if not worm_ok_cell(a) or not worm_ok_cell(b):
+		return out
+	var prev := {a: a}
+	var queue: Array[Vector2i] = [a]
+	var qi := 0
+	var found := false
+	while qi < queue.size():
+		var c: Vector2i = queue[qi]
+		qi += 1
+		if c == b:
+			found = true
+			break
+		for d in _N8:
+			var n: Vector2i = c + d
+			if prev.has(n) or not worm_ok_cell(n):
+				continue
+			if d.x != 0 and d.y != 0 and not (worm_ok_cell(c + Vector2i(d.x, 0)) and worm_ok_cell(c + Vector2i(0, d.y))):
+				continue # pas de coupe en diagonale à travers un coin de roche
+			prev[n] = c
+			queue.append(n)
+	if not found:
+		return out
+	var cur := b
+	while cur != a:
+		out.append(_cell_to_world(cur))
+		cur = prev[cur]
+	out.reverse()
+	return out
+
+
+## Point de sable à une distance de marche de `min_c` à `max_c` cases de `pos` (INF/-1 si aucun).
+func worm_spawn_point(pos: Vector2, min_c: int, max_c: int) -> Vector2:
+	var a := _world_to_cell(pos)
+	if not worm_ok_cell(a):
+		return Vector2(-1, -1)
+	var dist := {a: 0}
+	var queue: Array[Vector2i] = [a]
+	var qi := 0
+	var cands: Array[Vector2i] = []
+	while qi < queue.size():
+		var c: Vector2i = queue[qi]
+		qi += 1
+		var dc: int = dist[c]
+		if dc >= min_c:
+			cands.append(c)
+		if dc >= max_c:
+			continue
+		for d in _N8:
+			var n: Vector2i = c + d
+			if dist.has(n) or not worm_ok_cell(n):
+				continue
+			dist[n] = dc + 1
+			queue.append(n)
+	if cands.is_empty():
+		return Vector2(-1, -1)
+	return _cell_to_world(cands.pick_random())
 
 
 ## Zone de danger du ver : centre approximatif (calé sur une grille de 6 cases, pas la position exacte)
@@ -775,7 +853,7 @@ func _on_worm_finished() -> void:
 func alert_worm() -> void:
 	ui.toast("ALERTE : vibrations détectées, un ver approche !", GameData.RED)
 	for u in units:
-		if u.is_worker() and is_sand_at(u.position) and u.position.distance_to(worm.position) < 700.0:
+		if u.is_worker() and worm_ok(u.position) and u.position.distance_to(worm.position) < 900.0:
 			u.flee()
 
 
@@ -783,7 +861,7 @@ func nearest_sand_unit(pos: Vector2, max_d: float) -> Unit:
 	var best: Unit = null
 	var best_d := max_d
 	for u in units:
-		if is_sand_at(u.position):
+		if u.alive and not u.eaten and worm_ok(u.position):
 			var d := u.position.distance_to(pos)
 			if d < best_d:
 				best_d = d

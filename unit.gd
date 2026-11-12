@@ -10,6 +10,7 @@ var air := false     # unité volante : ignore le terrain, ombre au sol
 var repair_acc := 0.0
 var repair_site = null
 var carried := false # transportée (cachée, suit son transport)
+var eaten := false   # en train d'être englouti par un ver
 var cargo_units: Array = []
 var slots := 0
 var load_target = null
@@ -374,6 +375,20 @@ func _revert_control() -> void:
 	queue_redraw()
 
 
+## Englouti par un ver : l'unité est aspirée vers la gueule en rétrécissant, puis dévorée.
+func swallow(mouth: Vector2, dur: float) -> void:
+	if not alive or eaten:
+		return
+	eaten = true
+	stop()
+	selected = false
+	var tw := create_tween().set_parallel(true)
+	tw.tween_property(self, "position", mouth, dur).set_ease(Tween.EASE_IN).set_trans(Tween.TRANS_QUAD)
+	tw.tween_property(self, "scale", Vector2(0.15, 0.15), dur).set_ease(Tween.EASE_IN)
+	tw.tween_property(self, "rotation", rotation + 2.5, dur)
+	tw.chain().tween_callback(devour)
+
+
 func devour() -> void:
 	if not alive:
 		return
@@ -513,7 +528,7 @@ func _process(_delta: float) -> void:
 
 
 func _physics_process(delta: float) -> void:
-	if not alive:
+	if not alive or eaten:
 		return
 	if carried:
 		return

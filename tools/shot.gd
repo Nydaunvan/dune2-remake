@@ -32,8 +32,34 @@ func _process(_d: float) -> bool:
 				if node.terrain[c.x][c.y] == 0 and (best.x < 0 or Vector2(dx, dy).length() < Vector2(best - Vector2i(node.start_cell)).length()):
 					best = c
 		node.units[0].position = Vector2(best) * 32.0 + Vector2(16, 16)
-		node.center_camera(node.units[0].position)
-		node._spawn_worm(node.units[0])
+		node.center_camera(node.units[0].position + Vector2(0, -60))
+		# SHOT_WORM = erupt | lunge | swallow : ver posé à côté de l'unité dans la pose voulue
+		var w := Worm.new()
+		w.setup(node, node.units[0].position + Vector2(-34, 6), node.units[0])
+		node.add_child(w)
+		node.worm = w
+		w._trail.emitting = false
+		var pose := OS.get_environment("SHOT_WORM")
+		w.lean_dir = Vector2(1, 0.2).normalized()
+		match pose:
+			"erupt":
+				w.phase = "erupt"
+				w.emerge = 0.6
+			"lunge":
+				w.phase = "swallow"
+				w.emerge = 1.0
+				w.lean = 1.0
+				w.open = 1.0
+				w._pt = 0.0
+				w._victims = [node.units[0]]
+				w._bit = true
+				node.units[0].swallow(w.position + w.head_offset() + Vector2(0, 4), 3.0)
+			_:
+				w.phase = "swallow"
+				w.emerge = 1.0
+				w.lean = 0.5
+				w.open = 0.5
+				w._bit = true
 	if f == 8 and OS.has_environment("SHOT_PAUSE"):
 		node.save_game(1, false)
 		node.open_pause_menu()
