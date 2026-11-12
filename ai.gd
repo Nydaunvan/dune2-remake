@@ -805,8 +805,10 @@ func _value_of(id: String) -> float:
 			return 2.2
 		"radar":
 			return 1.6
-		"mur", "mur_acier":
+		"mur", "mur_acier", "mur_cristal":
 			return 0.2
+		"serre":
+			return 2.0
 	return 1.0
 
 

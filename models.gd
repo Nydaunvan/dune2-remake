@@ -10,6 +10,8 @@ const GLOW_ORANGE := Color(1.0, 0.45, 0.12)
 const GLOW_BLUE := Color(0.25, 0.8, 1.0)
 const GLOW_GREEN := Color(0.35, 1.0, 0.5)
 const GLOW_MAGENTA := Color(1.0, 0.3, 0.9)
+const GLOW_VIOLET := Color(0.72, 0.42, 1.0)
+const OBSIDIAN := Color(0.16, 0.12, 0.24)
 
 
 static func build(id: String, accent: Color) -> Node3D:
@@ -30,6 +32,16 @@ static func build(id: String, accent: Color) -> Node3D:
 		"faucon": _faucon(r, body, hi, accent)
 		"vipere": _vipere(r, body, hi, accent)
 		"mirage": _mirage(r, body, hi, accent)
+		"ombre": _ombre(r, body, hi, accent)
+		"prisme": _prisme(r, body, hi, accent)
+		"obelisque": _obelisque(r, body, hi, accent)
+		"vesper": _vesper(r, body, hi, accent)
+		"eclipse": _eclipse(r, body, hi, accent)
+		"passeur": _carrier(r, body, hi, accent, 1.1)
+		"tour_prisme": _tour_base(r, accent, id)
+		"tour_prisme_tete": _tour_tete(r, accent, id)
+		"serre": _serre(r, accent)
+		"mur_cristal": _mur(r, accent, false)
 		"chantier": _chantier(r, accent)
 		"centrale": _centrale(r, accent)
 		"raffinerie": _raffinerie(r, accent)
@@ -86,6 +98,12 @@ const MUZZLES := {
 	"tour_sonique_tete": [Vector3(18, 34, 0)],
 	"bunker_tete": [Vector3(43, 28, 0)],
 	"tour_acide_tete": [Vector3(35, 20, 0)],
+	"ombre": [Vector3(17, 14, 0)],
+	"prisme": [Vector3(24, 17, 0)],
+	"obelisque": [Vector3(34, 22, 0)],
+	"vesper": [Vector3(24, 10, 5), Vector3(24, 10, -5)],
+	"eclipse": [Vector3(3, 7, 0)],
+	"tour_prisme_tete": [Vector3(32, 24, 0)],
 }
 
 
@@ -116,8 +134,8 @@ static func rotors(id: String) -> Array:
 		"faucheur":
 			return [{"hub": Vector3(-1, 21.5, 0), "r": 23.0, "n": 2, "w": 34.0, "h": true},
 					{"hub": Vector3(-34, 16, 3.5), "r": 6.5, "n": 2, "w": 48.0, "h": false}]
-		"nacelle", "pelican", "mule":
-			var k := 1.0 if id == "nacelle" else (0.9 if id == "pelican" else 1.3)
+		"nacelle", "pelican", "mule", "passeur":
+			var k := 1.0 if id == "nacelle" else (0.9 if id == "pelican" else (1.1 if id == "passeur" else 1.3))
 			return [{"hub": Vector3(2, 16, -22 * k), "r": 8.5 * k, "n": 3, "w": 30.0, "h": true},
 					{"hub": Vector3(2, 16, 22 * k), "r": 8.5 * k, "n": 3, "w": -30.0, "h": true}]
 	return []
@@ -555,8 +573,90 @@ static func _marche(r: Node3D, acc: Color) -> void:
 	_ball(r, 3.0, Vector3(0, 24, -4), GLOW_MAGENTA, 2.0)
 
 
+## Cristal : prisme effilé (pointe en haut), incliné de `tilt` autour de Z, `spin` autour de X.
+static func _crystal(parent: Node3D, h: float, w: float, pos: Vector3, col: Color, tilt := 0.0, spin := 0.0, emit := 1.0) -> void:
+	_cyl(parent, 0.3, w, h, pos, col, 5, Vector3(spin, 0, tilt), emit)
+
+
+static func _ombre(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
+	_wheels(r, [-9, 9], 8.0, 4.5, 4.0)
+	_box(r, Vector3(26, 4, 11), Vector3(0, 7.5, 0), OBSIDIAN)
+	_box(r, Vector3(10, 3, 9), Vector3(-4, 10.5, 0), body)
+	_box(r, Vector3(9, 2.5, 7), Vector3(6, 9.5, 0), hi, Vector3(0, 0, -0.35))
+	_crystal(r, 11, 3.2, Vector3(-6, 17, 0), GLOW_VIOLET, 0.0, 0.0, 1.6)
+	_crystal(r, 7, 2.2, Vector3(-9, 15, 3), GLOW_VIOLET, 0.35, 0.0, 1.2)
+	_barrel(r, 4, 14, 0, 12, 1.0)
+	_box(r, Vector3(1, 1.5, 6), Vector3(13.2, 8, 0), GLOW_VIOLET, Vector3.ZERO, 1.5)
+
+
+static func _prisme(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
+	_tracks(r, 32.0, 9.0, 6.0, 7.0)
+	_box(r, Vector3(30, 6, 15), Vector3(0, 10, 0), OBSIDIAN)
+	_box(r, Vector3(9, 3.5, 15), Vector3(14, 9, 0), body, Vector3(0, 0, -0.5))
+	_cyl(r, 7, 9, 5, Vector3(-2, 15.5, 0), body, 6)
+	_cyl(r, 2.0, 5.5, 13, Vector3(-2, 24.5, 0), GLOW_VIOLET, 6, Vector3.ZERO, 1.3)   # prisme central
+	_crystal(r, 8, 2.4, Vector3(-9, 20, 5), hi, 0.3, 0.0, 0.8)
+	_crystal(r, 8, 2.4, Vector3(-9, 20, -5), hi, -0.3, 0.0, 0.8)
+	_barrel(r, 6, 17, 0, 18, 2.0)
+	_box(r, Vector3(1, 1.5, 4), Vector3(15, 11, 4), GLOW_VIOLET, Vector3.ZERO, 1.4)
+	_box(r, Vector3(1, 1.5, 4), Vector3(15, 11, -4), GLOW_VIOLET, Vector3.ZERO, 1.4)
+
+
+static func _obelisque(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
+	_tracks(r, 36.0, 9.5, 6.5, 7.0)
+	_box(r, Vector3(34, 6, 17), Vector3(0, 10, 0), OBSIDIAN)
+	_box(r, Vector3(24, 5, 15), Vector3(-3, 15.5, 0), body)
+	_cyl(r, 5, 8, 4, Vector3(-4, 20, 0), METAL, 6)
+	_barrel(r, 4, 22, 0, 30, 2.4)
+	_crystal(r, 22, 4.5, Vector3(10, 29, 0), GLOW_VIOLET, PI / 2.0 + 0.0, 0.0, 1.4)   # obélisque couché sur le canon
+	_crystal(r, 12, 3.0, Vector3(-12, 26, 6), hi, 0.2, 0.0, 0.9)
+	_crystal(r, 12, 3.0, Vector3(-12, 26, -6), hi, -0.2, 0.0, 0.9)
+
+
+static func _vesper(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
+	_box(r, Vector3(32, 4, 6), Vector3(0, 12, 0), OBSIDIAN)
+	_box(r, Vector3(12, 3.5, 5), Vector3(14, 11.5, 0), hi, Vector3(0, 0, -0.35))
+	_box(r, Vector3(8, 3, 5), Vector3(0, 14.5, 0), METAL)
+	_ball(r, 2.4, Vector3(4, 15.5, 0), GLOW_VIOLET, 1.8)
+	for s in [-1.0, 1.0]:
+		_box(r, Vector3(14, 1.0, 18), Vector3(-6, 12, 10 * s), body, Vector3(0, 0.45 * s, 0))        # ailes en flèche
+		_crystal(r, 7, 2.0, Vector3(-12, 13, 18 * s), GLOW_VIOLET, PI / 2.0, 0.0, 1.4)
+	_barrel(r, 14, 10, 5, 8, 0.9)
+	_barrel(r, 14, 10, -5, 8, 0.9)
+
+
+static func _eclipse(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
+	_box(r, Vector3(30, 7, 11), Vector3(0, 12, 0), OBSIDIAN)
+	_box(r, Vector3(10, 5, 9), Vector3(16, 11, 0), hi, Vector3(0, 0, -0.3))
+	_box(r, Vector3(8, 4, 6), Vector3(4, 16.5, 0), METAL)
+	for s in [-1.0, 1.0]:
+		_box(r, Vector3(16, 1.6, 22), Vector3(-6, 12, 14 * s), body, Vector3(0, 0.35 * s, 0))        # ailes delta
+		_crystal(r, 9, 3.0, Vector3(-8, 13, 25 * s), GLOW_VIOLET, PI / 2.0, 0.0, 1.4)
+	_box(r, Vector3(7, 8, 1.4), Vector3(-14, 17, 0), acc, Vector3.ZERO, 0.6)
+	_cyl(r, 5, 6, 8, Vector3(-1, 8, 0), GLOW_VIOLET, 6, Vector3.ZERO, 1.6)                           # soute à éclats
+	_ball(r, 2.8, Vector3(3, 7, 0), GLOW_VIOLET, 2.0)
+
+
+static func _serre(r: Node3D, acc: Color) -> void:
+	_slab(r, 96, 64, acc)
+	_box(r, Vector3(78, 12, 40), Vector3(0, 8, -3), OBSIDIAN)
+	for i in 3:
+		var x := -24.0 + i * 24.0
+		_cyl(r, 0.5, 11, 24, Vector3(x, 24, -3), GLOW_VIOLET, 5, Vector3.ZERO, 1.2)         # cristaux en croissance
+		_crystal(r, 12, 3.4, Vector3(x + 8, 18, 6), acc.lightened(0.3), 0.3, 0.0, 0.8)
+	_box(r, Vector3(30, 5, 3), Vector3(0, 8, 18), DARK)
+	_box(r, Vector3(30, 1.2, 3.5), Vector3(0, 11.5, 18), acc, Vector3.ZERO, 1.2)
+
+
 static func _tour_base(r: Node3D, acc: Color, id: String) -> void:
 	_slab(r, 64, 64, acc)
+	if id == "tour_prisme":
+		_cyl(r, 20, 23, 8, Vector3(0, 7, 0), OBSIDIAN, 6)
+		_cyl(r, 24, 24, 1.4, Vector3(0, 9, 0), acc, 6, Vector3.ZERO, 1.0)
+		for a in 3:
+			var d := Vector3.RIGHT.rotated(Vector3.UP, a * TAU / 3.0) * 24.0
+			_crystal(r, 14, 4.0, d + Vector3(0, 12, 0), GLOW_VIOLET, 0.0, 0.0, 1.2)
+		return
 	if id == "bunker":
 		_box(r, Vector3(50, 16, 50), Vector3(0, 11, 0), Color(0.36, 0.37, 0.42))
 		_box(r, Vector3(54, 3, 54), Vector3(0, 20, 0), METAL)
@@ -581,6 +681,11 @@ static func _tour_tete(r: Node3D, acc: Color, id: String) -> void:
 				for yy in [0.0, 8.0]:
 					_barrel(r, 10, y + 6 + yy, z, 26, 2.2, DARK)
 			_ball(r, 3.0, Vector3(-8, y + 12, 0), GLOW_ORANGE, 2.0)
+		"tour_prisme_tete":
+			_cyl(r, 8, 12, 8, Vector3(0, y + 4, 0), OBSIDIAN, 6)
+			_cyl(r, 2.5, 8, 16, Vector3(0, y + 16, 0), GLOW_VIOLET, 6, Vector3.ZERO, 1.4)
+			_barrel(r, 6, y + 10, 0, 26, 2.6, DARK)
+			_ball(r, 3.0, Vector3(-6, y + 14, 0), GLOW_VIOLET, 2.0)
 		"tour_sonique_tete":
 			_cyl(r, 8, 11, 22, Vector3(0, y + 11, 0), LIGHT, 8)
 			_cyl(r, 16, 5, 10, Vector3(8, y + 22, 0), acc, 10, Vector3(0, 0, -PI / 2.0 + 0.3), 0.8)

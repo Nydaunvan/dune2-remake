@@ -108,7 +108,7 @@ func _process(delta: float) -> void:
 
 ## Bâtiments dont le dessin est animé en continu.
 func _animated() -> bool:
-	return id in ["radar", "tour_sonique", "centrale", "reacteur", "relais_solaire", "fonderie", "raffinerie",
+	return id in ["radar", "tour_sonique", "tour_prisme", "serre", "mur_cristal", "centrale", "reacteur", "relais_solaire", "fonderie", "raffinerie",
 			"chantier", "marche", "reparation", "aerodrome", "usine"]
 
 
@@ -211,7 +211,7 @@ func _physics_process(delta: float) -> void:
 			var snapped: float = game.bank.snap_angle("%s|%s" % [hk, game.faction_id_of(team)], aim)
 			from = world_center() + Models.muzzle_offset(hk, snapped, _muzzle_i)
 			_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(hk)
-		fx_t = 0.6 if id == "tour_sonique" else 0.0
+		fx_t = 0.6 if id == "tour_sonique" else (0.25 if id == "tour_prisme" else 0.0)
 		game.fire(self, _target, weapon, dps * float(wd["cd"]), from)
 
 
@@ -284,6 +284,18 @@ func _draw_anim(s: Vector2, fid: String, bank) -> void:
 					var a := clampf(1.0 - p, 0.0, 1.0) * (1.0 - i * 0.28)
 					draw_arc(em, rr, aim - 0.55, aim + 0.55, 20, Color(0.6, 0.95, 1.0, a * 0.8), 3.0 - i * 0.6, true)
 				draw_circle(em, 10.0 * (1.0 - p) + 3.0, Color(0.8, 1.0, 1.0, (1.0 - p) * 0.8))
+		"tour_prisme":
+			var em := c + Models.muzzle_offset("tour_prisme_tete", aim, 0)
+			var pu := 0.5 + 0.5 * sin(t * 3.4)
+			draw_circle(em, 4.0 + 2.0 * pu, Color(0.8, 0.5, 1.0, 0.25 + 0.25 * pu))
+			if fx_t > 0.0:
+				draw_circle(em, 9.0 * (fx_t / 0.25), Color(1.0, 0.8, 1.0, 0.7 * (fx_t / 0.25)))
+		"serre":
+			for i in 3:
+				var ph := 0.5 + 0.5 * sin(t * 2.2 + i * 2.0)
+				var p := c + Models.project(Vector3(-24.0 + i * 24.0, 19.0, -2.0), 0.0)
+				draw_circle(p, 6.0 + 2.0 * ph, Color(0.75, 0.5, 1.0, 0.14 + 0.2 * ph))
+				draw_circle(p, 2.2, Color(1.0, 0.9, 1.0, 0.5 + 0.3 * ph))
 		"centrale":
 			for x in [-15.0, 15.0]:
 				var ph := 0.5 + 0.5 * sin(t * 2.4 + x)
@@ -418,7 +430,8 @@ func center_cell() -> Vector2:
 ## Mur : dessiné à plat dans sa case, pour que les segments s'alignent parfaitement.
 func _draw_wall(s: Vector2) -> void:
 	var steel: bool = id == "mur_acier"
-	var base := Color(0.5, 0.52, 0.6) if steel else Color(0.47, 0.4, 0.34)
+	var crystal: bool = id == "mur_cristal"
+	var base := Color(0.5, 0.52, 0.6) if steel else (Color(0.5, 0.34, 0.78) if crystal else Color(0.47, 0.4, 0.34))
 	var fid: String = game.faction_id_of(team) if game != null else ""
 	var acc: Color = GameData.FACTIONS[fid]["color"] if GameData.FACTIONS.has(fid) else Color.WHITE
 	draw_rect(Rect2(Vector2.ZERO, s), base.darkened(0.35))                       # flanc
@@ -426,6 +439,11 @@ func _draw_wall(s: Vector2) -> void:
 	draw_rect(Rect2(Vector2(2, 2), Vector2(s.x - 4.0, s.y - 13.0)), base.lightened(0.14))
 	draw_rect(Rect2(Vector2(0, s.y - 7.0), Vector2(s.x, 2.0)), acc * 1.3)         # liseré de faction
 	draw_rect(Rect2(Vector2.ZERO, s), Color(0, 0, 0, 0.35), false, 1.0)
+	if crystal:
+		var t := Time.get_ticks_msec() / 1000.0 + _phase
+		var sh := 0.5 + 0.5 * sin(t * 2.0 + float(cell.x + cell.y))
+		draw_colored_polygon(PackedVector2Array([Vector2(4, s.y - 12.0), Vector2(s.x * 0.35, 4), Vector2(s.x * 0.55, s.y - 12.0)]), Color(0.8, 0.6, 1.0, 0.45 + 0.25 * sh))
+		draw_colored_polygon(PackedVector2Array([Vector2(s.x * 0.5, s.y - 12.0), Vector2(s.x * 0.72, 2), Vector2(s.x - 4.0, s.y - 12.0)]), Color(0.65, 0.4, 0.95, 0.5))
 	if steel:
 		for p in [Vector2(6, 6), Vector2(s.x - 6.0, 6), Vector2(6, s.y - 14.0), Vector2(s.x - 6.0, s.y - 14.0)]:
 			draw_circle(p, 1.8, base.darkened(0.4))

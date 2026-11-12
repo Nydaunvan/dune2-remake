@@ -868,7 +868,7 @@ class InfoPanel extends GlassPanel:
 			"fonderie":
 				rows.append(["Minerai", "+%d %% par récolte" % int(12 * (b.level - 1))])
 				rows.append(["Stockage", "+1500 minerai"])
-			"tourelle", "batterie", "tour_sonique", "bunker", "tour_acide":
+			"tourelle", "batterie", "tour_sonique", "bunker", "tour_acide", "tour_prisme":
 				rows.append(["Dégâts", "%.0f /s" % b.dps])
 				rows.append(["Portée", "%d cases" % int(b.w_range / 32.0)])
 			"silo":
@@ -881,11 +881,13 @@ class InfoPanel extends GlassPanel:
 				rows.append(["Énergie", "+%d" % b.power])
 			"marche":
 				rows.append(["Revenu", "+%d Solaris/s" % int(d["income"])])
-			"mur", "mur_acier":
+			"serre":
+				rows.append(["Revenu", "+%d minerai/s" % int(d["ore_income"])])
+			"mur", "mur_acier", "mur_cristal":
 				rows.append(["Rôle", "Barrière"])
 		if b.power < 0:
 			rows.append(["Consomme", "%d énergie" % -b.power])
-		elif b.power == 0 and b.id != "mur" and b.id != "mur_acier":
+		elif b.power == 0 and b.id != "mur" and b.id != "mur_acier" and b.id != "mur_cristal":
 			rows.append(["Consomme", "0 énergie"])
 		rows.append(["Vision", "%d cases" % b.vision])
 		if b.offline:
@@ -1138,7 +1140,7 @@ class BuildIcon extends Control:
 			_draw_baked_icon(c, avail)
 			return
 		if GameData.def(id).get("wall", false):
-			var wc := Color(0.5, 0.52, 0.6) if id == "mur_acier" else Color(0.47, 0.4, 0.34)
+			var wc := Color(0.5, 0.52, 0.6) if id == "mur_acier" else (Color(0.55, 0.38, 0.8) if id == "mur_cristal" else Color(0.47, 0.4, 0.34))
 			if not avail:
 				wc = wc.darkened(0.4)
 			for i in 3:

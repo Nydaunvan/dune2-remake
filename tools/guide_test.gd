@@ -7,7 +7,7 @@ func _initialize() -> void:
 func _process(_d: float) -> bool:
 	f += 1
 	if f == 3:
-		for fac in ["solis", "kharn", "vael"]:
+		for fac in ["solis", "kharn", "vael", "conclave"]:
 			g = Guide.open(root.get_child(root.get_child_count() - 1), fac) if not is_instance_valid(g) else g
 			for t in Guide.TABS:
 				g._show(t[0])

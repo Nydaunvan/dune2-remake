@@ -52,7 +52,7 @@ func start_music() -> void:
 func warm_up(step: Callable) -> void:
 	if not enabled:
 		return
-	var names := ["autocannon", "cannon", "rocket", "sonic", "acid", "control", "hit", "boom", "boom_big",
+	var names := ["autocannon", "cannon", "rocket", "sonic", "acid", "control", "shard", "hit", "boom", "boom_big",
 			"worm", "click", "ack", "place", "coin", "ready", "unit_ready", "upgrade", "rank", "alert",
 			"error", "victory", "defeat", "music"]
 	for i in names.size():
@@ -214,6 +214,13 @@ func _make(name: String) -> AudioStreamWAV:
 			_add_tone(b, 0.0, 0.3, 240.0, 130.0, 0.2, 9.0, [1.0, 0.3], 0.15)
 			_lowpass(b, 0.4)
 			_reverb(b, [0.05, 0.11], 0.2)
+		"shard":
+			b = _blank(0.7)
+			_add_tone(b, 0.0, 0.25, 900.0, 420.0, 0.22, 10.0, [1.0, 0.5, 0.25], 0.0, 0.1)
+			_add_tone(b, 0.0, 0.5, 1350.0, 1100.0, 0.10, 6.0, [1.0, 0.7], 0.01, 0.2)
+			_add_noise(b, 0.0, 0.12, 0.35, 0.8, 18.0, 0.02, 30.0, 0.7)
+			_lowpass(b, 0.7)
+			_reverb(b, [0.06, 0.13, 0.22], 0.3)
 		"control":
 			b = _blank(1.4)
 			_add_tone(b, 0.0, 1.0, 220.0, 165.0, 0.28, 2.2, [1.0, 0.5, 0.25], 0.06, 0.15)

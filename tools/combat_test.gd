@@ -14,6 +14,8 @@ func _initialize() -> void:
 	GameSession.instant_bases = true
 	GameSession.faction = OS.get_environment("FACTION") if OS.has_environment("FACTION") else "solis"
 	GameSession.mode = "skirmish"
+	if OS.has_environment("FOE"):
+		GameSession.skirm_foe = OS.get_environment("FOE")
 	if OS.has_environment("DIFF"):
 		GameSession.skirm_diff = int(OS.get_environment("DIFF"))
 	if OS.has_environment("SCENARIO"):

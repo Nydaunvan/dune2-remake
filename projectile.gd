@@ -66,6 +66,8 @@ func _hit() -> void:
 			Fx.impact(game, position, Color(0.5, 1.2, 1.6), 5, 0.4)
 		"acid":
 			Fx.impact(game, position, Color(0.5, 1.4, 0.6), 3, 0.28)
+		"shard":
+			Fx.impact(game, position, Color(1.1, 0.6, 1.8), 5, 0.34)
 		_:
 			Fx.impact(game, position, color, 2, 0.18)
 	queue_free()
@@ -96,6 +98,12 @@ func _draw() -> void:
 		"sonic":
 			draw_arc(Vector2.ZERO, 6.0, -1.0, 1.0, 10, color, 3.0, true)
 			draw_arc(Vector2.ZERO, 11.0, -0.8, 0.8, 10, halo, 3.0, true)
+		"shard":
+			# éclat de cristal : losange effilé
+			var pts := PackedVector2Array([Vector2(7, 0), Vector2(0, -3.2), Vector2(-9, 0), Vector2(0, 3.2)])
+			draw_colored_polygon(PackedVector2Array([Vector2(9, 0), Vector2(0, -5.5), Vector2(-12, 0), Vector2(0, 5.5)]), halo)
+			draw_colored_polygon(pts, color)
+			draw_circle(Vector2(2, 0), 1.6, Color(2.0, 1.8, 2.2))
 		"acid":
 			draw_circle(Vector2.ZERO, 5.0, halo)
 			draw_circle(Vector2.ZERO, 3.0, color)

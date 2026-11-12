@@ -103,6 +103,7 @@ var occupied := {} # Vector2i -> true (cases prises par un bâtiment)
 var _full_warn := -99.0
 var _rep_acc := 0.0
 var tier := 0 # missions de campagne terminées : débloque les bâtiments
+var _ore_acc := {}
 var _inc_acc := {0: 0.0, 1: 0.0, 2: 0.0}
 var credits := 1000 # Solaris (épice raffinée) : payent les unités
 var ore := 1500     # Minerai : paye les bâtiments
@@ -1741,6 +1742,10 @@ func _building_effects(dt: float) -> void:
 		var d := GameData.def(b.id)
 		if d.has("income"):
 			_inc_acc[b.team] = float(_inc_acc.get(b.team, 0.0)) + float(d["income"]) * dt
+		if d.has("ore_income"):
+			_ore_acc[b.team] = float(_ore_acc.get(b.team, 0.0)) + float(d["ore_income"]) * dt
+		if b.id == "mur_cristal" and b.hp < b.max_hp:
+			b.hp = minf(b.max_hp, b.hp + 12.0 * dt) # le cristal se régénère
 		if d.has("heal"):
 			var r: float = float(d["heal_range"]) * TILE
 			for u in units:
@@ -1748,6 +1753,14 @@ func _building_effects(dt: float) -> void:
 						and u.position.distance_to(b.world_center()) < r + b.radius_px():
 					u.hp = minf(u.max_hp, u.hp + float(d["heal"]) * dt)
 					u.queue_redraw()
+	for t in _ore_acc.keys():
+		var ow := int(_ore_acc[t])
+		if ow > 0:
+			_ore_acc[t] = float(_ore_acc[t]) - ow
+			if t == 0:
+				ore = mini(ore + ow, maxi(storage_cap("ore"), ore))
+			elif ais.has(t):
+				ais[t].add_income("ore", ow)
 	for t in _inc_acc.keys():
 		var whole := int(_inc_acc[t])
 		if whole > 0:
@@ -1760,7 +1773,7 @@ func _building_effects(dt: float) -> void:
 
 ## Bâtiments qui s'arrêtent quand l'énergie ne couvre plus la consommation de leur camp.
 const NEEDS_POWER := ["raffinerie", "fonderie", "radar", "reparation", "marche", "tourelle", "batterie",
-		"tour_sonique", "bunker", "tour_acide", "aerodrome"]
+		"tour_sonique", "bunker", "tour_acide", "aerodrome", "tour_prisme", "serre"]
 var _power_was_ok := {}
 
 

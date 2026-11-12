@@ -46,6 +46,15 @@ const FACTIONS := {
 		"units": ["faucon", "vipere", "mirage"],
 		"air": ["guepe", "frelon", "pelican"],
 	},
+	"conclave": {
+		"name": "Conclave Obsidien",
+		"tagline": "Cristal et résilience",
+		"desc": "Minerai +20 %, unités qui se régénèrent.\nÉclats cristallins en zone, constructions un peu plus lentes.",
+		"color": Color("b277ff"), "accent": Color("ead6ff"),
+		"build_time_mult": 1.1, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.2, "regen": 2.0,
+		"units": ["ombre", "prisme", "obelisque"],
+		"air": ["vesper", "eclipse", "passeur"],
+	},
 }
 
 # Armes : cd = cadence (s), splash = rayon des dégâts de zone (px)
@@ -56,6 +65,7 @@ const WEAPONS := {
 	"sonic": {"cd": 1.6, "speed": 500.0, "color": Color(0.5, 1.2, 1.6), "splash": 64.0, "len": 12.0},
 	"acid": {"cd": 1.2, "speed": 560.0, "color": Color(0.4, 1.4, 0.5), "splash": 0.0, "len": 12.0},
 	"control": {"cd": 1.4, "speed": 700.0, "color": Color(1.3, 0.4, 1.5), "splash": 0.0, "len": 12.0},
+	"shard": {"cd": 0.9, "speed": 780.0, "color": Color(1.1, 0.55, 1.8), "splash": 30.0, "len": 13.0},
 }
 
 # Multiplicateur de dégâts : arme -> blindage
@@ -66,6 +76,7 @@ const MULT := {
 	"sonic": {"light": 1.1, "medium": 1.0, "heavy": 0.9, "building": 0.7},
 	"acid": {"light": 0.8, "medium": 1.2, "heavy": 1.4, "building": 0.9},
 	"control": {"light": 1.0, "medium": 1.0, "heavy": 1.0, "building": 1.0},
+	"shard": {"light": 1.2, "medium": 1.0, "heavy": 0.9, "building": 0.8},
 }
 
 # Vision par défaut (en cases) quand l'entrée n'a pas de "vision"
@@ -132,6 +143,10 @@ const UNIT_TECH := {
 	"marteau": {"hp": 1.25, "dps": 1.15}, "mule": {"hp": 1.3, "speed": 1.2},
 	"guepe": {"speed": 1.15, "dps": 1.25}, "frelon": {"dps": 1.3, "hp": 1.15},
 	"pelican": {"hp": 1.3, "speed": 1.15},
+	"ombre": {"speed": 1.2, "vision": 3, "hp": 1.2}, "prisme": {"hp": 1.25, "dps": 1.2},
+	"obelisque": {"range": 2, "dps": 1.2, "hp": 1.15},
+	"vesper": {"speed": 1.15, "dps": 1.25}, "eclipse": {"dps": 1.25, "hp": 1.2},
+	"passeur": {"hp": 1.3, "speed": 1.15},
 }
 ## Stockage : capacité de base, puis bonus par bâtiment [Solaris, minerai].
 const STORAGE_BASE := 3000
@@ -254,6 +269,23 @@ const BUILDINGS := {
 		"requires": ["raffinerie"], "hp": 700, "armor": "building", "unlock": 4, "no_upgrade": true,
 		"faction": "vael", "income": 4.0, "desc": "+4 Solaris par seconde (Vael)",
 		"req_level": {"raffinerie": 2}, "max": 2,
+	},
+	"tour_prisme": {
+		"name": "Tour prisme", "cost": 540, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
+		"requires": ["usine"], "hp": 650, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "conclave", "weapon": "shard", "dps": 36, "range": 8, "vision": 9,
+		"desc": "Éclats de cristal en zone (Conclave)", "req_level": {"usine": 2}, "max": 6,
+	},
+	"serre": {
+		"name": "Serre cristalline", "cost": 500, "time": 12.0, "size": Vector2i(3, 2), "power": -20,
+		"requires": ["fonderie"], "hp": 650, "armor": "building", "unlock": 4, "no_upgrade": true,
+		"faction": "conclave", "ore_income": 3.0, "desc": "+3 minerai par seconde (Conclave)",
+		"req_level": {"fonderie": 2}, "max": 2,
+	},
+	"mur_cristal": {
+		"name": "Mur de cristal", "cost": 70, "time": 3.2, "size": Vector2i(1, 1), "power": 0, "requires": [],
+		"hp": 1000, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true, "wall": true,
+		"faction": "conclave", "desc": "Mur cristallin qui se régénère (Conclave)",
 	},
 }
 
@@ -397,6 +429,46 @@ const UNITS := {
 		"armor": "light", "weapon": "control",
 		"cost": 430, "time": 9.0, "level": 3, "requires": ["usine", "radar"], "from": "usine",
 		"hp": 300, "dps": 32, "speed": 85.0, "range": 6,
+	},
+	# --- Conclave Obsidien ---
+	"ombre": {
+		"aa": true, "name": "Ombre", "role": "combat", "desc": "Éclaireur furtif, harcèle l'air",
+		"armor": "light", "weapon": "autocannon",
+		"cost": 230, "time": 5.0, "level": 1, "requires": ["usine"], "from": "usine",
+		"hp": 200, "dps": 15, "speed": 155.0, "range": 5, "vision": 11,
+		"vs_air": 0.7,
+	},
+	"prisme": {
+		"name": "Prisme", "role": "combat", "desc": "Char à éclats cristallins (dégâts de zone)",
+		"armor": "medium", "weapon": "shard",
+		"cost": 500, "time": 8.0, "level": 2, "requires": ["usine"], "from": "usine",
+		"hp": 500, "dps": 28, "speed": 92.0, "range": 6,
+	},
+	"obelisque": {
+		"name": "Obélisque", "role": "combat", "desc": "Artillerie de cristal longue portée (sol)",
+		"armor": "medium", "weapon": "shard",
+		"cost": 650, "time": 10.0, "level": 3, "requires": ["usine", "radar"], "from": "usine",
+		"hp": 420, "dps": 46, "speed": 60.0, "range": 10, "vision": 9,
+	},
+	"vesper": {
+		"aa": true, "name": "Vesper", "role": "combat", "desc": "Chasseur furtif (faible contre le sol)", "air": true,
+		"armor": "light", "weapon": "autocannon",
+		"cost": 350, "time": 6.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 160, "speed": 230.0, "vision": 13, "dps": 21, "range": 4,
+		"vs_air": 1.3,
+		"vs_ground": 0.5,
+	},
+	"eclipse": {
+		"name": "Éclipse", "role": "combat", "desc": "Bombardier à éclats (sol, zone)", "air": true,
+		"armor": "light", "weapon": "shard",
+		"cost": 640, "time": 10.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 250, "speed": 170.0, "vision": 10, "dps": 40, "range": 5,
+	},
+	"passeur": {
+		"name": "Passeur", "role": "transport", "desc": "Transport de 5 unités", "air": true,
+		"armor": "medium",
+		"cost": 500, "time": 8.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
+		"hp": 330, "speed": 175.0, "vision": 10, "slots": 5,
 	},
 }
 

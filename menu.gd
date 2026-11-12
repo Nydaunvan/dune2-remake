@@ -36,7 +36,7 @@ func _ready() -> void:
 	vb.add_child(_label("— CHOISISSEZ VOTRE FACTION —", 20, Color(1.0, 0.85, 0.7), true))
 
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 34)
+	row.add_theme_constant_override("separation", 22)
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	vb.add_child(row)
 	for id in GameData.FACTIONS.keys():
@@ -153,8 +153,7 @@ func _open_skirmish() -> void:
 		foe_opts.append([String(GameData.FACTIONS[k]["name"]).to_upper(), GameSession.skirm_foe == k,
 				func() -> void: GameSession.skirm_foe = k])
 	if two:
-		rows.add_child(_info_row("FACTIONS ADVERSES", "Les deux autres factions : %s et %s — chacune est hostile à tous (chacun pour soi)" % [
-				GameData.FACTIONS[others[0]]["name"], GameData.FACTIONS[others[1]]["name"]]))
+		rows.add_child(_info_row("FACTIONS ADVERSES", "Deux factions adverses tirées au sort parmi les autres — chacune est hostile à tous (chacun pour soi)"))
 	else:
 		rows.add_child(_option_row("FACTION ADVERSE", foe_opts))
 	rows.add_child(_option_row("TAILLE DE LA CARTE", [
@@ -635,6 +634,28 @@ class FactionCard extends Control:
 					var yy := -16.0 + i * 16.0
 					draw_polyline(PackedVector2Array([cc + Vector2(-22, yy), cc + Vector2(0, yy + 22), cc + Vector2(22, yy)]),
 							Color(col.r, col.g, col.b, wv), 5.0, true)
+			"conclave": # cristal : prisme facetté qui respire, éclats en orbite, anneau pentagonal
+				var pent := PackedVector2Array()
+				for i in 6:
+					pent.append(c + Vector2.from_angle(t * 0.3 * boost + TAU * i / 5.0) * 76.0)
+				draw_polyline(pent, Color(col.r, col.g, col.b, 0.55), 2.0, true)
+				var br := 1.0 + 0.07 * sin(t * 2.2)
+				var tip := c + Vector2(0, -44.0 * br)
+				var bot := c + Vector2(0, 44.0 * br)
+				var lft := c + Vector2(-26.0, -6.0)
+				var rgt := c + Vector2(26.0, -6.0)
+				var mid := c + Vector2(0, 8.0)
+				draw_colored_polygon(PackedVector2Array([tip, lft, mid]), Color(col.r * 0.7, col.g * 0.7, col.b * 0.9, 0.95))
+				draw_colored_polygon(PackedVector2Array([tip, mid, rgt]), Color(col.r * 1.0, col.g * 0.9, col.b, 0.95))
+				draw_colored_polygon(PackedVector2Array([lft, bot, mid]), Color(col.r * 0.35, col.g * 0.3, col.b * 0.55, 0.95))
+				draw_colored_polygon(PackedVector2Array([mid, bot, rgt]), Color(col.r * 0.55, col.g * 0.45, col.b * 0.8, 0.95))
+				draw_polyline(PackedVector2Array([tip, lft, bot, rgt, tip]), col, 3.0, true)
+				var gl := 0.5 + 0.5 * sin(t * 3.0)
+				draw_line(tip, mid, Color(1, 0.95, 1, 0.35 + 0.4 * gl), 2.0, true)
+				for j in 4:
+					var oa := t * (0.8 + 0.2 * j) + j * 1.57
+					var op := c + Vector2.from_angle(oa) * Vector2(70.0, 52.0)
+					draw_colored_polygon(PackedVector2Array([op + Vector2(0, -6), op + Vector2(4, 0), op + Vector2(0, 6), op + Vector2(-4, 0)]), Color(0.95, 0.85, 1.0))
 			_: # œil : pupille qui suit la souris, clignement, balayage radar
 				_ring(c, 74.0, Color(col.r, col.g, col.b, 0.5), t * 0.6 * boost, 3, 1.1, 2.0)
 				for k in 3:

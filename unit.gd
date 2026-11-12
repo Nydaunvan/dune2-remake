@@ -598,6 +598,10 @@ func _physics_process(delta: float) -> void:
 		return
 	if carried:
 		return
+	var rg: float = float(game.fdata_of(team).get("regen", 0.0))
+	if rg > 0.0 and hp < max_hp:
+		hp = minf(max_hp, hp + rg * delta) # cristal vivant : régénération lente
+		queue_redraw()
 	if emerging:
 		_emerge(delta)
 		return

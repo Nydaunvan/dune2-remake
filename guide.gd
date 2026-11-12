@@ -246,7 +246,7 @@ func _p_units() -> String:
 
 
 func _p_factions() -> String:
-	var s := _h("Les trois maisons")
+	var s := _h("Les quatre maisons")
 	for f in GameData.FACTIONS:
 		var d: Dictionary = GameData.FACTIONS[f]
 		var hexc: String = d["color"].to_html(false)
