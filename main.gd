@@ -1098,11 +1098,11 @@ func enemy_at(world_pos: Vector2):
 
 func fire(shooter, target, weapon: String, damage: float, from: Vector2, control := false) -> void:
 	var p := Projectile.new()
-	damage *= GameData.aim_mult(shooter.id, target is Unit and target.air)
+	damage *= GameData.aim_mult(shooter.id, target is Unit and target.air, target is Building)
 	p.setup(self, weapon, shooter.team, from, target, damage, shooter, control)
 	add_child(p)
 	Fx.impact(self, from, GameData.WEAPONS[weapon]["color"], 2, 0.16)
-	sfx.play(weapon, from, -4.0)
+	sfx.play(String(GameData.WEAPONS[weapon].get("snd", weapon)), from, -4.0)
 
 
 ## Chemin jusqu'à une cible (case voisine d'un bâtiment, ou case de l'unité).
@@ -1748,6 +1748,14 @@ func _building_effects(dt: float) -> void:
 			_ore_acc[b.team] = float(_ore_acc.get(b.team, 0.0)) + float(d["ore_income"]) * dt
 		if b.id == "mur_cristal" and b.hp < b.max_hp:
 			b.hp = minf(b.max_hp, b.hp + 12.0 * dt) # le cristal se régénère
+		if d.has("aura_regen"):
+			# Aura de réparation : les bâtiments alliés proches regagnent des PV
+			var ar: float = float(d.get("aura_range", 6)) * TILE
+			for o in buildings:
+				if o.alive and o != b and o.team == b.team and o.hp < o.max_hp \
+						and o.world_center().distance_to(b.world_center()) < ar + o.radius_px():
+					o.hp = minf(o.max_hp, o.hp + float(d["aura_regen"]) * dt)
+					o.queue_redraw()
 		if d.has("heal"):
 			var r: float = float(d["heal_range"]) * TILE
 			for u in units:
@@ -1784,7 +1792,8 @@ func _update_power_state() -> void:
 		var ok := power_ok(t)
 		for b in buildings:
 			if b.team == t and b.alive:
-				var off: bool = not ok and NEEDS_POWER.has(b.id)
+				var bd := GameData.def(b.id)
+				var off: bool = not ok and (NEEDS_POWER.has(b.id) or bd.has("weapon") or bd.get("needs_power", false))
 				if off != b.offline:
 					b.offline = off
 					b.queue_redraw()

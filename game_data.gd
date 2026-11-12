@@ -25,8 +25,8 @@ const FACTIONS := {
 		"desc": "Constructions 20 % plus rapides.\nUnités précises et mobiles, mais peu blindées.",
 		"color": Color("4aa8ff"), "accent": Color("bfe3ff"),
 		"build_time_mult": 0.8, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.0,
-		"units": ["sentinelle", "egide", "resonateur"],
-		"air": ["libellule", "aigrette", "nacelle"],
+		"units": ["sentinelle", "egide", "resonateur", "pisteur", "brise_mur", "citadelle", "technicien", "cirrus", "diapason"],
+		"air": ["libellule", "aigrette", "nacelle", "eclair", "foudre", "orage", "vigie"],
 	},
 	"kharn": {
 		"name": "Légion Kharn",
@@ -66,6 +66,12 @@ const WEAPONS := {
 	"acid": {"cd": 1.2, "speed": 560.0, "color": Color(0.4, 1.4, 0.5), "splash": 0.0, "len": 12.0},
 	"control": {"cd": 1.4, "speed": 700.0, "color": Color(1.3, 0.4, 1.5), "splash": 0.0, "len": 12.0},
 	"shard": {"cd": 0.9, "speed": 780.0, "color": Color(1.1, 0.55, 1.8), "splash": 30.0, "len": 13.0},
+	# Armes génériques des nouvelles unités (son emprunté à "snd")
+	"mortar": {"cd": 2.4, "speed": 380.0, "color": Color(1.5, 0.7, 0.3), "splash": 70.0, "len": 16.0, "snd": "rocket"},
+	"flame": {"cd": 0.22, "speed": 520.0, "color": Color(1.8, 0.8, 0.2), "splash": 0.0, "len": 12.0, "snd": "autocannon"},
+	"plasma": {"cd": 1.8, "speed": 460.0, "color": Color(0.5, 1.4, 1.9), "splash": 46.0, "len": 12.0, "snd": "sonic"},
+	"orbital": {"cd": 9.0, "speed": 1100.0, "color": Color(1.9, 1.5, 0.6), "splash": 100.0, "len": 40.0, "snd": "boom_big"},
+	"laser": {"cd": 0.7, "speed": 1300.0, "color": Color(1.9, 0.4, 0.4), "splash": 0.0, "len": 26.0, "snd": "autocannon"},
 }
 
 # Multiplicateur de dégâts : arme -> blindage
@@ -77,6 +83,11 @@ const MULT := {
 	"acid": {"light": 0.8, "medium": 1.2, "heavy": 1.4, "building": 0.9},
 	"control": {"light": 1.0, "medium": 1.0, "heavy": 1.0, "building": 1.0},
 	"shard": {"light": 1.2, "medium": 1.0, "heavy": 0.9, "building": 0.8},
+	"mortar": {"light": 1.0, "medium": 1.0, "heavy": 0.9, "building": 1.3},
+	"flame": {"light": 1.5, "medium": 1.0, "heavy": 0.5, "building": 0.6},
+	"plasma": {"light": 1.0, "medium": 1.1, "heavy": 1.2, "building": 1.0},
+	"laser": {"light": 0.9, "medium": 1.0, "heavy": 1.3, "building": 0.7},
+	"orbital": {"light": 1.0, "medium": 1.0, "heavy": 1.0, "building": 0.8},
 }
 
 # Vision par défaut (en cases) quand l'entrée n'a pas de "vision"
@@ -128,13 +139,13 @@ static func power_at(id: String, level: int) -> int:
 
 
 const UPGRADES := {
-	"chantier": "+2 places dans la file de construction, +25 % PV",
-	"centrale": "+50 énergie, +25 % PV",
-	"raffinerie": "+12 % de Solaris par récolte, +25 % PV",
-	"fonderie": "+12 % de minerai par récolte, +25 % PV",
-	"usine": "Débloque de nouvelles unités, +2 places en file, production +25 % plus rapide, +25 % PV",
-	"tourelle": "+25 % de dégâts, +25 % PV",
-	"radar": "+3 cases de vision et de détection, +25 % PV",
+	"chantier": "+2 places dans la file de construction, +40 % PV",
+	"centrale": "+50 énergie, +40 % PV",
+	"raffinerie": "+12 % de Solaris par récolte, +40 % PV",
+	"fonderie": "+12 % de minerai par récolte, +40 % PV",
+	"usine": "Débloque de nouvelles unités, +2 places en file, production +25 % plus rapide, +40 % PV",
+	"tourelle": "+25 % de dégâts, +40 % PV",
+	"radar": "+3 cases de vision et de détection, +40 % PV",
 }
 # Modernisation d'une unité (une fois, à l'Usine niveau 2) : bonus propres à chaque type.
 # Clés : hp/dps/speed/cap/rate = multiplicateurs, range/vision = cases en plus.
@@ -159,6 +170,16 @@ const UNIT_TECH := {
 	"obelisque": {"range": 2, "dps": 1.2, "hp": 1.15},
 	"vesper": {"speed": 1.15, "dps": 1.25}, "eclipse": {"dps": 1.25, "hp": 1.2},
 	"passeur": {"hp": 1.3, "speed": 1.15},
+	"pisteur": {"speed": 1.2, "vision": 3},
+	"brise_mur": {"hp": 1.2, "dps": 1.25},
+	"citadelle": {"hp": 1.3, "dps": 1.15},
+	"technicien": {"hp": 1.3, "speed": 1.2},
+	"cirrus": {"range": 2, "dps": 1.2},
+	"diapason": {"range": 2, "dps": 1.2},
+	"eclair": {"speed": 1.15, "dps": 1.25},
+	"foudre": {"hp": 1.2, "dps": 1.2},
+	"orage": {"dps": 1.25, "hp": 1.2},
+	"vigie": {"speed": 1.2, "vision": 3},
 }
 ## Stockage : capacité de base, puis bonus par bâtiment [Solaris, minerai].
 const STORAGE_BASE := 3000
@@ -308,6 +329,70 @@ const BUILDINGS := {
 		"name": "Mur de cristal", "cost": 70, "time": 3.2, "size": Vector2i(1, 1), "power": 0, "requires": [],
 		"hp": 1000, "tough": 2.0, "armor": "building", "vision": 3, "unlock": 4, "no_upgrade": true, "wall": true,
 		"faction": "conclave", "desc": "Mur cristallin qui se régénère (Conclave)",
+	},
+	# --- solis : extension (v2) ---
+	"atelier_solis": {
+		"name": "Atelier de précision", "cost": 600, "time": 12.0, "size": Vector2i(3, 2), "power": -25,
+		"requires": ["usine"], "hp": 900, "tough": 1.2, "armor": "building", "unlock": 2,
+		"faction": "solis", "desc": "Débloque les unités avancées Solis", "req_level": {"usine": 2},
+		"max": 1,
+	},
+	"clinique_solis": {
+		"name": "Clinique solaire", "cost": 520, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
+		"requires": ["usine"], "hp": 700, "armor": "building", "unlock": 2, "no_upgrade": true,
+		"faction": "solis", "heal": 24.0, "heal_range": 6.0, "needs_power": true,
+		"desc": "Soigne vite les unités proches (Solis)", "req_level": {"usine": 2}, "max": 2,
+	},
+	"tour_laser": {
+		"name": "Tour laser", "cost": 600, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "atelier_solis"], "hp": 700, "armor": "building", "unlock": 3,
+		"faction": "solis", "aa": true, "vs_air": 0.9, "weapon": "laser", "dps": 42, "range": 8,
+		"vision": 9, "desc": "Faisceau précis, efficace contre les blindés (Solis)",
+		"req_level": {"usine": 2}, "max": 5,
+	},
+	"mortier_lourd": {
+		"name": "Mortier lourd", "cost": 700, "time": 13.0, "size": Vector2i(2, 2), "power": -25,
+		"requires": ["usine", "radar", "atelier_solis"], "hp": 600, "armor": "building", "unlock": 4,
+		"no_upgrade": true, "faction": "solis", "weapon": "mortar", "dps": 30, "range": 13, "vision": 11,
+		"desc": "Artillerie longue portée, ne touche que le sol (Solis)", "req_level": {"usine": 3},
+		"max": 3,
+	},
+	"pylone_egide": {
+		"name": "Pylône Égide", "cost": 450, "time": 10.0, "size": Vector2i(2, 2), "power": -15,
+		"requires": ["centrale"], "hp": 600, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "solis", "aura_regen": 8.0, "aura_range": 7, "needs_power": true,
+		"desc": "Répare les bâtiments alliés proches (Solis)", "req_level": {"centrale": 2}, "max": 3,
+	},
+	"comptoir_solis": {
+		"name": "Comptoir technique", "cost": 550, "time": 12.0, "size": Vector2i(3, 2), "power": -15,
+		"requires": ["raffinerie"], "hp": 700, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "solis", "income": 3.5, "needs_power": true,
+		"desc": "+3,5 Solaris par seconde (Solis)", "req_level": {"raffinerie": 2}, "max": 2,
+	},
+	"cellule_fusion": {
+		"name": "Cellule de fusion", "cost": 800, "time": 13.0, "size": Vector2i(2, 2), "power": 320,
+		"requires": ["centrale", "usine"], "hp": 800, "tough": 1.4, "armor": "building", "unlock": 4,
+		"no_upgrade": true, "faction": "solis", "desc": "Énergie abondante (Solis)",
+		"req_level": {"centrale": 2, "usine": 2}, "max": 2,
+	},
+	"hangar_solis": {
+		"name": "Hangar de précision", "cost": 700, "time": 12.0, "size": Vector2i(3, 2), "power": -30,
+		"requires": ["aerodrome"], "hp": 900, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "solis", "desc": "Débloque les appareils avancés Solis", "req_level": {"usine": 2},
+		"max": 1,
+	},
+	"observatoire": {
+		"name": "Observatoire", "cost": 420, "time": 10.0, "size": Vector2i(2, 2), "power": -35,
+		"requires": ["radar"], "hp": 550, "armor": "building", "unlock": 3, "no_upgrade": true,
+		"faction": "solis", "vision": 22, "needs_power": true,
+		"desc": "Détection à très longue portée (Solis)", "req_level": {"radar": 2}, "max": 2,
+	},
+	"canon_solaire": {
+		"name": "Canon solaire", "cost": 1800, "time": 22.0, "size": Vector2i(3, 3), "power": -80,
+		"requires": ["usine", "radar", "atelier_solis"], "hp": 1800, "tough": 1.3, "armor": "building",
+		"unlock": 4, "no_upgrade": true, "faction": "solis", "weapon": "orbital", "dps": 160,
+		"range": 18, "vision": 12, "desc": "Frappe orbitale à très longue portée, sol seulement (Solis)",
+		"req_level": {"usine": 3}, "max": 1,
 	},
 }
 
@@ -492,6 +577,67 @@ const UNITS := {
 		"cost": 500, "time": 8.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
 		"hp": 330, "speed": 175.0, "vision": 10, "slots": 5,
 	},
+	# --- solis : extension (v2) ---
+	"pisteur": {
+		"name": "Pisteur", "role": "combat", "desc": "Éclaireur ultra-rapide, grande vision",
+		"armor": "light", "weapon": "autocannon", "cost": 160, "time": 3.5, "level": 1,
+		"requires": ["usine"], "from": "usine", "hp": 120, "dps": 9, "speed": 200.0, "range": 4,
+		"vision": 15,
+	},
+	"brise_mur": {
+		"name": "Brise-mur", "role": "combat", "desc": "Sapeur sonique : ravage les bâtiments",
+		"armor": "light", "weapon": "sonic", "cost": 360, "time": 7.0, "level": 2, "requires": ["usine"],
+		"from": "usine", "hp": 300, "dps": 18, "speed": 88.0, "range": 4, "vision": 7, "vs_ground": 0.5,
+		"vs_building": 2.2,
+	},
+	"citadelle": {
+		"name": "Citadelle", "role": "combat", "desc": "Char lourd à blindage réactif", "armor": "heavy",
+		"weapon": "cannon", "cost": 720, "time": 11.0, "level": 3,
+		"requires": ["usine", "atelier_solis"], "from": "usine", "hp": 900, "dps": 33, "speed": 70.0,
+		"range": 6,
+	},
+	"technicien": {
+		"name": "Technicien", "role": "combat", "desc": "Soigne les unités alliées proches",
+		"armor": "light", "cost": 380, "time": 7.0, "level": 2, "requires": ["usine", "atelier_solis"],
+		"from": "usine", "hp": 240, "dps": 0, "speed": 100.0, "range": 0, "vision": 8, "heal": 14.0,
+		"heal_range": 4,
+	},
+	"cirrus": {
+		"name": "Cirrus", "role": "combat", "desc": "Lance-missiles anti-aérien", "aa": true,
+		"armor": "light", "weapon": "rocket", "cost": 470, "time": 8.0, "level": 2,
+		"requires": ["usine", "radar"], "from": "usine", "hp": 250, "dps": 40, "speed": 85.0,
+		"range": 11, "vision": 9, "vs_air": 1.5, "vs_ground": 0.35,
+	},
+	"diapason": {
+		"name": "Diapason", "role": "combat", "desc": "Mortier sonique longue portée (sol)",
+		"armor": "light", "weapon": "mortar", "cost": 620, "time": 10.0, "level": 3,
+		"requires": ["usine", "radar", "atelier_solis"], "from": "usine", "hp": 230, "dps": 30,
+		"speed": 60.0, "range": 13, "vision": 9,
+	},
+	"eclair": {
+		"name": "Éclair", "role": "combat", "desc": "Intercepteur supersonique", "air": true, "aa": true,
+		"armor": "light", "weapon": "autocannon", "cost": 330, "time": 6.0, "level": 2,
+		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 150, "dps": 22, "speed": 260.0,
+		"range": 5, "vision": 13, "vs_air": 1.4, "vs_ground": 0.4,
+	},
+	"foudre": {
+		"name": "Foudre", "role": "combat", "desc": "Canonnière laser, vise l'air et le sol",
+		"air": true, "aa": true, "armor": "medium", "weapon": "laser", "cost": 600, "time": 9.0,
+		"level": 3, "requires": ["usine", "aerodrome", "hangar_solis"], "from": "aerodrome", "hp": 380,
+		"dps": 38, "speed": 190.0, "range": 6, "vision": 10, "vs_air": 0.9,
+	},
+	"orage": {
+		"name": "Orage", "role": "combat", "desc": "Bombardier plasma lourd (sol)", "air": true,
+		"armor": "medium", "weapon": "plasma", "cost": 700, "time": 12.0, "level": 3,
+		"requires": ["usine", "aerodrome", "hangar_solis"], "from": "aerodrome", "hp": 330, "dps": 44,
+		"speed": 150.0, "range": 3, "vision": 9, "vs_building": 1.3,
+	},
+	"vigie": {
+		"name": "Vigie", "role": "combat", "desc": "Drone de reconnaissance rapide", "air": true,
+		"armor": "light", "weapon": "autocannon", "cost": 140, "time": 3.0, "level": 1,
+		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 90, "dps": 6, "speed": 280.0,
+		"range": 4, "vision": 18,
+	},
 }
 
 
@@ -517,8 +663,12 @@ static func can_hit_air(id: String) -> bool:
 
 
 ## Modulation des dégâts selon la cible : "vs_air" / "vs_ground" du tireur (1.0 par défaut).
-static func aim_mult(shooter_id: String, target_is_air: bool) -> float:
-	return float(def(shooter_id).get("vs_air" if target_is_air else "vs_ground", 1.0))
+static func aim_mult(shooter_id: String, target_is_air: bool, target_is_building := false) -> float:
+	var d := def(shooter_id)
+	var m := float(d.get("vs_air" if target_is_air else "vs_ground", 1.0))
+	if target_is_building:
+		m *= float(d.get("vs_building", 1.0))
+	return m
 
 
 static func mult(weapon: String, armor: String) -> float:

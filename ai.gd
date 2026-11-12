@@ -300,6 +300,10 @@ func _next_building() -> String:
 	# Le joueur a des appareils : on s'équipe en anti-aérien
 	if skill >= 0.4 and _enemy_air() >= 2 and _count_aa_defenses() < 1 + mini(_enemy_air() / 2, 3):
 		return "batterie" if _available("batterie") else "tourelle"
+	if skill >= 0.45 and t > 420.0:
+		var tb := _tech_building()
+		if tb != "":
+			return tb
 	var tower_goal := mini(1 + int(skill * 3.0 + t / 360.0), 7)
 	if defs < tower_goal:
 		return tower
@@ -307,6 +311,15 @@ func _next_building() -> String:
 		return "silo"
 	if skill >= 0.5 and _count("silo_minerai") < 2 and ore > 0.8 * game.storage_cap("ore", team):
 		return "silo_minerai"
+	if skill >= 0.6 and t > 780.0:
+		for hid in _heavy_ids():
+			var cap := 1 if GameData.def(hid)["weapon"] == "orbital" else 2
+			if _count(hid) < cap and _available(hid) and (skill >= 0.75 or GameData.def(hid)["weapon"] != "orbital"):
+				return hid
+	if skill >= 0.5:
+		var sb := _support_building()
+		if sb != "":
+			return sb
 	if skill >= 0.55 and t > 540.0 and _count("aerodrome") < 1:
 		return "aerodrome"
 	if skill >= 0.6 and t > 700.0 and _count("reparation") < 1:
@@ -328,12 +341,85 @@ func _storage_pressure() -> bool:
 	return credits > 0.8 * game.storage_cap("spice", team) or ore > 0.8 * game.storage_cap("ore", team)
 
 
-## Défenses : alternance tourelle / tour de faction quand elle est disponible.
+## Défenses : on varie les tours disponibles (communes et de faction), en choisissant la moins représentée.
 func _defense_id() -> String:
-	var sp := _special_tower()
-	if sp != "" and skill >= 0.45 and _available(sp) and _count(sp) <= _count("tourelle"):
-		return sp
-	return "tourelle"
+	if skill < 0.45:
+		return "tourelle"
+	var best := "tourelle"
+	var best_n := _count("tourelle") * 1.3
+	for id in _tower_ids():
+		if id == "tourelle" or not _available(id):
+			continue
+		var n := float(_count(id)) + randf() * 0.5
+		if n < best_n:
+			best_n = n
+			best = id
+	return best
+
+
+## Tours « ordinaires » : armées, ni artillerie lourde (portée >= 12) ni arme orbitale.
+func _tower_ids() -> Array:
+	var out: Array = []
+	for id in GameData.BUILDINGS.keys():
+		var d: Dictionary = GameData.BUILDINGS[id]
+		if not d.has("weapon") or id == "batterie":
+			continue
+		var f: String = d.get("faction", "")
+		if f != "" and f != faction_id:
+			continue
+		if int(d.get("range", 0)) >= 12 or d["weapon"] == "orbital":
+			continue
+		out.append(id)
+	return out
+
+
+## Artillerie lourde (portée >= 12) et arme orbitale de la faction, quand elles sont disponibles.
+func _heavy_ids() -> Array:
+	var out: Array = []
+	for id in GameData.BUILDINGS.keys():
+		var d: Dictionary = GameData.BUILDINGS[id]
+		var f: String = d.get("faction", "")
+		if d.has("weapon") and (f == faction_id) and (int(d.get("range", 0)) >= 12 or d["weapon"] == "orbital"):
+			out.append(id)
+	return out
+
+
+## Bâtiment technologique manquant pour fabriquer une unité de la faction.
+func _tech_building() -> String:
+	for id in fdata["units"] + fdata["air"]:
+		for r in GameData.def(id)["requires"]:
+			if game.has_building(r, team) or not GameData.BUILDINGS.has(r):
+				continue
+			if GameData.def(r).get("faction", "") == "":
+				continue
+			if _available(r):
+				return r
+	return ""
+
+
+## Bâtiments de soutien de la faction (soins, auras, revenus, énergie, détection) : un de chaque, avec le temps.
+func _support_building() -> String:
+	var t: float = game.game_time
+	for id in GameData.BUILDINGS.keys():
+		var d: Dictionary = GameData.BUILDINGS[id]
+		if d.get("faction", "") != faction_id or d.has("weapon") or d.get("wall", false):
+			continue
+		if not (d.has("heal") or d.has("aura_regen") or d.has("income") or d.has("ore_income") or int(d.get("vision", 0)) > 12):
+			continue
+		var delay := 600.0 + 120.0 * float(_count_support())
+		if t > delay and _count(id) < 1 and _available(id):
+			return id
+	return ""
+
+
+func _count_support() -> int:
+	var n := 0
+	for b in game.buildings:
+		if b.team == team and b.alive and b.id != "reparation" and b.id != "marche" and b.id != "serre":
+			var d := GameData.def(b.id)
+			if d.get("faction", "") == faction_id and not d.has("weapon") and (d.has("heal") or d.has("aura_regen") or d.has("income") or d.has("ore_income") or int(d.get("vision", 0)) > 12):
+				n += 1
+	return n
 
 
 func _think_build() -> void:

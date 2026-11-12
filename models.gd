@@ -71,7 +71,9 @@ static func build(id: String, accent: Color) -> Node3D:
 		"marche": _marche(r, accent)
 		"batterie", "tour_sonique", "bunker", "tour_acide": _tour_base(r, accent, id)
 		"batterie_tete", "tour_sonique_tete", "bunker_tete", "tour_acide_tete": _tour_tete(r, accent, id)
-		_: _box(r, Vector3(20, 10, 20), Vector3(0, 5, 0), accent)
+		_:
+			if not ModelsExt.build(r, id, body, hi, accent):
+				_box(r, Vector3(20, 10, 20), Vector3(0, 5, 0), accent)
 	return r
 
 
@@ -108,13 +110,23 @@ const MUZZLES := {
 }
 
 
+static func has_muzzle(id: String) -> bool:
+	return MUZZLES.has(id) or ModelsExt.has(id.trim_suffix("_tete"))
+
+
+static func _muzzles(id: String) -> Array:
+	if MUZZLES.has(id):
+		return MUZZLES[id]
+	return ModelsExt.muzzles(id.trim_suffix("_tete"))
+
+
 ## Décalage 2D (monde, depuis le centre) de la bouche n° `idx` pour un modèle orienté `rot`.
 ## Même projection oblique que SpriteBank : la hauteur monte à l'écran de y·tan(TILT).
 ## Renvoie Vector2.INF si le modèle n'a pas de bouche définie.
 static func muzzle_offset(id: String, rot: float, idx := 0) -> Vector2:
-	if not MUZZLES.has(id):
+	if not has_muzzle(id):
 		return Vector2.INF
-	var arr: Array = MUZZLES[id]
+	var arr: Array = _muzzles(id)
 	var m: Vector3 = arr[idx % arr.size()]
 	return Vector2(m.x, m.z).rotated(rot) + Vector2(0.0, -m.y * tan(deg_to_rad(30.0)))
 
@@ -131,6 +143,8 @@ const DOORS := {
 ## Rotors animés (dessinés par l'unité, pas cuits dans le sprite) : moyeu (x, y, z du modèle),
 ## rayon, nombre de pales, vitesse (rad/s), plan horizontal (rotor principal) ou vertical (rotor de queue).
 static func rotors(id: String) -> Array:
+	if ModelsExt.has(id):
+		return ModelsExt.rotors(id)
 	match id:
 		"faucheur":
 			return [{"hub": Vector3(-1, 21.5, 0), "r": 23.0, "n": 2, "w": 34.0, "h": true},
@@ -148,7 +162,7 @@ static func project(p: Vector3, rot: float) -> Vector2:
 
 
 static func muzzle_count(id: String) -> int:
-	return (MUZZLES[id] as Array).size() if MUZZLES.has(id) else 1
+	return _muzzles(id).size() if has_muzzle(id) else 1
 
 
 # --- Primitives ---------------------------------------------------------------

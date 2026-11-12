@@ -215,7 +215,7 @@ func _physics_process(delta: float) -> void:
 		cooldown = wd["cd"]
 		var from := world_center() + Vector2.from_angle(aim) * 22.0
 		var hk := "%s_tete" % id
-		if not Models.MUZZLES.has(hk):
+		if not Models.has_muzzle(hk):
 			hk = "tourelle_tete"
 		if game.bank != null and game.bank.has("%s|%s" % [hk, game.faction_id_of(team)]):
 			# bout du canon de la tête de tourelle, à l'angle exact de l'image affichée
