@@ -49,7 +49,7 @@ const FACTIONS := {
 	"conclave": {
 		"name": "Conclave Obsidien",
 		"tagline": "Cristal et résilience",
-		"desc": "Minerai +20 %, unités qui se régénèrent.\nÉclats cristallins en zone, constructions un peu plus lentes.",
+		"desc": "Minerai +20 %, unités qui se régénèrent.\nÉclats cristallins en zone, construction plus lente.",
 		"color": Color("b277ff"), "accent": Color("ead6ff"),
 		"build_time_mult": 1.1, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.2, "regen": 2.0,
 		"units": ["ombre", "prisme", "obelisque", "tesson", "fracasseur", "monolithe", "veilleur", "aiguille", "quartz"],

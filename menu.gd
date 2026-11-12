@@ -519,7 +519,7 @@ class FactionCard extends Control:
 
 	func _init(p_id: String) -> void:
 		id = p_id
-		custom_minimum_size = Vector2(420, 640)
+		custom_minimum_size = Vector2(420, 470)
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		mouse_entered.connect(func() -> void: _hover = true)
 		mouse_exited.connect(func() -> void: _hover = false)
@@ -562,26 +562,6 @@ class FactionCard extends Control:
 		for l in String(f["desc"]).split("\n"):
 			UiStyle.text(self, Vector2(24, y), l, 15, Color(1, 1, 1, 0.88), false, HORIZONTAL_ALIGNMENT_CENTER, size.x - 48)
 			y += 23.0
-		y += 12.0
-		# Deux colonnes : unités terrestres à gauche, appareils à droite
-		var colw := (size.x - 68.0) / 2.0
-		UiStyle.section(self, Vector2(34, y), colw - 8.0, "TERRESTRES", acc)
-		UiStyle.section(self, Vector2(34 + colw + 8.0, y), colw - 8.0, "APPAREILS", acc)
-		y += 30.0
-		for c in 2:
-			var ids: Array = f["units"] if c == 0 else f["air"]
-			var x0 := 34.0 + c * (colw + 8.0)
-			var yy := y
-			for uid in ids:
-				var u: Dictionary = GameData.UNITS[uid]
-				var mk := PackedVector2Array([Vector2(x0, yy - 5), Vector2(x0 + 5, yy - 10), Vector2(x0 + 10, yy - 5), Vector2(x0 + 5, yy)]) if c == 0 \
-						else PackedVector2Array([Vector2(x0, yy - 1), Vector2(x0 + 5, yy - 10), Vector2(x0 + 10, yy - 1)])
-				draw_colored_polygon(mk, acc)
-				var ns := 16
-				while ns > 10 and UiStyle.text_width(String(u["name"]), ns, true) > colw - 26.0:
-					ns -= 1
-				UiStyle.text(self, Vector2(x0 + 20.0, yy), String(u["name"]), ns, Color.WHITE, true)
-				yy += 24.0
 		# Pied : état de sélection
 		var fy := size.y - 24.0
 		if active:
