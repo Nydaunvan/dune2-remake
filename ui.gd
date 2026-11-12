@@ -668,9 +668,15 @@ class InfoPanel extends GlassPanel:
 		btn.size = Vector2(330, 36)
 		btn.pressed.connect(func() -> void:
 			if _focus is Building:
-				game.upgrade_building(_focus)
+				if _focus.up_left > 0.0:
+					game.cancel_upgrade(_focus)
+				else:
+					game.upgrade_building(_focus)
 			elif _focus is Unit:
-				game.upgrade_unit(_focus))
+				if _focus.tech_left > 0.0:
+					game.cancel_unit_tech(_focus)
+				else:
+					game.upgrade_unit(_focus))
 		add_child(btn)
 		rbtn = GameUI.NeonButton.new("RÉPARER")
 		rbtn.accent = GameData.GREEN
@@ -742,9 +748,11 @@ class InfoPanel extends GlassPanel:
 			dbtn.position = Vector2(COL2 + 232.0, 52)
 			dbtn.size = Vector2(108, 32)
 			var why: String = game.upgrade_block(b, game.ore)
-			btn.enabled = why == ""
+			btn.enabled = why == "" or b.up_left > 0.0
+			btn.accent = GameData.RED if b.up_left > 0.0 else GameData.GOLD
 			if b.up_left > 0.0:
-				btn.text = "AMÉLIORATION — %d S" % int(ceil(b.up_left))
+				btn.text = "ANNULER — %d S RESTANTES" % int(ceil(b.up_left))
+				why = "Annule l'amélioration et rembourse la part déjà payée"
 			elif b.level >= GameData.MAX_LEVEL:
 				btn.text = "NIVEAU MAXIMUM"
 			else:
@@ -758,9 +766,11 @@ class InfoPanel extends GlassPanel:
 			rbtn.position = Vector2(398, 52)
 			rbtn.size = Vector2(186, 32)
 			var why2: String = game.unit_upgrade_block(u)
-			btn.enabled = why2 == ""
+			btn.enabled = why2 == "" or u.tech_left > 0.0
+			btn.accent = GameData.RED if u.tech_left > 0.0 else GameData.GOLD
 			if u.tech_left > 0.0:
-				btn.text = "MODERNISATION — %d S" % int(ceil(u.tech_left))
+				btn.text = "ANNULER — %d S" % int(ceil(u.tech_left))
+				why2 = "Annule la modernisation et rembourse la part déjà payée"
 			elif u.tech > 0:
 				btn.text = "MODERNISÉE"
 			else:
@@ -1019,10 +1029,11 @@ class InfoPanel extends GlassPanel:
 	func _draw_building(b: Building) -> void:
 		var d := GameData.def(b.id)
 		var mine: bool = b.team == 0
-		_hp_block(GameData.name_of(b.id, game.faction_id_of(b.team)), _building_sub(b, mine), b.hp, b.max_hp, mine,
-				"NIVEAU %d/%d" % [b.level, GameData.MAX_LEVEL])
+		_hp_block(GameData.name_of(b.id, game.faction_id_of(b.team)), _building_sub(b, mine), b.hp, b.max_hp, mine)
 		UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 		var rows: Array = []
+		if not d.get("wall", false) and not d.get("no_upgrade", false):
+			rows.append(["Niveau", "%d / %d" % [b.level, GameData.MAX_LEVEL]])
 		match b.id:
 			"chantier":
 				rows.append(["File bât.", "%d places" % (2 + 2 * (b.level - 1))])
@@ -1341,6 +1352,25 @@ class BuildIcon extends Control:
 		var col := Color.WHITE if avail else Color(0.5, 0.5, 0.56, 0.85)
 		var cc := c + Vector2(0, 2)
 		draw_texture_rect_region(tex, Rect2(cc - dsz / 2.0, dsz), src, col)
+		# Tête de tourelle / antenne : cuite à part, elle se superpose au socle comme sur la carte
+		if is_unit:
+			return
+		var d := GameData.def(id)
+		var hk := ""
+		if id == "radar":
+			hk = "radar_tete|%s" % game.faction_id
+		elif d.has("weapon") and not d.get("wall", false):
+			hk = "%s_tete|%s" % [id, game.faction_id]
+			if not game.bank.has(hk):
+				hk = "tourelle_tete|%s" % game.faction_id
+		if hk != "" and game.bank.has(hk):
+			var ha := 0.45
+			var ht = game.bank.frame(hk, ha)
+			if ht != null:
+				var wk: float = k * tex.get_size().x / maxf(game.bank.draw_size(key).x, 1.0)
+				var hsz: Vector2 = game.bank.draw_size(hk) * wk
+				var tc: Vector2 = cc + (tex.get_size() * 0.5 - (src.position + src.size * 0.5)) * k
+				draw_texture_rect(ht, Rect2(tc - hsz / 2.0, hsz), false, col)
 
 	func _draw_icon(c: Vector2, avail: bool) -> void:
 		var fill := Color("2a3350") if avail else Color("201c2c")

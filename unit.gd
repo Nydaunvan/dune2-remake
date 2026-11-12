@@ -53,6 +53,7 @@ var _scan_t := 0.0
 var kills := 0
 var rank := 0
 var tech := 0        # modernisation faite (0/1)
+var _sep_t := 0.0
 var tech_left := 0.0 # modernisation en cours : secondes restantes
 var tech_total := 0.0
 var tech_cost := 0.0 # prix restant à prélever progressivement ; 0 : déjà payé
@@ -872,6 +873,23 @@ func _seek(delta: float) -> void:
 func _harvest(delta: float) -> void:
 	if _work_fx != null:
 		_set_work_fx(true)
+	# Trop près d'une consœur : l'un des deux s'écarte vers une autre case du champ
+	_sep_t -= delta
+	if _sep_t <= 0.0:
+		_sep_t = 1.0 + randf() * 0.5
+		for o in game.units:
+			if o != self and o.alive and o.team == team and o.is_worker() and o.state == "harvest" \
+					and o.position.distance_to(position) < (radius + o.radius) * 1.6 and get_instance_id() > o.get_instance_id():
+				var n2: Vector2i = game.find_resource(cargo_kind, game.world_to_cell(position), 14, self)
+				if n2.x >= 0 and n2 != work_cell:
+					work_cell = n2
+					state = "seek"
+					_seek_started = true
+					follow(game.path_to(position, n2))
+					if path.is_empty():
+						path = PackedVector2Array([position])
+					return
+				break
 	var room := cargo_cap - cargo
 	var got: float = game.extract(work_cell, minf(harvest_rate * delta, room))
 	cargo += got

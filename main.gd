@@ -583,15 +583,29 @@ func find_resource(kind: String, from: Vector2i, max_dist := 999, me = null) -> 
 	var best_d := INF
 	# Cases déjà visées par un autre récolteur / mineur : une case = un engin
 	var claimed := {}
+	var others: Array[Vector2] = [] # cases occupées ou visées par les autres engins de récolte
 	for u in units:
-		if u != me and u.alive and u.is_worker() and (u.state == "seek" or u.state == "harvest") and u.work_cell.x >= 0:
-			claimed[u.work_cell] = true
+		if u != me and u.alive and u.is_worker():
+			if (u.state == "seek" or u.state == "harvest") and u.work_cell.x >= 0:
+				claimed[u.work_cell] = true
+				others.append(Vector2(u.work_cell))
+			else:
+				others.append(Vector2(world_to_cell(u.position)))
 	for c in resource:
 		var r: Dictionary = resource[c]
 		if r["kind"] != kind or occupied.has(c) or claimed.has(c):
 			continue
 		var d := Vector2(c - from).length()
-		if d < best_d and d <= max_dist:
+		if d > max_dist:
+			continue
+		# Les engins se répartissent dans le champ : une case proche d'une consœur coûte « plus loin »
+		var near := 99.0
+		var cv := Vector2(c)
+		for o in others:
+			near = minf(near, cv.distance_to(o))
+		if near < 3.5:
+			d += (3.5 - near) * 6.0
+		if d < best_d:
 			best_d = d
 			best = c
 	return best
@@ -993,10 +1007,14 @@ func _update_fog() -> void:
 	for b in buildings:
 		if b.team == 0 and b.alive:
 			_reveal(b.world_center(), GameData.BUILDING_VISION if (b.offline and b.id == "radar") else b.vision)
+	# Une zone une fois explorée reste entièrement visible : plus de brouillard, unités ennemies comprises
+	for i in fog_vis.size():
+		if fog_seen[i] == 1:
+			fog_vis[i] = 1
 	var data := PackedByteArray()
 	data.resize(map_w * map_h)
 	for i in data.size():
-		data[i] = 0 if fog_vis[i] == 1 else (140 if fog_seen[i] == 1 else 255)
+		data[i] = 0 if fog_vis[i] == 1 else 255
 	fog_img.set_data(map_w, map_h, false, Image.FORMAT_R8, data)
 	fog_tex.update(fog_img)
 	var rdata := PackedByteArray()
@@ -1906,6 +1924,34 @@ func upgrade_building(b: Building) -> bool:
 	sfx.play_ui("click")
 	ui.toast("%s : amélioration en cours (%d s)" % [GameData.dname(b.id), int(b.up_total)], GameData.AMBER)
 	return true
+
+
+## Annule une amélioration en cours : la part déjà payée est remboursée.
+func cancel_upgrade(b: Building) -> void:
+	if b.team != 0 or b.up_left <= 0.0:
+		return
+	var paid := int(b.up_cost * (1.0 - b.up_left / maxf(b.up_total, 0.1)))
+	ore += paid
+	b.up_left = 0.0
+	b.up_cost = 0.0
+	b.up_acc = 0.0
+	b.queue_redraw()
+	sfx.play_ui("click")
+	ui.toast("%s : amélioration annulée (+%d minerai rendus)" % [GameData.dname(b.id), paid], GameData.AMBER)
+
+
+## Annule une modernisation en cours : la part déjà payée est remboursée.
+func cancel_unit_tech(u: Unit) -> void:
+	if u.team != 0 or u.tech_left <= 0.0:
+		return
+	var paid := int(u.tech_cost * (1.0 - u.tech_left / maxf(u.tech_total, 0.1)))
+	credits += paid
+	u.tech_left = 0.0
+	u.tech_cost = 0.0
+	u.tech_acc = 0.0
+	u.queue_redraw()
+	sfx.play_ui("click")
+	ui.toast("%s : modernisation annulée (+%d Solaris rendus)" % [GameData.dname(u.id), paid], GameData.AMBER)
 
 
 func unit_upgrade_block(u: Unit) -> String:
