@@ -1636,7 +1636,7 @@ func upgrade_block(b: Building, money: int) -> String:
 		return "Niveau maximum atteint"
 	if b.id != "chantier" and b.level + 1 >= 3 and best_level("chantier", b.team) < 2:
 		return "Améliorez d'abord le Chantier (niveau 2)"
-	if money < upgrade_cost(b):
+	if money < upgrade_cost(b) * (START_FRAC if b.team == 0 else 1.0):
 		return "Minerai insuffisant"
 	var extra := -(GameData.power_at(b.id, b.level + 1) - GameData.power_at(b.id, b.level))
 	if extra > 0 and power_free(b.team) < extra:
@@ -1646,6 +1646,7 @@ func upgrade_block(b: Building, money: int) -> String:
 
 ## Lance le chronomètre d'amélioration (le coût est déjà payé).
 func begin_upgrade(b: Building) -> void:
+	b.up_cost = 0.0
 	b.up_total = upgrade_time(b)
 	b.up_left = b.up_total
 	b.queue_redraw()
@@ -1659,8 +1660,9 @@ func upgrade_building(b: Building) -> bool:
 		ui.toast(why, GameData.RED)
 		sfx.play_ui("error")
 		return false
-	ore -= upgrade_cost(b)
 	begin_upgrade(b)
+	b.up_cost = float(upgrade_cost(b)) # prélevé progressivement pendant les travaux
+	b.up_acc = 0.0
 	sfx.play_ui("click")
 	ui.toast("%s : amélioration en cours (%d s)" % [GameData.def(b.id)["name"], int(b.up_total)], GameData.AMBER)
 	return true
@@ -1675,7 +1677,7 @@ func unit_upgrade_block(u: Unit) -> String:
 		return "Modernisation en cours"
 	if best_level("usine", u.team) < 2:
 		return "Usine niveau 2 requise"
-	if credits < GameData.tech_cost(u.id):
+	if credits < GameData.tech_cost(u.id) * START_FRAC:
 		return "Solaris insuffisants"
 	return ""
 
@@ -1686,7 +1688,8 @@ func upgrade_unit(u: Unit) -> bool:
 		ui.toast(why, GameData.RED)
 		sfx.play_ui("error")
 		return false
-	credits -= GameData.tech_cost(u.id)
+	u.tech_cost = float(GameData.tech_cost(u.id))
+	u.tech_acc = 0.0
 	u.tech_total = GameData.tech_time(u.id)
 	u.tech_left = u.tech_total
 	u.queue_redraw()
@@ -1911,7 +1914,15 @@ func _nudge(u: Unit, off: Vector2) -> void:
 func _tick_upgrades(delta: float) -> void:
 	for b in buildings:
 		if b.alive and b.up_left > 0.0:
-			b.up_left -= delta * (1.0 if power_ok(b.team) else 0.5)
+			var dtu := minf(delta * (1.0 if power_ok(b.team) else 0.5), b.up_left)
+			if b.team == 0 and b.up_cost > 0.0:
+				var r := _pay_part(b.up_cost, dtu / maxf(b.up_total, 0.1), b.up_acc, ore)
+				if not r[0]:
+					_warn_funds("Amélioration")
+					continue
+				ore -= int(r[1])
+				b.up_acc = r[2]
+			b.up_left -= dtu
 			if b.up_left <= 0.0:
 				b.up_left = 0.0
 				b.upgrade()
@@ -1922,7 +1933,15 @@ func _tick_upgrades(delta: float) -> void:
 				b.queue_redraw()
 	for u in units:
 		if u.alive and u.tech_left > 0.0:
-			u.tech_left -= delta
+			var dtt := minf(delta, u.tech_left)
+			if u.team == 0 and u.tech_cost > 0.0:
+				var r2 := _pay_part(u.tech_cost, dtt / maxf(u.tech_total, 0.1), u.tech_acc, credits)
+				if not r2[0]:
+					_warn_funds("Modernisation")
+					continue
+				credits -= int(r2[1])
+				u.tech_acc = r2[2]
+			u.tech_left -= dtt
 			if u.tech_left <= 0.0:
 				u.apply_tech()
 				if u.team == 0:
@@ -1946,10 +1965,33 @@ func cost_label(id: String) -> String:
 	return "%d min. + %d $" % [item_cost(id), GameData.sol_cost(id)]
 
 
+## Part du prix à avoir en caisse pour lancer une production / une amélioration :
+## le reste est prélevé au fur et à mesure de l'avancement.
+const START_FRAC := 0.1
+
+
 func can_afford(id: String) -> bool:
 	if GameData.UNITS.has(id):
-		return credits >= item_cost(id)
-	return ore >= item_cost(id) and credits >= GameData.sol_cost(id)
+		return credits >= item_cost(id) * START_FRAC
+	return ore >= item_cost(id) * START_FRAC and credits >= GameData.sol_cost(id) * START_FRAC
+
+
+## Prélèvement progressif : `total` * `frac` + reliquat. Renvoie [possible, somme entière à prélever, nouveau reliquat].
+func _pay_part(total: float, frac: float, acc: float, avail: int) -> Array:
+	var need := acc + total * frac
+	var whole := int(floor(need))
+	if whole > avail:
+		return [false, 0, acc]
+	return [true, whole, need - whole]
+
+
+var _fund_warn := -99.0
+
+
+func _warn_funds(what: String) -> void:
+	if game_time - _fund_warn > 8.0:
+		_fund_warn = game_time
+		ui.toast("%s en pause : fonds insuffisants" % what, GameData.AMBER)
 
 
 func _add_money(id: String, amount: int) -> void:
@@ -2012,13 +2054,13 @@ func on_item_clicked(id: String, button: int) -> void:
 		sfx.play_ui("error")
 		return
 	var cost := item_cost(id)
-	var sol := GameData.sol_cost(id)
-	_add_money(id, -cost)
-	credits -= sol if cat == "building" else 0
+	var sol := GameData.sol_cost(id) if cat == "building" else 0
 	var t := float(d["time"])
 	if cat == "building":
 		t *= float(fdata["build_time_mult"])
-	q.append({"id": id, "progress": 0.0, "time": t, "ready": false, "paid": cost, "paid_sol": sol if cat == "building" else 0})
+	# Le prix est prélevé progressivement pendant la production (voir _update_production)
+	q.append({"id": id, "progress": 0.0, "time": t, "ready": false, "paid": 0, "paid_sol": 0,
+			"cost": cost, "sol": sol, "acc": 0.0, "acc_s": 0.0})
 
 
 func _update_production(delta: float) -> void:
@@ -2032,7 +2074,30 @@ func _update_production(delta: float) -> void:
 		if producer_busy(cat, p["id"]):
 			continue # le bâtiment producteur est en travaux
 		var f := factor * (unit_speed_bonus() if cat == "unit" else 1.0)
-		p["progress"] += delta * f / p["time"]
+		var dp := minf(delta * f / p["time"], 1.0 - float(p["progress"]))
+		var cost_t := float(p.get("cost", 0))
+		var sol_t := float(p.get("sol", 0))
+		if cost_t > 0.0 or sol_t > 0.0:
+			var ro: Array
+			var rs := [true, 0, 0.0]
+			if cat == "unit":
+				ro = _pay_part(cost_t, dp, float(p["acc"]), credits)
+			else:
+				ro = _pay_part(cost_t, dp, float(p["acc"]), ore)
+				rs = _pay_part(sol_t, dp, float(p["acc_s"]), credits)
+			if not (ro[0] and rs[0]):
+				_warn_funds(String(GameData.def(p["id"])["name"]))
+				continue
+			if cat == "unit":
+				credits -= int(ro[1])
+			else:
+				ore -= int(ro[1])
+				credits -= int(rs[1])
+				p["paid_sol"] = int(p["paid_sol"]) + int(rs[1])
+				p["acc_s"] = rs[2]
+			p["paid"] = int(p["paid"]) + int(ro[1])
+			p["acc"] = ro[2]
+		p["progress"] += dp
 		if p["progress"] >= 1.0:
 			p["progress"] = 1.0
 			var item_name: String = GameData.def(p["id"])["name"]

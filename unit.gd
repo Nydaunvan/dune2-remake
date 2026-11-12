@@ -46,6 +46,8 @@ var rank := 0
 var tech := 0        # modernisation faite (0/1)
 var tech_left := 0.0 # modernisation en cours : secondes restantes
 var tech_total := 0.0
+var tech_cost := 0.0 # prix restant à prélever progressivement ; 0 : déjà payé
+var tech_acc := 0.0
 var base_max_hp := 100.0
 var vision := 7
 var seen := true # visible actuellement par le joueur (brouillard de guerre)
@@ -853,7 +855,7 @@ func export_state(idx: Dictionary) -> Dictionary:
 		"id": id, "team": _orig_team if control_timer > 0.0 else team, "pos": position, "rot": rotation,
 		"hp": hp, "max_hp": max_hp, "base_max_hp": base_max_hp, "dps": dps, "speed": speed, "w_range": w_range,
 		"vision": vision, "cargo_cap": cargo_cap, "harvest_rate": harvest_rate,
-		"tech": tech, "tech_left": tech_left, "tech_total": tech_total, "rank": rank, "kills": kills,
+		"tech": tech, "tech_left": tech_left, "tech_total": tech_total, "tech_cost": tech_cost, "tech_acc": tech_acc, "rank": rank, "kills": kills,
 		"cargo": cl, "cargo_amount": cargo, "guard": guard, "convoy": convoy,
 		"state": state, "path": path, "amove_goal": amove_goal,
 	}
@@ -875,6 +877,8 @@ func restore_state(s: Dictionary) -> void:
 	tech = int(s["tech"])
 	tech_left = float(s["tech_left"])
 	tech_total = float(s["tech_total"])
+	tech_cost = float(s.get("tech_cost", 0.0))
+	tech_acc = float(s.get("tech_acc", 0.0))
 	rank = int(s["rank"])
 	kills = int(s["kills"])
 	cargo = float(s["cargo_amount"])

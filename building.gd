@@ -24,6 +24,8 @@ var hp := 500.0
 var repairing := false
 var up_left := 0.0  # amélioration en cours : secondes restantes
 var up_total := 0.0
+var up_cost := 0.0   # prix restant à prélever progressivement (joueur) ; 0 : déjà payé
+var up_acc := 0.0
 var max_hp := 500.0
 var armor := "building"
 var weapon := ""
@@ -368,7 +370,7 @@ class BarsLayer extends Node2D:
 
 func export_state() -> Dictionary:
 	return {"id": id, "cell": cell, "team": team, "hp": hp, "level": level, "up_left": up_left,
-			"up_total": up_total, "repairing": repairing, "outpost": outpost}
+			"up_total": up_total, "up_cost": up_cost, "up_acc": up_acc, "repairing": repairing, "outpost": outpost}
 
 
 func restore_state(s: Dictionary) -> void:
@@ -380,6 +382,8 @@ func restore_state(s: Dictionary) -> void:
 	hp = minf(float(s["hp"]), max_hp)
 	up_left = float(s["up_left"])
 	up_total = float(s["up_total"])
+	up_cost = float(s.get("up_cost", 0.0))
+	up_acc = float(s.get("up_acc", 0.0))
 	repairing = bool(s["repairing"])
 	outpost = int(s["outpost"])
 	queue_redraw()
