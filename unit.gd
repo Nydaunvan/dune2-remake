@@ -89,6 +89,8 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	var d := GameData.def(id)
 	role = d.get("role", "combat")
 	air = d.get("air", false)
+	# Toujours dessiné au-dessus des bâtiments (jamais caché derrière), air au-dessus du sol
+	z_index = 8 if air else 3
 	slots = int(d.get("slots", 0))
 	speed = float(d.get("speed", 100.0)) * (GameData.AIR_SPEED_MULT if d.get("air", false) else GameData.SPEED_MULT)
 	max_hp = float(d.get("hp", 200))

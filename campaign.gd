@@ -6,7 +6,7 @@ const SAVE_PATH := "user://campaign.cfg"
 
 ## (l'élimination d'une faction n'est jamais requise sauf si destroy_all figure dans les objectifs)
 ## Types d'objectifs : build, harvest, train, survive, destroy_all, outposts,
-## escort, hold.
+## escort.
 const BASE := {"centrale": 1, "raffinerie": 1, "fonderie": 1, "usine": 1}
 
 ## Une campagne différente par faction : 10 missions chacune, avec son propre adversaire,
@@ -49,12 +49,12 @@ const CAMPAIGNS := {
 		{
 			"id": "sommet", "title": "Le sommet", "enemy": "kharn", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 3,
-			"zone": {"units": 4, "time": 75.0},
-			"objectives": [{"type": "hold"}, {"type": "kills", "count": 20}, {"type": "train", "count": 10}],
+			"outposts": 3,
+			"objectives": [{"type": "outposts"}, {"type": "kills", "count": 20}, {"type": "train", "count": 10}],
 			"ai": {"slowdown": 1.15, "grace": 360.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Tenez la zone centrale, formez 10 unités et abattez 20 unités ennemies",
-			"brief": "Le grand sommet réunit trois maisons et aucune n'a d'allié. {ENEMY} et {RIVAL} se battent aussi entre eux : tenez la zone centrale, bâtissez une armée et faites payer chaque camp qui s'approche de la zone.",
+			"obj": "Rasez 3 avant-postes, formez 10 unités et abattez 20 unités ennemies",
+			"brief": "Le grand sommet réunit trois maisons et aucune n'a d'allié. {ENEMY} et {RIVAL} se battent aussi entre eux : rasez les avant-postes disséminés sur le plateau, bâtissez une armée et faites payer chaque camp qui s'approche.",
 		},
 		{
 			"id": "laboratoire", "title": "Le laboratoire", "enemy": "vael", "size": 96, "credits": 3000, "ore": 3500,
@@ -121,11 +121,11 @@ const CAMPAIGNS := {
 		{
 			"id": "percee", "title": "La percée", "rival": true, "enemy": "solis", "size": 96, "credits": 2000, "ore": 2200,
 			"ally_units": 2, "start_units": ["@0", "@1"],
-			"zone": {"units": 5, "time": 90.0},
-			"objectives": [{"type": "hold"}, {"type": "train", "count": 8}, {"type": "harvest", "amount": 2500}],
+			"outposts": 3,
+			"objectives": [{"type": "outposts"}, {"type": "train", "count": 8}, {"type": "harvest", "amount": 2500}],
 			"ai": {"slowdown": 1.5, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Tenez la zone centrale, formez 8 unités et récoltez 2500 Solaris",
+			"obj": "Rasez 3 avant-postes, formez 8 unités et récoltez 2500 Solaris",
 			"brief": "Le col central attire aussi {RIVAL}, qui n'est l'ami de personne. Occupez-le avec une troupe solide face à {ENEMY} et aux pillards, sans négliger la récolte.",
 		},
 		{
@@ -182,13 +182,13 @@ const CAMPAIGNS := {
 		},
 		{
 			"id": "trone", "title": "Le trône de fer", "enemy": "vael", "rival": true, "size": 112, "credits": 3000, "ore": 3000,
-			"ally_units": 4, "start_units": ["@0", "@0", "@1", "@1"], "zone": {"units": 8, "time": 120.0},
-			"objectives": [{"type": "hold"}, {"type": "kills", "count": 40}, {"type": "upgrade", "id": "chantier", "level": 3},
+			"ally_units": 4, "start_units": ["@0", "@0", "@1", "@1"], "outposts": 4,
+			"objectives": [{"type": "outposts"}, {"type": "kills", "count": 40}, {"type": "upgrade", "id": "chantier", "level": 3},
 					{"type": "power", "amount": 400}, {"type": "train", "count": 20}],
 			"ai": {"slowdown": 1.2, "grace": 300.0, "pause": 50.0, "max_army": 20, "wave": 6, "credits": 2600, "ore": 2800},
 			"third_ai": {"slowdown": 1.4, "grace": 360.0, "pause": 60.0, "max_army": 16, "wave": 6, "credits": 2200, "ore": 2400},
-			"obj": "Tenez le trône avec 8 unités pendant 2 minutes, détruisez 40 unités, Chantier niveau 3, 400 d'énergie, 20 unités",
-			"brief": "Le trône de fer est au centre du monde et {ENEMY} comme {RIVAL} le veulent. Montez votre empire : chantier au sommet, énergie en abondance, une armée nombreuse, puis posez vos unités sur le trône et gardez-le. Les victimes feront taire les prétendants.",
+			"obj": "Rasez les 4 avant-postes du trône, détruisez 40 unités, Chantier niveau 3, 400 d'énergie, 20 unités",
+			"brief": "Le trône de fer est au centre du monde et {ENEMY} comme {RIVAL} le veulent. Montez votre empire : chantier au sommet, énergie en abondance, une armée nombreuse, puis rasez les avant-postes qui gardent ses abords. Les victimes feront taire les prétendants.",
 		},
 	],
 	# --- Cartel Vael : vitesse, ruse, commerce ---
@@ -229,11 +229,11 @@ const CAMPAIGNS := {
 		{
 			"id": "braquage", "title": "Le grand braquage", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 3,
-			"zone": {"units": 3, "time": 45.0},
-			"objectives": [{"type": "hold"}, {"type": "kills", "count": 25}, {"type": "harvest", "amount": 4000}],
+			"outposts": 3,
+			"objectives": [{"type": "outposts"}, {"type": "kills", "count": 25}, {"type": "harvest", "amount": 4000}],
 			"ai": {"slowdown": 1.15, "grace": 360.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Prenez la zone centrale 45 s, amassez 4000 Solaris et abattez 25 unités ennemies",
+			"obj": "Rasez 3 avant-postes, amassez 4000 Solaris et abattez 25 unités ennemies",
 			"brief": "Le coup du siècle : le coffre central de {ENEMY} intéresse aussi {RIVAL}. Prenez-le avant eux, remplissez les caisses et abattez ceux qui vous barrent la route.",
 		},
 		{
