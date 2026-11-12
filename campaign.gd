@@ -798,7 +798,39 @@ static func briefing(faction: String, m: int) -> String:
 	t = t.replace("{ENEMY}", GameData.FACTIONS[enemy_of(faction, m)]["name"])
 	t = t.replace("{RIVAL}", GameData.FACTIONS[rival]["name"] if rival != "" else "")
 	t = t.replace("{FOURTH}", GameData.FACTIONS[f4]["name"] if f4 != "" else "")
-	return FLAVOR[faction] + "\n\n" + _fnames(t, faction)
+	return FLAVOR[faction] + "\n\n" + _gnames(_fnames(t, faction), faction)
+
+
+## Mots courants du briefing (radar, tourelle…) -> nom du bâtiment de la faction, pour rester cohérent avec les objectifs en jeu.
+static func _gnames(t: String, faction: String) -> String:
+	var rx := {"radar": "radars?", "tourelle": "tourelles?", "aerodrome": "a[ée]rodromes?", "reacteur": "r[ée]acteurs?",
+			"canon_solaire": "canons? solaires?", "serre": "serres?"}
+	for id in rx:
+		if not GameData.BUILDINGS.has(id):
+			continue
+		var f: String = GameData.BUILDINGS[id].get("faction", "")
+		if f != "" and f != faction:
+			continue
+		var nm: String = GameData.name_of(id, faction).to_lower()
+		var re := RegEx.create_from_string("(?i)\\b" + String(rx[id]) + "\\b")
+		var out := ""
+		var last := 0
+		for mt in re.search_all(t):
+			var word: String = mt.get_string()
+			if word.to_lower() == nm:
+				continue
+			var plural := word.to_lower().ends_with("s")
+			var parts := nm.split(" ", true, 1)
+			var w1: String = parts[0]
+			if plural and not (w1.ends_with("s") or w1.ends_with("x")):
+				w1 += "s"
+			var repl: String = w1 + (" " + parts[1] if parts.size() > 1 else "")
+			if word.substr(0, 1) == word.substr(0, 1).to_upper():
+				repl = repl.substr(0, 1).to_upper() + repl.substr(1)
+			out += t.substr(last, mt.get_start() - last) + repl
+			last = mt.get_end()
+		t = out + t.substr(last)
+	return t
 
 
 ## Remplace les noms génériques des bâtiments cités dans un texte par ceux de la faction.
