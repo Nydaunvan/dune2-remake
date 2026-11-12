@@ -146,13 +146,19 @@ float sd_trap(vec2 p, float r1, float r2, float he) {
 }
 
 float sd_vehicle(vec2 p, int kind) {
-	if (kind == 0) { // char : silhouette anguleuse (chenilles biseautées, caisse et tourelle en trapèze)
-		float d = sd_box(p - vec2(0.0, 0.13), vec2(0.74, 0.13), 0.015);                // chenilles
-		d = max(d, (abs(p.x) - 0.74 + 0.12 - p.y) * 0.7071);                            // biseau des extrémités
-		d = min(d, sd_trap(p - vec2(0.0, 0.37), 0.62, 0.46, 0.11));                    // caisse inclinée
-		d = min(d, sd_trap(p - vec2(0.04, 0.60), 0.30, 0.17, 0.12));                   // tourelle à pans
-		d = min(d, sd_box(p - vec2(0.68, 0.62), vec2(0.40, 0.03), 0.004));             // canon
-		d = min(d, sd_box(p - vec2(1.06, 0.62), vec2(0.07, 0.05), 0.004));             // frein de bouche
+	if (kind == 0) { // char : galets, bande de roulement, glacis incliné, tourelle à pans, canon avec frein de bouche
+		float qx = abs(p.x);
+		float d = sd_box(p - vec2(0.0, 0.14), vec2(0.76, 0.14), 0.0);                  // chenilles
+		d = max(d, ((qx - 0.60) - p.y) * 0.7071);                                       // biseau bas
+		d = max(d, ((qx - 0.66) + (p.y - 0.28)) * 0.7071);                              // biseau haut
+		d = max(d, -sd_box(p - vec2(0.0, 0.0), vec2(0.50, 0.035), 0.0));               // garde au sol
+		d = min(d, sd_trap(p - vec2(0.0, 0.40), 0.66, 0.50, 0.09));                    // caisse
+		d = min(d, sd_box(p - vec2(0.56, 0.38), vec2(0.14, 0.05), 0.005));             // pointe de glacis
+		d = min(d, sd_trap(p - vec2(-0.02, 0.60), 0.32, 0.21, 0.11));                  // tourelle à pans
+		d = min(d, sd_box(p - vec2(-0.12, 0.74), vec2(0.07, 0.035), 0.005));           // coupole
+		d = min(d, sd_box(p - vec2(0.30, 0.60), vec2(0.07, 0.085), 0.005));            // masque de canon
+		d = min(d, sd_box(p - vec2(0.80, 0.61), vec2(0.46, 0.026), 0.004));            // tube
+		d = min(d, sd_box(p - vec2(1.22, 0.61), vec2(0.05, 0.042), 0.004));            // frein de bouche
 		return d;
 	}
 	if (kind == 1) { // récolteur
@@ -270,7 +276,7 @@ vec4 walkers(vec2 uv, float ar, float t, vec3 ro, float terr, vec2 px) {
 	float dir = hash(vec2(cyc, 9.7)) > 0.5 ? 1.0 : -1.0;
 	int n = ev == 0 ? 3 : (ev == 1 ? 2 : 1);
 	float zc = ev == 0 ? 6.6 : (ev == 1 ? 7.4 : 6.2); // au premier plan : visible sous l'interface
-	const float VS = 0.62;                          // échelle des silhouettes
+	const float VS = 0.70;                          // échelle des silhouettes
 	float dur = ev == 2 ? 15.0 : 30.0;
 	float half_w = 0.5 * ar * 0.85 * zc + 3.0;
 	vec4 res = vec4(0.0);
