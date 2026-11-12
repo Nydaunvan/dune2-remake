@@ -153,6 +153,17 @@ func _ready() -> void:
 	elif _save.is_empty():
 		credits = int(credits * GameSession.skirm_res)
 		ore = int(ore * GameSession.skirm_res)
+		# Plancher : de quoi bâtir le minimum vital (centrale, raffinerie, fonderie) et produire un récolteur et un mineur
+		var need_sol := 0
+		var need_ore := 0
+		for bid in ["centrale", "raffinerie", "fonderie"]:
+			need_sol += GameData.sol_cost(bid)
+			need_ore += int(GameData.def(bid)["cost"])
+		for uid in ["recolteur", "mineur"]:
+			need_sol += item_cost(uid)
+			need_ore += item_ore(uid)
+		credits = maxi(credits, int(ceil(need_sol * 1.1 / 50.0)) * 50)
+		ore = maxi(ore, int(ceil(need_ore * 1.1 / 50.0)) * 50)
 	tier = Campaign.needed_tier(faction_id, GameSession.mission) if GameSession.mode == "campaign" else Campaign.tier_of(faction_id, Campaign.cleared(faction_id))
 	# Écran de chargement (la partie est en pause tant que tout n'est pas prêt)
 	if DisplayServer.get_name() != "headless":

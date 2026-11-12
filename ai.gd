@@ -92,6 +92,17 @@ func configure(p: Dictionary) -> void:
 	wave_size = maxi(int(int(p.get("wave", int(wave_size / EASE_WAVE))) * EASE_WAVE), 3)
 	credits = int(int(p.get("credits", int(credits / EASE_MONEY))) * EASE_MONEY)
 	ore = int(int(p.get("ore", int(ore / EASE_MONEY))) * EASE_MONEY)
+	# Plancher : de quoi bâtir centrale, raffinerie, fonderie et produire un récolteur et un mineur
+	var need_sol := 0
+	var need_ore := 0
+	for bid in ["centrale", "raffinerie", "fonderie"]:
+		need_sol += GameData.sol_cost(bid)
+		need_ore += int(GameData.def(bid)["cost"])
+	for uid in ["recolteur", "mineur"]:
+		need_sol += int(GameData.def(uid)["cost"] * float(fdata["unit_cost_mult"]))
+		need_ore += int(round(float(GameData.unit_ore(uid)) * float(fdata["unit_cost_mult"])))
+	credits = maxi(credits, int(ceil(need_sol * 1.1 / 50.0)) * 50)
+	ore = maxi(ore, int(ceil(need_ore * 1.1 / 50.0)) * 50)
 	skill = clampf(float(p.get("skill", skill)), 0.0, 1.0)
 
 
