@@ -64,6 +64,9 @@ var state := "idle" # idle | move | amove | attack | seek | harvest | return | f
 var path := PackedVector2Array()
 var work_cell := Vector2i(-1, -1)
 var _blocked_t := 0.0 # temps passé bloqué derrière un autre véhicule
+var _detours := 0     # contournements récents (pour ne pas se battre avec le même voisin)
+var _detour_clock := 0.0
+var _pause_t := 0.0   # courte pause après plusieurs contournements : on laisse l'autre passer
 var _seek_started := false
 var _retry := 0.0
 var _flee_timer := 0.0
@@ -591,6 +594,12 @@ func _shoot(t) -> void:
 func _move(delta: float) -> void:
 	if path.is_empty():
 		return
+	if _pause_t > 0.0:
+		_pause_t -= delta
+		return
+	_detour_clock -= delta
+	if _detour_clock <= 0.0:
+		_detours = 0
 	var target := path[0]
 	var desired := (target - position).angle()
 	# Le véhicule tourne d'abord, puis avance (sensation jeu de stratégie classique)
@@ -601,7 +610,14 @@ func _move(delta: float) -> void:
 			var blocker = game.unit_blocking(self, step_pos)
 			if blocker != null:
 				_blocked_t += delta
-				if _blocked_t > 0.35:
+				var moving: bool = not blocker.path.is_empty()
+				var limit := 0.12 # voisin à l'arrêt : on le contourne tout de suite
+				if moving:
+					# voisin en mouvement : on lui laisse le temps de dégager, sauf face à face
+					# où seul l'un des deux (identifiant le plus bas) contourne
+					var head_on: bool = (blocker.path[0] - blocker.position).dot(target - position) < 0.0
+					limit = 0.12 if (head_on and get_instance_id() < blocker.get_instance_id()) else 0.9
+				if _blocked_t > limit:
 					_blocked_t_detour(blocker)
 				return # on n'avance pas sur un autre véhicule : on attend ou on contourne
 		if _blocked_t > 0.0 and _blocked_t < 3.0:
@@ -625,6 +641,14 @@ func _blocked_t_detour(blocker: Unit) -> void:
 		path = PackedVector2Array()
 		_blocked_t = 0.0
 		_arrived()
+		return
+	_detours += 1
+	_detour_clock = 8.0
+	if _detours >= 3:
+		# on se gêne mutuellement depuis un moment : courte pause aléatoire, l'autre passera
+		_pause_t = randf_range(0.5, 1.2)
+		_detours = 0
+		_blocked_t = 0.0
 		return
 	var np: PackedVector2Array = game.detour_path(self, blocker, goal)
 	if np.size() > 0:
@@ -650,6 +674,10 @@ func _arrived() -> void:
 
 func _work(delta: float) -> void:
 	if not is_worker():
+		return
+	# Plein : on va toujours se vider avant de repartir en récolte
+	if cargo >= cargo_cap - 0.01 and (state == "seek" or state == "harvest" or (state == "idle" and path.is_empty())):
+		_start_return()
 		return
 	match state:
 		"seek":
@@ -678,6 +706,8 @@ func _seek(delta: float) -> void:
 	var c: Vector2i = game.find_resource(cargo_kind, from, 999, self)
 	if c.x < 0:
 		_retry = 3.0 # plus rien à récolter : on réessaie plus tard
+		if cargo > 0.0:
+			_start_return() # en attendant, on va vider ce qu'on porte
 		return
 	work_cell = c
 	_seek_started = true

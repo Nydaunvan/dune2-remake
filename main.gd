@@ -1871,25 +1871,48 @@ func _separate_units() -> void:
 
 ## Véhicule terrestre qui gênerait `u` s'il avançait en `step_pos` (null si la voie est libre).
 func unit_blocking(u: Unit, step_pos: Vector2):
+	var dir := (step_pos - u.position).normalized()
+	# on regarde aussi un peu devant soi pour anticiper plutôt que de coller l'autre véhicule
+	var probes := [step_pos, step_pos + dir * u.radius * 1.1]
 	for v in units:
 		if v == u or not v.alive or v.air or v.carried:
 			continue
 		var min_d := (u.radius + v.radius) * 0.92
-		var d := v.position.distance_to(step_pos)
-		if d < min_d and d < v.position.distance_to(u.position) - 0.01:
-			return v
+		var dnow := v.position.distance_to(u.position)
+		for p in probes:
+			var d := v.position.distance_to(p)
+			if d < min_d and d < dnow - 0.01:
+				return v
 	return null
 
 
-## Chemin vers `goal` qui contourne la case occupée par `blocker` ; vide s'il n'existe pas.
+## Chemin vers `goal` qui contourne `blocker` et les autres véhicules proches ; vide s'il n'existe pas.
 func detour_path(u: Unit, blocker: Unit, goal: Vector2) -> PackedVector2Array:
 	var bc := _world_to_cell(blocker.position)
 	var gc := _world_to_cell(goal)
 	var uc := _world_to_cell(u.position)
 	if bc == gc or bc == uc or grid.is_point_solid(bc):
 		return PackedVector2Array()
-	grid.set_point_solid(bc, true)
+	# 1re tentative : tous les véhicules proches sont des obstacles
+	var marked: Array = []
+	for v in units:
+		if v == u or not v.alive or v.air or v.carried:
+			continue
+		if v.position.distance_to(u.position) > 4.0 * TILE and v != blocker:
+			continue
+		var vc := _world_to_cell(v.position)
+		if vc == gc or vc == uc or grid.is_point_solid(vc) or marked.has(vc):
+			continue
+		grid.set_point_solid(vc, true)
+		marked.append(vc)
 	var p := grid.get_point_path(uc, gc)
+	for c in marked:
+		grid.set_point_solid(c, false)
+	if p.size() > 0:
+		return p
+	# 2e tentative : seulement le véhicule qui bloque
+	grid.set_point_solid(bc, true)
+	p = grid.get_point_path(uc, gc)
 	grid.set_point_solid(bc, false)
 	return p
 
