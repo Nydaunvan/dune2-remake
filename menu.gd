@@ -519,7 +519,7 @@ class FactionCard extends Control:
 
 	func _init(p_id: String) -> void:
 		id = p_id
-		custom_minimum_size = Vector2(420, 560)
+		custom_minimum_size = Vector2(420, 640)
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		mouse_entered.connect(func() -> void: _hover = true)
 		mouse_exited.connect(func() -> void: _hover = false)
@@ -548,32 +548,40 @@ class FactionCard extends Control:
 		UiStyle.frame(self, r, 26.0, line, fill, lit * 1.2, 0.0)
 		# Bandeau de couleur et reflet supérieur
 		draw_rect(Rect2(30, 3, size.x - 60, 3), Color(col.r, col.g, col.b, 0.35 + 0.65 * lit))
-		draw_rect(Rect2(3, 8, size.x - 6, 230), Color(col.r, col.g, col.b, 0.05 + 0.08 * lit))
+		draw_rect(Rect2(3, 8, size.x - 6, 200), Color(col.r, col.g, col.b, 0.05 + 0.08 * lit))
 		_draw_embers(col, t, lit)
-		_draw_emblem(Vector2(size.x * 0.5, 125.0), col, t, lit)
+		_draw_emblem(Vector2(size.x * 0.5, 108.0), col, t, lit)
 		# Plaque du nom : nom et devise centrés horizontalement et verticalement
-		var plate := Rect2(26, 232, size.x - 52, 74)
+		var plate := Rect2(26, 200, size.x - 52, 74)
 		draw_rect(plate, Color(col.r * 0.12, col.g * 0.12, col.b * 0.12, 0.55 + 0.25 * lit))
 		draw_line(plate.position, plate.position + Vector2(plate.size.x, 0), Color(col.r, col.g, col.b, 0.35 + 0.4 * lit), 1.2, true)
 		draw_line(plate.position + Vector2(0, plate.size.y), plate.end, Color(col.r, col.g, col.b, 0.35 + 0.4 * lit), 1.2, true)
 		UiStyle.text_center(self, Rect2(plate.position.x, plate.position.y + 4, plate.size.x, 42), String(f["name"]).to_upper(), 30, Color.WHITE, true, true)
 		UiStyle.text_center(self, Rect2(plate.position.x, plate.position.y + 46, plate.size.x, 24), String(f["tagline"]), 17, acc)
-		var y := 336.0
+		var y := 304.0
 		for l in String(f["desc"]).split("\n"):
 			UiStyle.text(self, Vector2(24, y), l, 15, Color(1, 1, 1, 0.88), false, HORIZONTAL_ALIGNMENT_CENTER, size.x - 48)
 			y += 23.0
-		y += 18.0
-		UiStyle.section(self, Vector2(34, y), size.x - 68, "UNITÉS UNIQUES", acc)
+		y += 12.0
+		# Deux colonnes : unités terrestres à gauche, appareils à droite
+		var colw := (size.x - 68.0) / 2.0
+		UiStyle.section(self, Vector2(34, y), colw - 8.0, "TERRESTRES", acc)
+		UiStyle.section(self, Vector2(34 + colw + 8.0, y), colw - 8.0, "APPAREILS", acc)
 		y += 30.0
-		for uid in f["units"]:
-			var u: Dictionary = GameData.UNITS[uid]
-			draw_colored_polygon(PackedVector2Array([Vector2(34, y - 5), Vector2(39, y - 10), Vector2(44, y - 5), Vector2(39, y)]), acc)
-			UiStyle.text(self, Vector2(54, y), String(u["name"]), 17, Color.WHITE, true)
-			var ds := 13
-			while ds > 9 and UiStyle.text_width(String(u["desc"]), ds) > size.x - 196.0 - 14.0:
-				ds -= 1 # le texte doit tenir dans la carte
-			UiStyle.text(self, Vector2(196, y), String(u["desc"]), ds, Color(1, 1, 1, 0.62))
-			y += 28.0
+		for c in 2:
+			var ids: Array = f["units"] if c == 0 else f["air"]
+			var x0 := 34.0 + c * (colw + 8.0)
+			var yy := y
+			for uid in ids:
+				var u: Dictionary = GameData.UNITS[uid]
+				var mk := PackedVector2Array([Vector2(x0, yy - 5), Vector2(x0 + 5, yy - 10), Vector2(x0 + 10, yy - 5), Vector2(x0 + 5, yy)]) if c == 0 \
+						else PackedVector2Array([Vector2(x0, yy - 1), Vector2(x0 + 5, yy - 10), Vector2(x0 + 10, yy - 1)])
+				draw_colored_polygon(mk, acc)
+				var ns := 16
+				while ns > 10 and UiStyle.text_width(String(u["name"]), ns, true) > colw - 26.0:
+					ns -= 1
+				UiStyle.text(self, Vector2(x0 + 20.0, yy), String(u["name"]), ns, Color.WHITE, true)
+				yy += 24.0
 		# Pied : état de sélection
 		var fy := size.y - 24.0
 		if active:

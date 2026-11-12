@@ -1,4 +1,6 @@
 shader_type canvas_item;
+
+uniform float time_offset = 0.0; // décalage du temps (captures d'écran de test)
 // Fond animé du menu : désert de dunes en couches (parallaxe), deux lunes, voie lactée,
 // étoiles à halo et à croisillons, étoile filante, poussière portée par le vent.
 
@@ -113,11 +115,262 @@ float terrain(vec2 q) {
 	return n * n * (3.0 - 2.0 * n) * 5.0;
 }
 
+
+// ---------------------------------------------------------------------------------------------
+// Silhouettes de passage (véhicules qui traversent le désert, aéronef dans le ciel)
+float sd_box(vec2 p, vec2 b, float r) {
+	vec2 q = abs(p) - b + r;
+	return length(max(q, 0.0)) + min(max(q.x, q.y), 0.0) - r;
+}
+
+mat2 rot2(float a) {
+	float c = cos(a);
+	float s = sin(a);
+	return mat2(vec2(c, s), vec2(-s, c));
+}
+
+// Distance signée d'un véhicule (repère local : x vers l'avant, y vers le haut, sol à y = 0)
+float sd_vehicle(vec2 p, int kind) {
+	if (kind == 0) { // char
+		float d = sd_box(p - vec2(0.0, 0.13), vec2(0.72, 0.13), 0.12);                 // chenilles
+		d = min(d, sd_box(p - vec2(0.0, 0.36), vec2(0.58, 0.14), 0.05));               // caisse
+		d = min(d, sd_box(p - vec2(0.04, 0.62), vec2(0.28, 0.13), 0.06));              // tourelle
+		d = min(d, sd_box(p - vec2(0.66, 0.64), vec2(0.40, 0.035), 0.02));             // canon
+		return d;
+	}
+	if (kind == 1) { // récolteur
+		float d = sd_box(p - vec2(-0.05, 0.14), vec2(0.78, 0.14), 0.12);
+		d = min(d, sd_box(p - vec2(-0.12, 0.50), vec2(0.52, 0.24), 0.06));             // cuve
+		d = min(d, sd_box(p - vec2(0.58, 0.40), vec2(0.20, 0.18), 0.05));              // cabine
+		d = min(d, length(p - vec2(0.88, 0.16)) - 0.16);                               // tambour
+		return d;
+	}
+	// buggy rapide
+	float d = sd_box(p - vec2(0.0, 0.30), vec2(0.42, 0.10), 0.05);
+	d = min(d, sd_box(p - vec2(-0.08, 0.46), vec2(0.22, 0.08), 0.04));
+	d = min(d, length(p - vec2(-0.30, 0.13)) - 0.13);
+	d = min(d, length(p - vec2(0.30, 0.13)) - 0.13);
+	return d;
+}
+
+// ----- Désert : champ de dunes, tracé de rayons sur une carte de hauteur ------------------------
+// Renvoie la couleur ; `dist` = distance au sol touché (négatif si aucun).
+vec3 desert(vec2 uv, float ar, float t, vec3 ro, out float dist_out) {
+	float horizon = 0.56;
+	vec3 rd = normalize(vec3((uv.x - 0.5) * ar * 0.85, -(uv.y - horizon) * 1.45 - 0.004, 1.0));
+	float dist = 1.5;
+	float prev = dist;
+	bool hit = false;
+	for (int i = 0; i < 110; i++) {
+		vec3 p = ro + rd * dist;
+		float d = p.y - terrain(p.xz);
+		if (d < 0.004 + 0.0004 * dist) {
+			hit = true;
+			break;
+		}
+		prev = dist;
+		dist += max(d * 0.5, 0.03 + 0.0025 * dist);
+		if (dist > 160.0) {
+			break;
+		}
+	}
+	dist_out = -1.0;
+	if (!hit) {
+		return vec3(-1.0);
+	}
+	// Raffinage : dichotomie entre le dernier point au-dessus du sol et le point sous le sol.
+	// Supprime l'effet d'escalier des courbes de niveau dû au pas du tracé de rayons.
+	float lo = prev;
+	float hi = dist;
+	for (int k = 0; k < 7; k++) {
+		float mid = 0.5 * (lo + hi);
+		vec3 pm = ro + rd * mid;
+		if (pm.y - terrain(pm.xz) > 0.0) {
+			lo = mid;
+		} else {
+			hi = mid;
+		}
+	}
+	dist = 0.5 * (lo + hi);
+	dist_out = dist;
+	vec3 p = ro + rd * dist;
+	float e = 0.12 + 0.01 * dist;
+	float hc = terrain(p.xz);
+	vec3 n = normalize(vec3(terrain(p.xz - vec2(e, 0.0)) - terrain(p.xz + vec2(e, 0.0)), 2.0 * e,
+			terrain(p.xz - vec2(0.0, e)) - terrain(p.xz + vec2(0.0, e))));
+	// rides de sable : fines, perpendiculaires au vent, qui s'estompent avec la distance
+	float rid_amp = 0.16 * exp(-dist * 0.05);
+	float rid = vnoise(vec2(p.x * 1.6 + p.z * 0.5 + n.x * 4.0, p.z * 7.0));
+	n = normalize(n + vec3(0.0, 0.0, (rid - 0.5) * rid_amp * 2.0));
+	vec3 L = normalize(vec3(0.92, 0.20, 0.30));
+	float lam = clamp(dot(n, L), 0.0, 1.0);
+	float wrap = clamp((dot(n, L) + 0.35) / 1.35, 0.0, 1.0);
+	vec3 shade_c = vec3(0.30, 0.12, 0.19);
+	vec3 mid_c = vec3(0.80, 0.40, 0.27);
+	vec3 lit_c = vec3(1.0, 0.70, 0.42);
+	vec3 sand = mix(shade_c, mid_c, smoothstep(0.0, 0.55, wrap));
+	sand = mix(sand, lit_c, smoothstep(0.45, 1.0, lam));
+	// creux un peu plus sombres et rougeâtres, sommets plus clairs
+	sand *= 0.80 + 0.26 * clamp(hc / 5.0, 0.0, 1.0);
+	// reflet rasant orangé sur les crêtes qui regardent le soleil
+	float rim = pow(clamp(1.0 - dot(n, -rd), 0.0, 1.0), 3.0);
+	sand += vec3(1.0, 0.55, 0.28) * rim * 0.22 * smoothstep(0.1, 0.8, dot(n, L) + 0.4);
+	// grains de sable
+	sand *= 0.985 + 0.03 * hash(floor(uv * vec2(1400.0, 800.0)));
+	// rafales : voiles de sable chassés le long des crêtes par le vent
+	float crest = smoothstep(0.30, 0.75, 1.0 - n.y);
+	float gust = vnoise(vec2(p.x * 0.22 - t * 1.3, p.z * 0.9 + sin(t * 0.3)));
+	sand += vec3(1.0, 0.72, 0.46) * smoothstep(0.55, 0.95, gust) * crest * 0.20 * exp(-dist * 0.02);
+	// brume : se fond dans la teinte exacte de l'horizon
+	vec2 sp0 = vec2((uv.x - 0.70) * ar, 0.0);
+	vec3 hz = vec3(0.943, 0.525, 0.291) + vec3(1.0, 0.55, 0.28) * 0.55 * exp(-length(sp0) * 4.2)
+			+ vec3(1.0, 0.82, 0.5) * 0.45 * exp(-length(sp0) * 12.0);
+	float fogk = 1.0 - exp(-dist * 0.016);
+	sand = mix(sand, hz, clamp(fogk, 0.0, 1.0));
+	// assombrissement doux vers le bas de l'écran (lisibilité de l'interface)
+	sand *= mix(1.0, 0.70, smoothstep(0.66, 1.0, uv.y));
+	return sand;
+}
+
+// Composition « over » (couleur non pré-multipliée)
+vec4 over(vec4 dst, vec3 c, float a) {
+	float na = a + dst.a * (1.0 - a);
+	vec3 rgb = (c * a + dst.rgb * dst.a * (1.0 - a)) / max(na, 1e-4);
+	return vec4(rgb, na);
+}
+
+// Passages : toutes les 40 s un événement différent — colonne de chars (0), récolteur escorté (1),
+// buggy rapide (2), aéronef dans le ciel (3) ou rien (4). Les véhicules suivent le relief du sable
+// et disparaissent derrière les buttes (test de profondeur contre le sol touché par le rayon).
+vec4 walkers(vec2 uv, float ar, float t, vec3 ro, float terr, vec2 px) {
+	float horizon = 0.56;
+	float cyc = floor(t / 40.0);
+	float ph = t - cyc * 40.0;
+	int ev = int(hash(vec2(cyc, 5.1)) * 5.0);
+	if (ev >= 3) {
+		return vec4(0.0);
+	}
+	float dir = hash(vec2(cyc, 9.7)) > 0.5 ? 1.0 : -1.0;
+	int n = ev == 0 ? 3 : (ev == 1 ? 2 : 1);
+	float zc = ev == 0 ? 6.6 : (ev == 1 ? 7.4 : 6.2); // au premier plan : visible sous l'interface
+	const float VS = 0.62;                          // échelle des silhouettes
+	float dur = ev == 2 ? 15.0 : 30.0;
+	float half_w = 0.5 * ar * 0.85 * zc + 3.0;
+	vec4 res = vec4(0.0);
+	for (int i = 0; i < 3; i++) {
+		if (i >= n) {
+			break;
+		}
+		float u = (ph - 2.0 - float(i) * 1.7) / dur;
+		if (u < 0.0 || u > 1.0) {
+			continue;
+		}
+		float x = dir * mix(-half_w, half_w, u);
+		float z = zc + 0.5 * float(i % 2);
+		float y = terrain(vec2(x, z));
+		vec3 dv = vec3(x, y, z) - ro;
+		float ux = 0.5 + (dv.x / dv.z) / (ar * 0.85);
+		float uy = horizon - (dv.y / dv.z + 0.004) / 1.45;
+		vec2 l = vec2((uv.x - ux) * ar * 0.85 * dv.z, -(uv.y - uy) * 1.45 * dv.z) / VS;
+		if (abs(l.x) > 3.4 || l.y < -0.8 || l.y > 2.4) {
+			continue;
+		}
+		float slope = (terrain(vec2(x + 0.5, z)) - terrain(vec2(x - 0.5, z)));
+		float tilt = clamp(atan(slope), -0.6, 0.6);
+		float udist = length(dv);
+		// caché par une butte : le sol touché par le rayon est plus proche que le véhicule
+		bool hidden = terr > 0.0 && terr < udist - 0.45;
+		float aa = px.y * 1.45 * dv.z / VS;
+		int kind = ev == 0 ? 0 : (ev == 1 ? (i == 0 ? 1 : 0) : 2);
+		// poussière soulevée derrière le véhicule
+		if (!hidden && u > 0.02 && u < 0.98) {
+			for (int k = 0; k < 5; k++) {
+				float fk = float(k);
+				vec2 c = vec2(-dir * (0.9 + 0.5 * fk), 0.10 + 0.08 * fk + 0.04 * sin(t * 3.0 + fk * 2.0 + float(i)));
+				float r = 0.17 + 0.07 * fk;
+				float a = smoothstep(r, r * 0.2, length(l - c)) * 0.34 * (1.0 - fk / 5.0);
+				res = over(res, vec3(1.0, 0.72, 0.50), a);
+			}
+		}
+		vec2 p = rot2(-tilt) * l;
+		p.x *= dir;
+		p.y += 0.04;
+		float d = sd_vehicle(p, kind);
+		if (!hidden) {
+			float a = smoothstep(aa, -aa, d);
+			if (a > 0.0) {
+				// éclairage rasant du couchant : liseré orangé côté soleil
+				float e = 0.02;
+				vec2 g = vec2(sd_vehicle(p + vec2(e, 0.0), kind) - sd_vehicle(p - vec2(e, 0.0), kind),
+						sd_vehicle(p + vec2(0.0, e), kind) - sd_vehicle(p - vec2(0.0, e), kind));
+				g = normalize(g + 1e-5);
+				g.x *= dir;
+				g = rot2(tilt) * g;
+				float rimk = smoothstep(0.0, 0.9, dot(g, normalize(vec2(0.92, 0.35)))) * smoothstep(-0.12, 0.0, d);
+				vec3 body = vec3(0.075, 0.04, 0.10) + vec3(1.0, 0.58, 0.30) * rimk * 0.85;
+				// feu d'avant : petite lueur
+				float lamp = exp(-dot(p - vec2(kind == 1 ? 0.62 : (kind == 2 ? 0.42 : 0.30), 0.50), p - vec2(kind == 1 ? 0.62 : (kind == 2 ? 0.42 : 0.30), 0.50)) * 90.0);
+				body += vec3(1.0, 0.8, 0.5) * lamp * 0.8;
+				body = mix(body, vec3(0.62, 0.32, 0.26), (1.0 - exp(-udist * 0.016)) * 0.55); // brume de distance
+				res = over(res, body, a);
+			}
+		}
+	}
+	return res;
+}
+
+// Aéronef qui traverse le ciel (événement 3) : silhouette à ailes battantes, feu clignotant.
+vec4 flyer(vec2 uv, float ar, float t) {
+	float cyc = floor(t / 40.0);
+	float ph = t - cyc * 40.0;
+	if (int(hash(vec2(cyc, 5.1)) * 5.0) != 3) {
+		return vec4(0.0);
+	}
+	float u = (ph - 3.0) / 20.0;
+	if (u < 0.0 || u > 1.0) {
+		return vec4(0.0);
+	}
+	float dir = hash(vec2(cyc, 9.7)) > 0.5 ? 1.0 : -1.0;
+	vec2 c = vec2(mix(-0.1, 1.1, dir > 0.0 ? u : 1.0 - u), 0.30 + 0.05 * sin(u * 5.0) - 0.04 * u);
+	float sc = 0.020;
+	vec2 l = vec2((uv.x - c.x) * ar * dir, -(uv.y - c.y)) / sc;
+	if (abs(l.x) > 4.0 || abs(l.y) > 3.0) {
+		return vec4(0.0);
+	}
+	float aa = 1.2 / (1080.0 * sc);
+	float d = (length(l * vec2(1.0, 2.4)) - 1.7) * 0.4;                    // fuselage
+	d = min(d, sd_box(l - vec2(-1.8, 0.1), vec2(0.8, 0.08), 0.04));         // poutre de queue
+	for (int k = 0; k < 4; k++) {
+		float fk = float(k);
+		float hx = 0.8 - fk * 0.5;
+		float ang = 0.75 * sin(t * 17.0 + fk * 1.7) + (fk < 2.0 ? 0.35 : -0.35);
+		vec2 wp = rot2(-ang) * (l - vec2(hx, 0.35));
+		d = min(d, sd_box(wp - vec2(0.0, 0.9), vec2(0.07, 0.9), 0.03));
+	}
+	float a = smoothstep(aa, -aa, d);
+	vec3 col = vec3(0.06, 0.035, 0.10) + vec3(1.0, 0.6, 0.35) * smoothstep(-0.3, 0.0, d) * 0.35;
+	float blink = step(0.5, fract(t * 1.3));
+	col += vec3(1.0, 0.15, 0.1) * exp(-dot(l - vec2(-2.5, 0.1), l - vec2(-2.5, 0.1)) * 14.0) * blink * 2.0;
+	return vec4(col, a);
+}
+
+// Un échantillon du désert complet : sable, puis véhicule éventuel ; `sky` si le rayon ne touche rien.
+vec3 desert_px(vec2 uv, float ar, float t, vec3 ro, vec3 sky, vec2 px, out float dist_out) {
+	dist_out = -1.0;
+	if (uv.y < 0.556) {
+		return sky;
+	}
+	vec3 s = desert(uv, ar, t, ro, dist_out);
+	vec3 c = s.x < 0.0 ? sky : s;
+	vec4 w = walkers(uv, ar, t, ro, dist_out, px);
+	return mix(c, w.rgb, w.a);
+}
+
 void fragment() {
 	vec2 uv = UV;
 	float ar = SCREEN_PIXEL_SIZE.y / SCREEN_PIXEL_SIZE.x;
 	vec2 p = vec2(uv.x * ar, uv.y); // coordonnées à l'échelle correcte
-	float t = TIME;
+	float t = TIME + time_offset;
 	float horizon = 0.56;
 
 	// ----- Ciel : indigo profond -> mauve -> braise à l'horizon -----
@@ -170,65 +423,27 @@ void fragment() {
 	col += vec3(1.0, 0.55, 0.28) * 0.55 * exp(-length(sp) * 4.2);
 	col += vec3(1.0, 0.82, 0.5) * 0.45 * exp(-length(sp) * 12.0);
 
-	// ----- Désert : vrai champ de dunes, tracé de rayons sur une carte de hauteur -----
-	// Caméra surélevée face à l'horizon ; les dunes proches cachent les lointaines, sans aucune
-	// séparation en couches : ombrage continu, brume de distance et rides de sable.
-	if (uv.y >= horizon - 0.004) {
-		vec3 ro = vec3(0.0, 5.2, t * 0.0); // la scène est immobile : seul le vent anime le sable
-		vec3 rd = normalize(vec3((uv.x - 0.5) * ar * 0.85, -(uv.y - horizon) * 1.45 - 0.004, 1.0));
-		float dist = 1.5;
-		bool hit = false;
-		for (int i = 0; i < 90; i++) {
-			vec3 p = ro + rd * dist;
-			float d = p.y - terrain(p.xz);
-			if (d < 0.01 + 0.0008 * dist) {
-				hit = true;
-				break;
-			}
-			dist += max(d * 0.55, 0.04 + 0.003 * dist);
-			if (dist > 160.0) {
-				break;
-			}
+	// ----- Désert (voir desert()) avec antialiasing adaptatif sur les arêtes ------------------
+	// Un échantillon au centre ; là où la profondeur ou la couleur varient vite (crêtes, silhouettes),
+	// on moyenne quatre échantillons sous-pixel : plus aucun effet d'escalier sur les dunes.
+	vec4 fl = flyer(uv, ar, t);
+	col = mix(col, fl.rgb, fl.a);
+	if (uv.y >= horizon - 0.02) {
+		vec2 px = SCREEN_PIXEL_SIZE;
+		vec3 ro = vec3(0.0, 5.2, 0.0); // la scène est immobile : seul le vent anime le sable
+		float dc;
+		vec3 c0 = desert_px(uv, ar, t, ro, col, px, dc);
+		vec3 fw = fwidth(c0);
+		float edge = max(step(0.04, fwidth(dc) / max(abs(dc), 1.0)), step(0.05, max(fw.x, max(fw.y, fw.z))));
+		if (edge > 0.5) {
+			float d1;
+			vec3 acc = desert_px(uv + px * vec2(-0.3, -0.1), ar, t, ro, col, px, d1);
+			acc += desert_px(uv + px * vec2(0.1, -0.3), ar, t, ro, col, px, d1);
+			acc += desert_px(uv + px * vec2(0.3, 0.1), ar, t, ro, col, px, d1);
+			acc += desert_px(uv + px * vec2(-0.1, 0.3), ar, t, ro, col, px, d1);
+			c0 = acc * 0.25;
 		}
-		if (hit) {
-			vec3 p = ro + rd * dist;
-			float e = 0.12 + 0.01 * dist;
-			float hc = terrain(p.xz);
-			vec3 n = normalize(vec3(terrain(p.xz - vec2(e, 0.0)) - terrain(p.xz + vec2(e, 0.0)), 2.0 * e,
-					terrain(p.xz - vec2(0.0, e)) - terrain(p.xz + vec2(0.0, e))));
-			// rides de sable : fines, perpendiculaires au vent, qui s'estompent avec la distance
-			float rid_amp = 0.16 * exp(-dist * 0.05);
-			float rid = vnoise(vec2(p.x * 1.6 + p.z * 0.5 + n.x * 4.0, p.z * 7.0));
-			n = normalize(n + vec3(0.0, 0.0, (rid - 0.5) * rid_amp * 2.0));
-			vec3 L = normalize(vec3(0.92, 0.20, 0.30));
-			float lam = clamp(dot(n, L), 0.0, 1.0);
-			float wrap = clamp((dot(n, L) + 0.35) / 1.35, 0.0, 1.0);
-			vec3 shade_c = vec3(0.30, 0.12, 0.19);
-			vec3 mid_c = vec3(0.80, 0.40, 0.27);
-			vec3 lit_c = vec3(1.0, 0.70, 0.42);
-			vec3 sand = mix(shade_c, mid_c, smoothstep(0.0, 0.55, wrap));
-			sand = mix(sand, lit_c, smoothstep(0.45, 1.0, lam));
-			// creux un peu plus sombres et rougeâtres, sommets plus clairs
-			sand *= 0.80 + 0.26 * clamp(hc / 5.0, 0.0, 1.0);
-			// reflet rasant orangé sur les crêtes qui regardent le soleil
-			float rim = pow(clamp(1.0 - dot(n, -rd), 0.0, 1.0), 3.0);
-			sand += vec3(1.0, 0.55, 0.28) * rim * 0.22 * smoothstep(0.1, 0.8, dot(n, L) + 0.4);
-			// grains de sable
-			sand *= 0.975 + 0.05 * hash(floor(uv * vec2(1400.0, 800.0)));
-			// rafales : voiles de sable chassés le long des crêtes par le vent
-			float crest = smoothstep(0.30, 0.75, 1.0 - n.y);
-			float gust = vnoise(vec2(p.x * 0.22 - t * 1.3, p.z * 0.9 + sin(t * 0.3)));
-			sand += vec3(1.0, 0.72, 0.46) * smoothstep(0.55, 0.95, gust) * crest * 0.20 * exp(-dist * 0.02);
-			// brume : se fond dans la teinte exacte de l'horizon
-			vec2 sp0 = vec2((uv.x - 0.70) * ar, 0.0);
-			vec3 hz = vec3(0.943, 0.525, 0.291) + vec3(1.0, 0.55, 0.28) * 0.55 * exp(-length(sp0) * 4.2)
-					+ vec3(1.0, 0.82, 0.5) * 0.45 * exp(-length(sp0) * 12.0);
-			float fogk = 1.0 - exp(-dist * 0.016);
-			sand = mix(sand, hz, clamp(fogk, 0.0, 1.0));
-			// assombrissement doux vers le bas de l'écran (lisibilité de l'interface)
-			sand *= mix(1.0, 0.70, smoothstep(0.66, 1.0, uv.y));
-			col = sand;
-		}
+		col = c0;
 	}
 
 	// Poussière en suspension : petits grains lumineux emportés par le vent
