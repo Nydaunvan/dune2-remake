@@ -61,6 +61,20 @@ func _process(_d: float) -> bool:
 			u.position = node.start_cell * 32.0 + Vector2(i * 70 - 70, 70)
 			u.rotation = -0.4
 		node.center_camera(node.start_cell * 32.0 + Vector2(0, 70))
+	if f == 6 and OS.has_environment("SHOT_LEVELS"):
+		# Une rangée par niveau : tous les bâtiments de la faction aux niveaux 1, 2 et 3
+		for lv in 3:
+			var x := 0
+			for id in GameData.buildings_for(node.faction_id):
+				if GameData.def(id).get("wall", false):
+					continue
+				var size: Vector2i = GameData.def(id)["size"]
+				var b = node._place_building(id, Vector2i(node.start_cell) + Vector2i(-4 + x, -10 + lv * 5), 0, false)
+				if b != null:
+					for i in lv:
+						b.upgrade()
+				x += size.x + 1
+		node.center_camera(node.start_cell * 32.0 + Vector2(120, -190))
 	if f == 10 and OS.has_environment("SHOT_SELECT"):
 		for b in node.buildings:
 			if b.team == 0 and b.id == OS.get_environment("SHOT_SELECT"):

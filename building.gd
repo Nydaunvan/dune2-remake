@@ -169,7 +169,10 @@ func _draw_sprite(s: Vector2) -> bool:
 	var c := s / 2.0
 	# Ombre portée (bas-gauche)
 	draw_rect(Rect2(Vector2(-10, 8), s - Vector2(4, 4)), Color(0.1, 0.03, 0.12, 0.25))
-	draw_texture_rect(tex, Rect2(c - sz / 2.0, sz), false)
+	var tint := Color(1, 1, 1) if level < 3 else Color(1.1, 1.08, 1.14)
+	draw_texture_rect(tex, Rect2(c - sz / 2.0, sz), false, tint)
+	if level > 1:
+		_draw_upgrade(s, fid)
 	if weapon != "":
 		var hk := "%s_tete|%s" % [id, fid]
 		if not bank.has(hk):
@@ -179,6 +182,46 @@ func _draw_sprite(s: Vector2) -> bool:
 			var hs := bank.draw_size(hk)
 			draw_texture_rect(ht, Rect2(c - hs / 2.0, hs), false)
 	return true
+
+
+## Améliorations visibles : plus un bâtiment est modernisé, plus il s'orne de blindages,
+## d'antennes et de bandes lumineuses aux couleurs de la faction.
+func _draw_upgrade(s: Vector2, fid: String) -> void:
+	var acc: Color = GameData.FACTIONS[fid]["color"] if GameData.FACTIONS.has(fid) else Color.WHITE
+	var dark := acc.darkened(0.55)
+	var arm := minf(minf(s.x, s.y) * 0.22, 16.0)
+	var t := 4.0 if level == 2 else 5.0
+	# Plaques de blindage aux quatre coins (niveau 2 et plus)
+	for corner in 4:
+		var px := 0.0 if corner % 2 == 0 else s.x
+		var py := 0.0 if corner < 2 else s.y
+		var sx := 1.0 if corner % 2 == 0 else -1.0
+		var sy := 1.0 if corner < 2 else -1.0
+		var o := Vector2(px, py)
+		draw_rect(Rect2(o + Vector2(minf(0.0, sx * arm), minf(0.0, sy * t)), Vector2(arm, t)), dark)
+		draw_rect(Rect2(o + Vector2(minf(0.0, sx * t), minf(0.0, sy * arm)), Vector2(t, arm)), dark)
+		draw_rect(Rect2(o + Vector2(minf(0.0, sx * arm), minf(0.0, sy * t)), Vector2(arm, t)), acc, false, 1.0)
+		draw_rect(Rect2(o + Vector2(minf(0.0, sx * t), minf(0.0, sy * arm)), Vector2(t, arm)), acc, false, 1.0)
+	if weapon != "":
+		# Défenses : anneau de blindage autour de l'embase
+		var rr := minf(s.x, s.y) * 0.5
+		draw_arc(s / 2.0, rr - 1.0, 0.0, TAU, 40, acc * 1.2, 2.0 + level, true)
+		if level >= 3:
+			draw_arc(s / 2.0, rr - 6.0, 0.0, TAU, 40, GameData.GOLD, 1.5, true)
+		return
+	# Antenne de toit
+	var base := Vector2(s.x * 0.82, s.y * 0.2)
+	draw_line(base, base + Vector2(0, -16.0 - 4.0 * level), dark, 3.0)
+	draw_circle(base + Vector2(0, -16.0 - 4.0 * level), 3.0, acc * 1.6)
+	# Module de toiture supplémentaire
+	draw_rect(Rect2(s.x * 0.12, s.y * 0.1, s.x * 0.2, s.y * 0.12), dark)
+	draw_rect(Rect2(s.x * 0.12, s.y * 0.1, s.x * 0.2, s.y * 0.12), acc, false, 1.0)
+	if level >= 3:
+		# Bande énergétique le long de la façade et dôme doré
+		draw_rect(Rect2(s.x * 0.08, s.y - 10.0, s.x * 0.84, 3.0), acc * 1.9)
+		draw_rect(Rect2(s.x * 0.08, s.y - 11.0, s.x * 0.84, 5.0), Color(acc.r, acc.g, acc.b, 0.25))
+		draw_circle(Vector2(s.x * 0.5, s.y * 0.14), 6.0, GameData.GOLD.darkened(0.2))
+		draw_arc(Vector2(s.x * 0.5, s.y * 0.14), 6.0, 0.0, TAU, 20, GameData.GOLD.lightened(0.3), 1.5, true)
 
 
 func _valid(t) -> bool:
