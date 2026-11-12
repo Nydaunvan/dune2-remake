@@ -1173,10 +1173,20 @@ class BuildIcon extends Control:
 				cc = GameData.RED
 			var label := str(game.item_cost(id))
 			if is_unit:
-				var w := UiStyle.text_width(label, 14)
-				var x0 := (size.x - w - 18.0) * 0.5
-				UiStyle.glyph(self, "credit", Vector2(x0 + 6, 118), 11.0, cc)
-				UiStyle.text(self, Vector2(x0 + 18, 123), label, 14, cc)
+				# Unité : Solaris + un peu de minerai, chacun en rouge s'il manque
+				var ou: int = game.item_ore(id)
+				var c_sol := cc if (not avail or game.credits >= game.item_cost(id) * 0.1) else GameData.RED
+				var c_ore := GameData.ORE_BLUE if game.ore >= ou * 0.1 else GameData.RED
+				if not avail:
+					c_ore = cc
+				var w1 := UiStyle.text_width(label, 13)
+				var w2 := UiStyle.text_width(str(ou), 13)
+				var x1 := (size.x - (w1 + w2 + 42.0)) * 0.5
+				UiStyle.glyph(self, "credit", Vector2(x1 + 6, 118), 10.0, c_sol)
+				UiStyle.text(self, Vector2(x1 + 17, 123), label, 13, c_sol)
+				var x2 := x1 + 17.0 + w1 + 8.0
+				UiStyle.glyph(self, "ore", Vector2(x2 + 6, 118), 10.0, c_ore)
+				UiStyle.text(self, Vector2(x2 + 17, 123), str(ou), 13, c_ore)
 			else:
 				# Bâtiment : minerai + Solaris, chacun en rouge s'il manque
 				var sol := GameData.sol_cost(id)

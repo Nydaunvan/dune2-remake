@@ -156,6 +156,10 @@ func _cost(id: String) -> int:
 	return int(round(c))
 
 
+func _ore_cost(id: String) -> int:
+	return int(round(float(GameData.unit_ore(id)) * float(fdata["unit_cost_mult"])))
+
+
 func _available(id: String) -> bool:
 	if game.unit_level_block(id, team) != "":
 		return false
@@ -557,14 +561,16 @@ func _think_units() -> void:
 			want = "mineur"
 		elif game.has_building("usine", team) and _army().size() < _army_limit() and _under_cap():
 			want = _pick_ground_unit()
-		if want != "" and _available(want) and credits >= _cost(want):
+		if want != "" and _available(want) and credits >= _cost(want) and ore >= _ore_cost(want):
 			credits -= _cost(want)
+			ore -= _ore_cost(want)
 			unit_q = {"id": want, "progress": 0.0, "time": float(GameData.def(want)["time"])}
 	# Aérodrome : escadrille de bombardiers / chasseurs (finesse élevée)
 	if air_q.is_empty() and skill >= 0.5 and game.has_building("aerodrome", team) and _air_units().size() < 3 + int(skill * 6.0):
 		var aid := _pick_air_unit()
-		if aid != "" and _available(aid) and credits >= _cost(aid) + 200:
+		if aid != "" and _available(aid) and credits >= _cost(aid) + 200 and ore >= _ore_cost(aid):
 			credits -= _cost(aid)
+			ore -= _ore_cost(aid)
 			air_q = {"id": aid, "progress": 0.0, "time": float(GameData.def(aid)["time"])}
 
 

@@ -220,6 +220,7 @@ func _p_units() -> String:
 	for id in GameData.units_for(faction):
 		var d: Dictionary = GameData.UNITS[id]
 		var line := "\n[b]%s[/b]%s — %d Solaris" % [GameData.name_of(id, faction), " (volant)" if d.get("air", false) else "", int(d["cost"])]
+		line += " + %d minerai" % GameData.unit_ore(id)
 		line += "\n    PV %d, vitesse %d" % [int(d["hp"]), int(d["speed"])]
 		if d.has("dps"):
 			line += ", dégâts %d/s, portée %d" % [int(d["dps"]), int(d["range"])]

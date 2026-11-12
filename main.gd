@@ -2193,9 +2193,14 @@ func item_cost(id: String) -> int:
 	return int(round(c))
 
 
+## Minerai d'une unité (bonus de coût de faction inclus).
+func item_ore(id: String) -> int:
+	return int(round(float(GameData.unit_ore(id)) * float(fdata["unit_cost_mult"])))
+
+
 func cost_label(id: String) -> String:
 	if GameData.UNITS.has(id):
-		return "%d $" % item_cost(id)
+		return "%d $ + %d min." % [item_cost(id), item_ore(id)]
 	return "%d min. + %d $" % [item_cost(id), GameData.sol_cost(id)]
 
 
@@ -2206,7 +2211,7 @@ const START_FRAC := 0.1
 
 func can_afford(id: String) -> bool:
 	if GameData.UNITS.has(id):
-		return credits >= item_cost(id) * START_FRAC
+		return credits >= item_cost(id) * START_FRAC and ore >= item_ore(id) * START_FRAC
 	return ore >= item_cost(id) * START_FRAC and credits >= GameData.sol_cost(id) * START_FRAC
 
 
@@ -2245,7 +2250,10 @@ func on_item_clicked(id: String, button: int) -> void:
 		for i in range(q.size() - 1, -1, -1):
 			if q[i]["id"] == id:
 				_add_money(id, int(q[i]["paid"]))
-				credits += int(q[i].get("paid_sol", 0))
+				if cat == "unit":
+					ore += int(q[i].get("paid_sol", 0)) # unités : le minerai versé
+				else:
+					credits += int(q[i].get("paid_sol", 0))
 				q.remove_at(i)
 				if i == 0 and placing_id == id:
 					placing_id = ""
@@ -2281,6 +2289,8 @@ func on_item_clicked(id: String, button: int) -> void:
 		return
 	if not can_afford(id):
 		var lack := "Solaris insuffisants"
+		if cat == "unit" and ore < item_ore(id) * START_FRAC:
+			lack = "Minerai insuffisant" if credits >= item_cost(id) * START_FRAC else "Minerai et Solaris insuffisants"
 		if cat == "building" and ore < item_cost(id):
 			lack = "Minerai insuffisant" if credits >= GameData.sol_cost(id) else "Minerai et Solaris insuffisants"
 		ui.toast(lack, GameData.RED)
@@ -2297,7 +2307,7 @@ func on_item_clicked(id: String, button: int) -> void:
 		t *= float(fdata["build_time_mult"])
 	# Le prix est prélevé progressivement pendant la production (voir _update_production)
 	q.append({"id": id, "progress": 0.0, "time": t, "ready": false, "paid": 0, "paid_sol": 0,
-			"cost": cost, "sol": sol, "acc": 0.0, "acc_s": 0.0})
+			"cost": cost, "sol": sol, "acc": 0.0, "acc_s": 0.0, "ore_u": item_ore(id) if cat == "unit" else 0})
 
 
 func _update_production(delta: float) -> void:
@@ -2314,11 +2324,13 @@ func _update_production(delta: float) -> void:
 		var dp := minf(delta * f / p["time"], 1.0 - float(p["progress"]))
 		var cost_t := float(p.get("cost", 0))
 		var sol_t := float(p.get("sol", 0))
-		if cost_t > 0.0 or sol_t > 0.0:
+		var ore_u := float(p.get("ore_u", 0))
+		if cost_t > 0.0 or sol_t > 0.0 or ore_u > 0.0:
 			var ro: Array
 			var rs := [true, 0, 0.0]
 			if cat == "unit":
 				ro = _pay_part(cost_t, dp, float(p["acc"]), credits)
+				rs = _pay_part(ore_u, dp, float(p["acc_s"]), ore)
 			else:
 				ro = _pay_part(cost_t, dp, float(p["acc"]), ore)
 				rs = _pay_part(sol_t, dp, float(p["acc_s"]), credits)
@@ -2327,6 +2339,9 @@ func _update_production(delta: float) -> void:
 				continue
 			if cat == "unit":
 				credits -= int(ro[1])
+				ore -= int(rs[1])
+				p["paid_sol"] = int(p["paid_sol"]) + int(rs[1])
+				p["acc_s"] = rs[2]
 			else:
 				ore -= int(ro[1])
 				credits -= int(rs[1])
@@ -2346,6 +2361,7 @@ func _update_production(delta: float) -> void:
 					ui.toast("%s prêt !" % item_name, GameData.GREEN)
 				else:
 					credits += int(p["paid"]) # le bâtiment a été détruit : remboursé
+					ore += int(p.get("paid_sol", 0))
 					ui.toast("%s annulé — bâtiment perdu" % item_name, GameData.RED)
 			else:
 				p["ready"] = true

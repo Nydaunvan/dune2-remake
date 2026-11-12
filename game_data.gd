@@ -1140,6 +1140,13 @@ static func sol_cost(id: String) -> int:
 	return int(round(float(BUILDINGS[id]["cost"]) * 0.5 / 5.0)) * 5
 
 
+## Minerai demandé en plus des Solaris pour produire une unité (environ 8 % de son prix, 5 minimum).
+static func unit_ore(id: String) -> int:
+	if not UNITS.has(id):
+		return 0
+	return maxi(5, int(round(float(UNITS[id]["cost"]) * 0.08 / 5.0)) * 5)
+
+
 static func tech_cost(id: String) -> int:
 	return int(round(float(UNITS[id]["cost"]) * 0.7))
 
