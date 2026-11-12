@@ -48,16 +48,49 @@ func start_music() -> void:
 	_music.play()
 
 
-## Génère tous les sons à l'avance (écran de chargement) : un son par image.
-func warm_up(step: Callable) -> void:
+const WARM_NAMES := ["music", "autocannon", "cannon", "rocket", "sonic", "acid", "control", "shard", "hit", "boom", "boom_big",
+		"worm", "click", "ack", "place", "coin", "ready", "unit_ready", "upgrade", "rank", "alert",
+		"error", "victory", "defeat"]
+var _mutex := Mutex.new()
+var _warm_task := -1
+var _warm_done := 0
+
+
+## Génère tous les sons à l'avance dans un fil d'exécution, pendant le reste du chargement.
+func warm_up_start() -> void:
 	if not enabled:
 		return
-	var names := ["autocannon", "cannon", "rocket", "sonic", "acid", "control", "shard", "hit", "boom", "boom_big",
-			"worm", "click", "ack", "place", "coin", "ready", "unit_ready", "upgrade", "rank", "alert",
-			"error", "victory", "defeat", "music"]
-	for i in names.size():
-		stream_of(names[i])
-		await step.call(float(i + 1) / names.size(), names[i])
+	_warm_task = WorkerThreadPool.add_task(_warm_job)
+
+
+func _warm_job() -> void:
+	for n in WARM_NAMES:
+		_mutex.lock()
+		var have := _cache.has(n)
+		_mutex.unlock()
+		if not have:
+			var w := _make(n)
+			_mutex.lock()
+			_cache[n] = w
+			_mutex.unlock()
+		_warm_done += 1
+
+
+## Avancement de la génération des sons (0..1).
+func warm_progress() -> float:
+	if _warm_task < 0:
+		return 1.0
+	return float(_warm_done) / float(WARM_NAMES.size())
+
+
+func warm_finished() -> bool:
+	return _warm_task < 0 or WorkerThreadPool.is_task_completed(_warm_task)
+
+
+func warm_wait() -> void:
+	if _warm_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_warm_task)
+		_warm_task = -1
 
 
 func toggle_mute() -> bool:
@@ -94,8 +127,14 @@ func play_ui(name: String, vol_db := 0.0) -> void:
 
 
 func stream_of(name: String) -> AudioStreamWAV:
-	if not _cache.has(name):
-		_cache[name] = _make(name)
+	_mutex.lock()
+	var have := _cache.has(name)
+	_mutex.unlock()
+	if not have:
+		var w := _make(name)
+		_mutex.lock()
+		_cache[name] = w
+		_mutex.unlock()
 	return _cache[name]
 
 

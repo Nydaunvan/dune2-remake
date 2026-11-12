@@ -156,9 +156,16 @@ func _ready() -> void:
 	if DisplayServer.get_name() != "headless":
 		loading = LoadingScreen.new(fdata["color"])
 		add_child(loading)
+		# Le chargement n'est limité que par le rendu : pas de synchro verticale pendant la cuisson des sprites
+		_vsync_before = DisplayServer.window_get_vsync_mode()
+		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)
 		get_tree().paused = true
 	await _load_step(0.0, "Préparation des camps…")
 	_setup_factions()
+	sfx = Sfx.new()
+	add_child(sfx)
+	if loading != null:
+		sfx.warm_up_start() # les sons sont générés en parallèle des modèles 3D
 	# Les modèles 3D sont cuits en parallèle de la génération de la carte
 	if loading != null:
 		bank = SpriteBank.new()
@@ -188,8 +195,6 @@ func _ready() -> void:
 		_setup_fog()
 	await _load_step(0.95, "Installation des camps…")
 	_setup_sides()
-	sfx = Sfx.new()
-	add_child(sfx)
 	markers = MissionMarkers.new(self)
 	add_child(markers)
 	ui = GameUI.new()
@@ -202,14 +207,14 @@ func _ready() -> void:
 	_update_fog() # les bases non découvertes restent cachées dès la 1re image
 	_load_terrain = 1.0
 	if loading != null:
-		while not bank.ready_all:
-			loading.set_progress(_overall(), "Préparation des modèles 3D…")
+		while not bank.ready_all or not sfx.warm_finished():
+			loading.set_progress(_overall(), "Préparation des modèles 3D…" if not bank.ready_all else "Génération des sons…")
 			await get_tree().process_frame
-		await sfx.warm_up(func(f: float, n: String) -> void:
-			loading.set_progress(0.97 + 0.03 * f, "Génération des sons…")
-			await get_tree().process_frame)
+		sfx.warm_wait()
+		loading.set_progress(1.0, "Prêt")
 		loading.queue_free()
 		loading = null
+		DisplayServer.window_set_vsync_mode(_vsync_before)
 		get_tree().paused = false
 	sfx.start_music()
 	if not mission.is_empty():
@@ -220,6 +225,7 @@ func _ready() -> void:
 
 
 var loading: LoadingScreen
+var _vsync_before := DisplayServer.VSYNC_ENABLED
 var _load_terrain := 0.0
 
 
@@ -227,11 +233,14 @@ func _overall() -> float:
 	var bf := 1.0
 	if bank != null and bank.total > 0:
 		bf = float(bank.done) / float(bank.total)
-	return 0.45 * _load_terrain + 0.55 * bf
+	var sf := sfx.warm_progress() if sfx != null else 1.0
+	return 0.40 * _load_terrain + 0.50 * bf + 0.10 * sf
 
 
 ## Avance l'écran de chargement et laisse une image s'afficher.
 func _load_step(frac: float, text: String) -> void:
+	if OS.has_environment("LOAD_DEBUG"):
+		print("[load] %6d ms  %.2f  %s" % [Time.get_ticks_msec(), frac, text])
 	_load_terrain = frac
 	if loading == null:
 		return

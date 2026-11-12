@@ -181,7 +181,6 @@ func _bake(job: Dictionary) -> void:
 		model.rotation.y = -TAU * i / float(job["angles"])
 		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 		await RenderingServer.frame_post_draw
-		await RenderingServer.frame_post_draw
 		var img := _vp.get_texture().get_image()
 		rects.append(Rect2(img.get_used_rect()))
 		img.generate_mipmaps()

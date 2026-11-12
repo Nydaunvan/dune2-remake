@@ -34,7 +34,7 @@ func _init(p_color := Color(0.4, 0.7, 1.0)) -> void:
 
 
 func set_progress(frac: float, text: String) -> void:
-	_frac = clampf(frac, 0.0, 1.0)
+	_frac = maxf(_frac, clampf(frac, 0.0, 1.0)) # la barre ne recule jamais
 	_text = text
 	_shown = lerpf(_shown, _frac, 0.6)
 	_canvas.queue_redraw()
