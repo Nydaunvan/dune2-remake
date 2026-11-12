@@ -142,7 +142,7 @@ func _name(id: String) -> String:
 
 func _p_start() -> String:
 	return _h("Le but du jeu") + """Bâtissez une base sur la planète désertique, récoltez l'épice (Solaris) et le minerai, formez une armée puis détruisez vos adversaires. Il existe deux façons de jouer :
-• [b]Campagne[/b] : 5 missions par faction, chacune avec ses objectifs, son adversaire et son briefing. Les missions terminées débloquent de nouveaux bâtiments.
+• [b]Campagne[/b] : 10 missions par faction, chacune avec ses objectifs, son adversaire et son briefing. Les missions terminées débloquent de nouveaux bâtiments.
 • [b]Escarmouche[/b] : une carte aléatoire, un ou deux adversaires menés par l'IA. Tout se débloque en améliorant le Chantier. L'option « 3 camps » du menu principal ajoute un second adversaire : chacun pour soi.
 """ + _h("Vos premières minutes") + """1. Sélectionnez l'[b]engin de chantier[/b] et appuyez sur """ + _k("D") + """ (ou bouton DÉPLOYER) : il devient un Chantier, le cœur de votre base.
 2. Construisez une [b]Centrale[/b] : sans énergie, rien ne fonctionne correctement.
@@ -261,7 +261,8 @@ func _p_factions() -> String:
 func _p_campaign() -> String:
 	var s := _h("Les campagnes")
 	s += "Chaque faction a sa propre campagne de %d missions, avec ses adversaires et son style : défense et précision pour Solis, offensive pour Kharn, vitesse et commerce pour Vael. Une mission terminée débloque la suivante et de nouveaux bâtiments.\n" % Campaign.count(faction)
-	s += "\nTypes d'objectifs : construire une base, récolter une quantité de Solaris, produire des unités, survivre un temps donné, détruire les avant-postes ou tout l'ennemi, escorter un convoi, tenir une zone, protéger la base d'un allié.\nCertaines missions ont [b]2, 3 objectifs ou plus[/b], à remplir tous ; d'autres opposent trois camps où chacun est l'ennemi de tous.\n"
+	s += "\nTypes d'objectifs : construire, récolter Solaris ou minerai, produire des unités, une flotte aérienne ou de l'énergie, améliorer des bâtiments, survivre, abattre un nombre d'ennemis, détruire des bâtiments précis, des avant-postes ou tout l'ennemi, escorter un convoi, tenir une zone, protéger un allié.
+Certaines missions imposent un [b]temps limite[/b], démarrent avec une [b]base déjà bâtie[/b] (la vôtre, celle de l'ennemi, ou les deux), ou déchaînent les vers de sable.\nCertaines missions ont [b]2, 3 objectifs ou plus[/b], à remplir tous ; d'autres opposent trois camps où chacun est l'ennemi de tous.\n"
 	s += _h("Missions de " + GameData.FACTIONS[faction]["name"])
 	var i := 0
 	for m in Campaign.missions(faction):

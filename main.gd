@@ -66,6 +66,9 @@ var enemy_faction := ""
 var over := false
 var mission := {}          # mission de campagne en cours (vide en escarmouche)
 var earned := 0            # Solaris récoltés par le joueur
+var ore_earned := 0        # minerai récolté par le joueur
+var kills := 0             # unités hostiles détruites
+var destroyed := {}        # id de bâtiment hostile -> nombre détruit
 var _obj_t := 0.0
 var map_seed := 0          # graine de la carte (sauvegarde : la carte est régénérée à l'identique)
 var _save := {}            # sauvegarde en cours de chargement (vide : partie neuve)
@@ -638,6 +641,7 @@ func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void
 			earned += gain
 		else:
 			ore += gain
+			ore_earned += gain
 		sfx.play("coin", world_pos, -8.0)
 		popup(world_pos, ("+%d $" if kind == "spice" else "+%d min.") % gain,
 				GameData.GOLD if kind == "spice" else GameData.ORE_BLUE)
@@ -669,13 +673,13 @@ func _update_worm(delta: float) -> void:
 	if worm != null:
 		return
 	worm_cooldown -= delta
-	if worm_cooldown > 0.0 or game_time < WORM_GRACE:
+	if worm_cooldown > 0.0 or game_time < float(mission.get("worm_grace", WORM_GRACE)):
 		return
 	var workers := _harvesters_on_sand()
 	if workers.is_empty():
 		return
 	# Très rare : probabilité proportionnelle au nombre de récolteurs en activité
-	if randf() < WORM_RATE * workers.size() * delta:
+	if randf() < WORM_RATE * float(mission.get("worm_rate", 1.0)) * workers.size() * delta:
 		_spawn_worm(workers.pick_random())
 
 
@@ -756,7 +760,7 @@ func _on_worm_finished() -> void:
 		_worm_zone.queue_free()
 		_worm_zone = null
 	worm = null
-	worm_cooldown = WORM_COOLDOWN
+	worm_cooldown = WORM_COOLDOWN / maxf(float(mission.get("worm_rate", 1.0)), 1.0)
 
 
 ## Alerte : les ouvriers proches, sur le sable, se réfugient sur la roche.
@@ -808,6 +812,8 @@ func shake(amp: float, dur: float) -> void:
 
 
 func on_unit_lost(u: Unit) -> void:
+	if hostile(u.team, 0) and u.id != "mcv":
+		kills += 1
 	units.erase(u)
 	selected.erase(u)
 
@@ -1032,6 +1038,8 @@ func notify_attack(b: Building) -> void:
 
 
 func on_building_destroyed(b: Building) -> void:
+	if hostile(b.team, 0):
+		destroyed[b.id] = int(destroyed.get(b.id, 0)) + 1
 	buildings.erase(b)
 	for c in b.cells():
 		occupied.erase(c)
@@ -1068,6 +1076,10 @@ func _check_end() -> void:
 				for i in mission["objectives"].size():
 					if not obj_state[i]["done"] and mission["objectives"][i]["type"] != "protect_ally":
 						won = false
+	if not lost and not won and not mission.is_empty() and mission.has("time_limit") \
+			and game_time >= float(mission["time_limit"]):
+		lost = true
+		reason = "Le temps est écoulé."
 	if lost or won:
 		over = true
 		for a in ais.values():
@@ -2089,7 +2101,7 @@ func _setup_sides() -> void:
 		var home := home_of(t)
 		if not _save.is_empty():
 			pass # les bâtiments et unités viennent de la sauvegarde
-		elif GameSession.instant_bases:
+		elif GameSession.instant_bases or (not mission.is_empty() and mission.get(["start_base", "enemy_base", "third_base"][t], false)):
 			_place_base(Vector2(home), t)
 			_spawn_base_units(Vector2(home), t)
 		else:
@@ -2357,6 +2369,33 @@ func objective_info(i: int) -> Dictionary:
 			var t: float = mission["zone"]["time"]
 			return {"text": "Tenir la zone : %d/%d s" % [int(minf(hold_t, t)), int(t)] + ("" if hold_ok or hold_t >= t else "  (en attente)"),
 					"frac": clampf(hold_t / t, 0.0, 1.0)}
+		"upgrade":
+			var lv: int = best_level(o["id"]) if has_building(o["id"]) else 0
+			var need_l: int = o["level"]
+			return {"text": "%s niveau %d : %d/%d" % [GameData.def(o["id"])["name"], need_l, mini(lv, need_l), need_l],
+					"frac": clampf(float(lv) / need_l, 0.0, 1.0)}
+		"kills":
+			var nk: int = o["count"]
+			return {"text": "Unités ennemies détruites : %d/%d" % [mini(kills, nk), nk], "frac": clampf(float(kills) / nk, 0.0, 1.0)}
+		"destroy_type":
+			var nd: int = o["count"]
+			var got := int(destroyed.get(o["id"], 0))
+			return {"text": "Structure ennemie « %s » détruite : %d/%d" % [GameData.def(o["id"])["name"], mini(got, nd), nd],
+					"frac": clampf(float(got) / nd, 0.0, 1.0)}
+		"ore":
+			var ao: int = o["amount"]
+			return {"text": "Récolter %d minerai : %d" % [ao, mini(ore_earned, ao)], "frac": clampf(float(ore_earned) / ao, 0.0, 1.0)}
+		"power":
+			var ap: int = o["amount"]
+			var pp := power_produced()
+			return {"text": "Produire %d d'énergie : %d" % [ap, mini(pp, ap)], "frac": clampf(float(pp) / ap, 0.0, 1.0)}
+		"air":
+			var na: int = o["count"]
+			var ca := 0
+			for u in units:
+				if u.team == 0 and u.alive and u.air and u.role == "combat":
+					ca += 1
+			return {"text": "Flotte aérienne : %d/%d" % [mini(ca, na), na], "frac": clampf(float(ca) / na, 0.0, 1.0)}
 		"protect_ally":
 			var ok := _team_alive(2)
 			return {"text": "Base alliée intacte" if ok else "Base alliée détruite", "frac": 1.0 if ok else 0.0}
@@ -2379,6 +2418,11 @@ func objectives_status() -> Array:
 		var info := objective_info(i)
 		info["done"] = obj_state[i]["done"] and mission["objectives"][i]["type"] != "protect_ally"
 		out.append(info)
+	if mission.has("time_limit"):
+		var lim := float(mission["time_limit"])
+		var left := maxf(lim - game_time, 0.0)
+		out.append({"text": "Temps limite : %d:%02d" % [int(left / 60.0), int(left) % 60],
+				"frac": clampf(game_time / lim, 0.0, 1.0), "done": false})
 	return out
 
 
@@ -2519,7 +2563,7 @@ func _collect_state() -> Dictionary:
 	return {
 		"seed": map_seed, "faction": faction_id, "mode": GameSession.mode, "mission": GameSession.mission,
 		"team_factions": team_factions, "third_hostile": third_hostile, "game_time": game_time,
-		"credits": credits, "ore": ore, "earned": earned,
+		"credits": credits, "ore": ore, "earned": earned, "ore_earned": ore_earned, "kills": kills, "destroyed": destroyed,
 		"production": production.duplicate(true),
 		"units": us, "buildings": bs, "resource": res, "ais": ai_state,
 		"fog_seen": fog_seen, "worm_cooldown": worm_cooldown,
@@ -2589,6 +2633,9 @@ func _apply_state() -> void:
 	credits = int(d["credits"])
 	ore = int(d["ore"])
 	earned = int(d["earned"])
+	ore_earned = int(d.get("ore_earned", 0))
+	kills = int(d.get("kills", 0))
+	destroyed = d.get("destroyed", {})
 	production = d["production"]
 	game_time = float(d["game_time"])
 	worm_cooldown = float(d["worm_cooldown"])

@@ -1,5 +1,5 @@
 class_name Campaign
-## Campagnes : 5 missions par faction, objectifs variés, progression sauvegardée.
+## Campagnes : 10 missions par faction, objectifs variés, progression sauvegardée.
 ## Tous les camps démarrent avec un simple engin de chantier à déployer.
 
 const SAVE_PATH := "user://campaign.cfg"
@@ -8,7 +8,7 @@ const SAVE_PATH := "user://campaign.cfg"
 ## escort, hold, protect_ally (contrainte : la base alliée ne doit pas tomber).
 const BASE := {"centrale": 1, "raffinerie": 1, "fonderie": 1, "usine": 1}
 
-## Une campagne différente par faction : 5 missions chacune, avec son propre adversaire,
+## Une campagne différente par faction : 10 missions chacune, avec son propre adversaire,
 ## ses objectifs, son rythme et son briefing ({ENEMY} et {ALLY} = noms des factions).
 const CAMPAIGNS := {
 	# --- Maison Solis : défense, précision, patience ---
@@ -55,6 +55,50 @@ const CAMPAIGNS := {
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Tenez la zone centrale, formez 10 unités et détruisez les deux camps adverses",
 			"brief": "Le grand sommet réunit trois maisons et aucune n'a d'allié. {ENEMY} et {RIVAL} se battent aussi entre eux : tenez la zone centrale, bâtissez une armée et ne laissez personne debout.",
+		},
+		{
+			"id": "laboratoire", "title": "Le laboratoire", "enemy": "vael", "size": 96, "credits": 3000, "ore": 3500,
+			"start_units": ["@0", "@1"],
+			"objectives": [{"type": "upgrade", "id": "chantier", "level": 3}, {"type": "upgrade", "id": "usine", "level": 2},
+					{"type": "upgrade", "id": "centrale", "level": 3}, {"type": "build", "label": "le complexe", "ids": {"radar": 1, "reacteur": 1}}],
+			"ai": {"slowdown": 1.9, "grace": 420.0, "pause": 70.0, "max_army": 10, "wave": 5, "credits": 1500, "ore": 1800},
+			"obj": "Portez Chantier, Usine et Centrale à leur niveau cible et bâtissez radar et réacteur",
+			"brief": "Le conseil de Solis veut une vitrine : un campement entièrement modernisé. Montez le Chantier au niveau 3, l'Usine au niveau 2 et la Centrale au niveau 3, puis ajoutez radar et réacteur. Pendant les travaux un bâtiment ne produit plus : échelonnez les chantiers pendant que {ENEMY} observe de loin.",
+		},
+		{
+			"id": "tempete", "title": "Tempête d'épice", "enemy": "kharn", "size": 96, "credits": 2000, "ore": 2200,
+			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 5.0, "worm_grace": 60.0,
+			"objectives": [{"type": "harvest", "amount": 4000}, {"type": "survive", "time": 480.0}, {"type": "train", "count": 6}],
+			"ai": {"slowdown": 1.5, "grace": 240.0, "pause": 60.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
+			"obj": "Récoltez 4000 Solaris et tenez 8 minutes malgré les vers",
+			"brief": "Une tempête d'épice a réveillé les vers de sable : ils rôdent partout. Récoltez malgré eux, faites fuir vos récolteurs au bon moment et gardez une escorte. {ENEMY} profite du chaos pour tâter nos défenses.",
+		},
+		{
+			"id": "frappe", "title": "Frappe chirurgicale", "enemy": "vael", "enemy_base": true, "size": 96, "credits": 2500, "ore": 2500,
+			"start_units": ["@0", "@0", "@1", "@2"], "time_limit": 900.0,
+			"objectives": [{"type": "destroy_type", "id": "centrale", "count": 1}, {"type": "destroy_type", "id": "raffinerie", "count": 1},
+					{"type": "destroy_type", "id": "fonderie", "count": 1}],
+			"ai": {"slowdown": 1.6, "grace": 360.0, "pause": 60.0, "max_army": 12, "wave": 5, "credits": 2000, "ore": 2200},
+			"obj": "Détruisez la centrale, la raffinerie et la fonderie de l'ennemi en 15 minutes",
+			"brief": "La base de {ENEMY} est déjà là, en ordre de marche. Précision d'abord : coupez son énergie, sa récolte et son minerai en moins d'un quart d'heure. Chaque minute perdue lui laisse le temps de se fortifier.",
+		},
+		{
+			"id": "pont", "title": "Pont aérien", "enemy": "kharn", "size": 112, "credits": 3500, "ore": 3500,
+			"start_units": ["@0", "@1"],
+			"objectives": [{"type": "build", "label": "la base aérienne", "ids": {"usine": 1, "aerodrome": 1}},
+					{"type": "air", "count": 4}, {"type": "kills", "count": 15}],
+			"ai": {"slowdown": 1.3, "grace": 300.0, "pause": 50.0, "max_army": 16, "wave": 6, "credits": 2200, "ore": 2400},
+			"obj": "Bâtissez un aérodrome, alignez 4 appareils et abattez 15 unités ennemies",
+			"brief": "L'avenir de Solis est dans le ciel. Construisez un aérodrome, formez une escadre de quatre appareils et prouvez sa valeur en détruisant quinze unités de {ENEMY}. Leurs batteries antiaériennes sont rares mais redoutables.",
+		},
+		{
+			"id": "aiguille", "title": "L'Aiguille", "enemy": "kharn", "start_base": true, "size": 112, "credits": 3000, "ore": 3000,
+			"start_units": ["@0", "@0", "@1"],
+			"objectives": [{"type": "survive", "time": 780.0}, {"type": "kills", "count": 25},
+					{"type": "build", "label": "le front", "ids": {"tourelle": 4}}, {"type": "upgrade", "id": "tourelle", "level": 2}],
+			"ai": {"slowdown": 1.1, "grace": 200.0, "pause": 45.0, "max_army": 24, "wave": 7, "credits": 3000, "ore": 3200},
+			"obj": "Tenez 13 minutes, détruisez 25 unités, alignez 4 tourelles dont une améliorée",
+			"brief": "Dernier rempart : la base de l'Aiguille est déjà bâtie, mais {ENEMY} y envoie tout ce qu'il possède. Fortifiez, améliorez vos tourelles et brisez ses assauts un par un jusqu'à la relève.",
 		},
 	],
 	# --- Légion Kharn : puissance brute, offensive ---
@@ -103,6 +147,50 @@ const CAMPAIGNS := {
 			"obj": "Détruisez les deux armées, formez 12 unités et récoltez 5000 Solaris",
 			"brief": "La campagne se joue ici et chacun pour soi : {ENEMY} et {RIVAL} s'entre-déchirent. Prenez-les l'un après l'autre, remplissez les caisses et ne laissez rien debout.",
 		},
+		{
+			"id": "blitz", "title": "Blitzkrieg", "enemy": "solis", "start_base": true, "enemy_base": true, "size": 80, "credits": 3000, "ore": 3000,
+			"start_units": ["@0", "@0", "@1", "@1", "@2", "@2"], "time_limit": 720.0,
+			"objectives": [{"type": "destroy_all"}, {"type": "kills", "count": 15}],
+			"ai": {"slowdown": 2.0, "grace": 900.0, "pause": 90.0, "max_army": 8, "wave": 4, "credits": 1200, "ore": 1500},
+			"obj": "Rasez toute la présence ennemie en 12 minutes",
+			"brief": "Pas de préparatifs : la base est prête, les blindés aussi. {ENEMY} n'a pas fini de s'installer. Douze minutes pour tout raser avant que ses renforts n'arrivent.",
+		},
+		{
+			"id": "forge", "title": "La forge de guerre", "enemy": "vael", "size": 96, "credits": 2500, "ore": 2500,
+			"start_units": ["@0", "@1"],
+			"objectives": [{"type": "ore", "amount": 5000}, {"type": "train", "count": 14},
+					{"type": "build", "label": "les défenses", "ids": {"tourelle": 4}}, {"type": "power", "amount": 250}],
+			"ai": {"slowdown": 1.6, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
+			"obj": "Récoltez 5000 minerai, alignez 14 unités, 4 tourelles et 250 d'énergie",
+			"brief": "La Légion forge ses armes dans le minerai. Alimentez les fournaises : 5000 de minerai, une armée de quatorze machines, quatre tourelles et assez d'énergie pour tout faire tourner. {ENEMY} tentera de saboter l'effort.",
+		},
+		{
+			"id": "pluie", "title": "Pluie d'acier", "enemy": "vael", "enemy_base": true, "size": 112, "credits": 3500, "ore": 3500,
+			"start_units": ["@0", "@1"], "time_limit": 1500.0,
+			"objectives": [{"type": "air", "count": 5}, {"type": "destroy_all"}],
+			"ai": {"slowdown": 1.3, "grace": 420.0, "pause": 60.0, "max_army": 16, "wave": 6, "credits": 2200, "ore": 2400},
+			"obj": "Alignez 5 appareils et détruisez la base ennemie en 25 minutes",
+			"brief": "La Légion apprend à frapper d'en haut. Bâtissez un aérodrome, montez une escadre de cinq appareils puis écrasez la forteresse de {ENEMY} avec l'appui du ciel. Le temps est compté.",
+		},
+		{
+			"id": "disputees", "title": "Terres disputées", "enemy": "solis", "rival": true, "size": 112, "outposts": 3, "credits": 2500, "ore": 2500,
+			"ally_units": 3, "start_units": ["@0", "@0", "@1"],
+			"objectives": [{"type": "outposts"}, {"type": "kills", "count": 30}, {"type": "harvest", "amount": 3000}, {"type": "ore", "amount": 2000}],
+			"ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
+			"third_ai": {"slowdown": 1.7, "grace": 420.0, "pause": 70.0, "max_army": 10, "wave": 5, "credits": 1600, "ore": 1800},
+			"obj": "Rasez 3 avant-postes, détruisez 30 unités, récoltez 3000 Solaris et 2000 minerai",
+			"brief": "Trois maisons se disputent la même vallée. {ENEMY} garde trois avant-postes, {RIVAL} pille tout ce qui passe. Prenez-les à tous les deux : abattez les avant-postes, faites des victimes et remplissez les silos.",
+		},
+		{
+			"id": "trone", "title": "Le trône de fer", "enemy": "vael", "rival": true, "size": 112, "credits": 3000, "ore": 3000,
+			"ally_units": 4, "start_units": ["@0", "@0", "@1", "@1"], "zone": {"units": 8, "time": 120.0},
+			"objectives": [{"type": "hold"}, {"type": "kills", "count": 40}, {"type": "upgrade", "id": "chantier", "level": 3},
+					{"type": "power", "amount": 400}, {"type": "train", "count": 20}],
+			"ai": {"slowdown": 1.2, "grace": 300.0, "pause": 50.0, "max_army": 20, "wave": 6, "credits": 2600, "ore": 2800},
+			"third_ai": {"slowdown": 1.4, "grace": 360.0, "pause": 60.0, "max_army": 16, "wave": 6, "credits": 2200, "ore": 2400},
+			"obj": "Tenez le trône avec 8 unités pendant 2 minutes, détruisez 40 unités, Chantier niveau 3, 400 d'énergie, 20 unités",
+			"brief": "Le trône de fer est au centre du monde et {ENEMY} comme {RIVAL} le veulent. Montez votre empire : chantier au sommet, énergie en abondance, vingt machines, puis posez huit unités sur le trône et gardez-le deux minutes. Quarante victimes feront taire les prétendants.",
+		},
 	],
 	# --- Cartel Vael : vitesse, ruse, commerce ---
 	"vael": [
@@ -149,6 +237,54 @@ const CAMPAIGNS := {
 			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Prenez la zone centrale 45 s, amassez 4000 Solaris et éliminez les deux camps adverses",
 			"brief": "Le coup du siècle : le coffre central de {ENEMY} intéresse aussi {RIVAL}. Prenez-le avant eux, remplissez les caisses, puis détruisez tout ce qui reste.",
+		},
+		{
+			"id": "marche", "title": "Le marché noir", "enemy": "solis", "size": 96, "credits": 2000, "ore": 2200,
+			"start_units": ["@0", "@1"], "worm_rate": 2.0,
+			"objectives": [{"type": "harvest", "amount": 6000}, {"type": "ore", "amount": 3000},
+					{"type": "build", "label": "les entrepôts", "ids": {"silo": 3}}],
+			"ai": {"slowdown": 1.9, "grace": 420.0, "pause": 70.0, "max_army": 10, "wave": 5, "credits": 1500, "ore": 1800},
+			"obj": "Récoltez 6000 Solaris et 3000 minerai, bâtissez 3 silos",
+			"brief": "Le Cartel ouvre son plus gros marché clandestin : il faut de l'épice, du minerai et des silos pour tout entreposer. Les vers sont nerveux, les récolteurs doivent l'être aussi. {ENEMY} n'y verra que du feu.",
+		},
+		{
+			"id": "primes", "title": "Chasseurs de primes", "enemy": "kharn", "size": 96, "credits": 2500, "ore": 2500,
+			"start_units": ["faucon", "faucon", "vipere", "vipere"], "time_limit": 840.0,
+			"objectives": [{"type": "kills", "count": 30}, {"type": "train", "count": 10}, {"type": "harvest", "amount": 2000}],
+			"ai": {"slowdown": 1.4, "grace": 200.0, "pause": 45.0, "max_army": 16, "wave": 6, "credits": 2000, "ore": 2200},
+			"obj": "Détruisez 30 unités ennemies en 14 minutes, formez 10 unités et récoltez 2000 Solaris",
+			"brief": "{ENEMY} a mis sa tête à prix, et nous touchons à chaque blindé abattu. Trente victimes en quatorze minutes : harcelez, repliez-vous, recommencez. Quelques Solaris au passage ne feront pas de mal.",
+		},
+		{
+			"id": "fragile", "title": "Alliance fragile", "enemy": "solis", "ally": true, "size": 112, "credits": 2500, "ore": 2500,
+			"start_units": ["@0", "@1"], "ally_units": 3,
+			"convoy": {"count": 5, "need": 4, "ambushes": 3, "start": 360.0, "ambush_size": 3},
+			"objectives": [{"type": "escort"}, {"type": "protect_ally"}, {"type": "upgrade", "id": "raffinerie", "level": 2}],
+			"ai": {"slowdown": 1.5, "grace": 360.0, "pause": 70.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
+			"ally_ai": {"slowdown": 1.8, "grace": 600.0, "pause": 90.0, "max_army": 8, "wave": 5, "credits": 1200, "ore": 1500},
+			"obj": "Escortez 4 camions sur 5, gardez la base de l'allié et passez la raffinerie au niveau 2",
+			"brief": "{ALLY} ne nous aime pas, mais il paie. Escortez ses camions à travers les embuscades de {ENEMY}, empêchez sa base de tomber et prouvez le savoir-faire du Cartel en modernisant la raffinerie.",
+		},
+		{
+			"id": "troisgrands", "title": "Guerre des trois", "enemy": "kharn", "rival": true, "size": 112, "credits": 3000, "ore": 3000,
+			"ally_units": 3, "start_units": ["@0", "@0", "@1", "@2"],
+			"objectives": [{"type": "destroy_type", "id": "chantier", "count": 2}, {"type": "survive", "time": 600.0},
+					{"type": "harvest", "amount": 3500}, {"type": "kills", "count": 20}],
+			"ai": {"slowdown": 1.6, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
+			"third_ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1700, "ore": 1900},
+			"obj": "Détruisez les deux chantiers ennemis, tenez 10 minutes, récoltez 3500 Solaris et abattez 20 unités",
+			"brief": "{ENEMY} et {RIVAL} se détestent : laissez-les s'user. Tenez dix minutes, remplissez les caisses et frappez l'instant venu : il faut décapiter les deux camps en détruisant leurs chantiers.",
+		},
+		{
+			"id": "roi", "title": "Roi du désert", "enemy": "solis", "rival": true, "start_base": true, "enemy_base": true, "third_base": true,
+			"size": 112, "credits": 3500, "ore": 3500, "time_limit": 1500.0,
+			"ally_units": 4, "start_units": ["@0", "@0", "@1", "@2"],
+			"objectives": [{"type": "harvest", "amount": 8000}, {"type": "destroy_all"}, {"type": "air", "count": 4},
+					{"type": "upgrade", "id": "chantier", "level": 3}],
+			"ai": {"slowdown": 1.2, "grace": 300.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2800, "ore": 3000},
+			"third_ai": {"slowdown": 1.4, "grace": 360.0, "pause": 60.0, "max_army": 18, "wave": 6, "credits": 2400, "ore": 2600},
+			"obj": "En 25 minutes : 8000 Solaris, Chantier niveau 3, 4 appareils et la destruction des deux camps",
+			"brief": "Trois bases, déjà bâties, une seule couronne. Le Cartel doit tout faire à la fois : remplir les caisses, moderniser, bâtir une flotte et effacer {ENEMY} et {RIVAL} avant que le temps ne s'écoule. Qui tient le désert tient le commerce.",
 		},
 	],
 }
@@ -255,12 +391,35 @@ static func details(faction: String, m: int) -> Array:
 					obj.append("Détruire toutes les unités et structures de %s" % enemy)
 			"protect_ally":
 				obj.append("Ne pas laisser tomber la base alliée (défaite sinon)")
+			"upgrade":
+				obj.append("Améliorer : %s au niveau %d" % [GameData.def(o["id"])["name"], int(o["level"])])
+			"kills":
+				obj.append("Détruire %d unités ennemies" % int(o["count"]))
+			"destroy_type":
+				obj.append("Détruire %d %s ennemi(s)" % [int(o["count"]), String(GameData.def(o["id"])["name"]).to_lower()])
+			"ore":
+				obj.append("Récolter %d minerai au total" % int(o["amount"]))
+			"power":
+				obj.append("Produire %d d'énergie" % int(o["amount"]))
+			"air":
+				obj.append("Aligner %d appareils volants de combat" % int(o["count"]))
+	if d.has("time_limit"):
+		obj.append("Défaite : si les objectifs ne sont pas remplis en %s" % _mins(float(d["time_limit"])))
 	obj.append("Défaite : perdre toute votre base et vos unités")
 	out.append(["OBJECTIFS", obj])
 	# Situation
 	var sit: Array = []
 	sit.append("Carte générée aléatoirement, %d × %d cases" % [int(d["size"]), int(d["size"])])
-	sit.append("Départ : %d Solaris, %d minerai, un engin de chantier à déployer" % [int(d["credits"]), int(d["ore"])])
+	if d.get("start_base", false):
+		sit.append("Départ : %d Solaris, %d minerai, une base déjà bâtie (chantier, centrale, raffinerie, fonderie)" % [int(d["credits"]), int(d["ore"])])
+	else:
+		sit.append("Départ : %d Solaris, %d minerai, un engin de chantier à déployer" % [int(d["credits"]), int(d["ore"])])
+	if d.get("enemy_base", false):
+		sit.append("La base de l'adversaire est déjà bâtie et opérationnelle")
+	if d.get("third_base", false):
+		sit.append("La base du second adversaire est aussi déjà bâtie")
+	if d.has("worm_rate"):
+		sit.append("Les vers de sable sont %d fois plus fréquents : surveillez vos récolteurs" % int(d["worm_rate"]))
 	var su: Array = d.get("start_units", [])
 	if not su.is_empty():
 		var names: PackedStringArray = []

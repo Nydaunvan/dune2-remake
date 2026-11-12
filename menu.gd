@@ -76,7 +76,7 @@ func _ready() -> void:
 	opp.alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vb.add_child(opp)
 
-	_hint = _label("Campagne : 5 missions par faction — Escarmouche : détruisez la base adverse", 15,
+	_hint = _label("Campagne : 10 missions par faction — Escarmouche : détruisez la base adverse", 15,
 			Color(1, 1, 1, 0.55), false)
 	vb.add_child(_hint)
 
@@ -163,18 +163,36 @@ func _open_campaign() -> void:
 	vb.add_theme_constant_override("separation", 24)
 	cc.add_child(vb)
 	vb.add_child(_label("CAMPAGNE — " + String(fd["name"]).to_upper(), 46, fd["accent"], true))
+	var scroll := ScrollContainer.new()
+	scroll.custom_minimum_size = Vector2(1500, 670)
+	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	vb.add_child(scroll)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 14)
-	vb.add_child(row)
+	scroll.add_child(row)
 	for i in Campaign.count(selected):
 		row.add_child(_mission_card(i, done, fd))
+	# On amène la première mission jouable à l'écran
+	var first_open := mini(done, Campaign.count(selected) - 1)
+	scroll.set_deferred("scroll_horizontal", maxi(first_open - 1, 0) * 354)
+	vb.add_child(_label("Faites défiler (molette / glisser) : %d missions" % Campaign.count(selected), 14, Color(1, 1, 1, 0.5), false))
 	var back := GameUI.NeonButton.new("RETOUR")
 	back.accent = GameData.RED
 	back.custom_minimum_size = Vector2(250, 56)
 	back.pressed.connect(func() -> void: _overlay.queue_free(); _overlay = null)
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
-	hb.add_child(back)
+	hb.add_theme_constant_override("separation", 20)
+	for dir in [-1, 1]:
+		var arrow := GameUI.NeonButton.new("◀  MISSIONS" if dir < 0 else "MISSIONS  ▶")
+		arrow.accent = fd["accent"]
+		arrow.custom_minimum_size = Vector2(190, 56)
+		arrow.pressed.connect(func() -> void:
+			var tw := create_tween()
+			tw.tween_property(scroll, "scroll_horizontal", clampi(scroll.scroll_horizontal + dir * 1062, 0, 100000), 0.35))
+		hb.add_child(arrow)
+		if dir < 0:
+			hb.add_child(back)
 	vb.add_child(hb)
 
 
