@@ -65,6 +65,14 @@ func _ready() -> void:
 		b.custom_minimum_size = Vector2(250, 58)
 		btns.add_child(b)
 
+	var opp := CheckButton.new()
+	opp.text = "Escarmouche à 3 camps (2 adversaires)"
+	opp.button_pressed = GameSession.opponents >= 2
+	opp.add_theme_font_size_override("font_size", 16)
+	opp.toggled.connect(func(on: bool) -> void: GameSession.opponents = 2 if on else 1)
+	opp.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vb.add_child(opp)
+
 	_hint = _label("Campagne : 5 missions par faction — Escarmouche : détruisez la base adverse", 15,
 			Color(1, 1, 1, 0.55), false)
 	vb.add_child(_hint)

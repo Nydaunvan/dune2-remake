@@ -39,7 +39,8 @@ var field_scale := 3        # échantillons de relief par case (texture envoyée
 var world_size := Vector2(96, 96) * TILE
 var start_cell := Vector2(48, 80)      # case de départ du joueur
 var enemy_cell := Vector2(48, 16)      # case de départ de l'adversaire
-var ally_cell := Vector2(-1, -1)       # case de départ de l'allié (-1 : pas d'allié)
+var ally_cell := Vector2(-1, -1)       # case de départ du 3e camp (-1 : absent)
+var third_hostile := false             # le 3e camp est un second adversaire (chacun pour soi)
 var spice_fields: Array = []           # bassins de sable à épice (cases)
 var ore_fields: Array = []             # filons sur plateaux rocheux
 var corridor_w := 5.5
@@ -237,11 +238,17 @@ func _setup_factions() -> void:
 		enemy = Campaign.enemy_of(faction_id, GameSession.mission)
 	team_factions = {0: faction_id, 1: enemy}
 	enemy_faction = enemy
-	if not mission.is_empty() and mission.get("ally", false):
+	third_hostile = false
+	if not mission.is_empty() and (mission.get("ally", false) or mission.get("rival", false)):
+		third_hostile = mission.get("rival", false)
+		team_factions[2] = Campaign.third_of(faction_id, GameSession.mission)
+	elif mission.is_empty() and GameSession.opponents >= 2:
+		third_hostile = true
 		for k in others:
 			if k != enemy:
 				team_factions[2] = k
 	if not _save.is_empty():
+		third_hostile = bool(_save.get("third_hostile", third_hostile))
 		team_factions = {}
 		for t in _save["team_factions"]:
 			team_factions[int(t)] = String(_save["team_factions"][t])
@@ -267,7 +274,7 @@ func _generate_layout() -> void:
 	plateaus = [[start_cell, 9.0], [enemy_cell, 9.0]]
 	var keys: Array = [start_cell, enemy_cell]
 	ally_cell = Vector2(-1, -1)
-	if mission.get("ally", false):
+	if team_factions.has(2):
 		var da := rng.randf_range(1.0, 1.4) * (1.0 if rng.randf() < 0.5 else -1.0)
 		ally_cell = (c + Vector2.from_angle(a0 + da) * radius * 0.95).round()
 		plateaus.append([ally_cell, 9.0])
@@ -884,13 +891,38 @@ func faction_id_of(team: int) -> String:
 	return team_factions.get(team, faction_id)
 
 
-## Camp : 0 = joueur et allié (équipes 0 et 2), 1 = adversaire.
+## Camp : 0 = joueur (et allié), 1 = adversaire, 2 = 3e faction hostile (chacun pour soi).
 func side_of(team: int) -> int:
+	if team == 2 and third_hostile:
+		return 2
 	return 1 if team == 1 else 0
 
 
 func hostile(a: int, b: int) -> bool:
 	return side_of(a) != side_of(b)
+
+
+## Reste-t-il au moins un camp hostile au joueur ?
+func _foes_alive() -> bool:
+	for t in team_factions.keys():
+		if hostile(t, 0) and _team_alive(t):
+			return true
+	return false
+
+
+## Base hostile vivante la plus proche d'une équipe (cible des IA).
+func nearest_foe_home(team: int) -> Vector2:
+	var best := Vector2(-1, -1)
+	var bd := INF
+	var me := Vector2(home_of(team))
+	for t in team_factions.keys():
+		if t == team or not hostile(t, team) or not _team_alive(t):
+			continue
+		var h := Vector2(home_of(t))
+		if me.distance_to(h) < bd:
+			bd = me.distance_to(h)
+			best = h
+	return best
 
 
 func home_of(team: int) -> Vector2i:
@@ -1004,10 +1036,10 @@ func _check_end() -> void:
 	var won := false
 	if not lost:
 		if mission.is_empty():
-			won = not _side_alive(1)
+			won = not _foes_alive()
 		else:
 			_update_objectives(0.0)
-			won = not _side_alive(1)
+			won = not _foes_alive()
 			if not won:
 				won = true
 				for i in mission["objectives"].size():
@@ -1983,9 +2015,9 @@ func _setup_sides() -> void:
 		var a := SkirmishAI.new()
 		a.setup(self, team_factions[t], t)
 		a.home = Vector2(home)
-		a.foe = enemy_cell if t == 2 else start_cell
+		a.foe = nearest_foe_home(t) if nearest_foe_home(t).x >= 0 else start_cell
 		if not mission.is_empty():
-			a.configure(mission["ai"] if t == 1 else mission.get("ally_ai", mission["ai"]))
+			a.configure(mission["ai"] if t == 1 else mission.get("third_ai", mission.get("ally_ai", mission["ai"])))
 		add_child(a)
 		ais[t] = a
 	ai = ais.get(1)
@@ -2219,8 +2251,8 @@ func objective_info(i: int) -> Dictionary:
 			for b in buildings:
 				if b.alive and hostile(b.team, 0):
 					n += 1
-			var alive := _side_alive(1)
-			return {"text": "Détruire l'ennemi : %d structure(s)" % n, "frac": 0.0 if alive else 1.0}
+			var alive := _foes_alive()
+			return {"text": ("Détruire les ennemis : %d structure(s)" if third_hostile else "Détruire l'ennemi : %d structure(s)") % n, "frac": 0.0 if alive else 1.0}
 		"outposts":
 			var total := int(mission.get("outposts", 0))
 			var left := 0
@@ -2402,7 +2434,7 @@ func _collect_state() -> Dictionary:
 		ai_state[t] = ais[t].export_state()
 	return {
 		"seed": map_seed, "faction": faction_id, "mode": GameSession.mode, "mission": GameSession.mission,
-		"team_factions": team_factions, "game_time": game_time,
+		"team_factions": team_factions, "third_hostile": third_hostile, "game_time": game_time,
 		"credits": credits, "ore": ore, "earned": earned,
 		"production": production.duplicate(true),
 		"units": us, "buildings": bs, "resource": res, "ais": ai_state,

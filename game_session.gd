@@ -6,3 +6,4 @@ static var mode := "skirmish" # "skirmish" ou "campaign"
 static var mission := 0
 static var instant_bases := false # tests : bases complètes dès le départ
 static var load_slot := -1 # emplacement à charger au prochain lancement de la partie (-1 : partie neuve)
+static var opponents := 1 # escarmouche : nombre d'adversaires (1 ou 2 : chacun pour soi)

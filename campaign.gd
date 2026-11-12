@@ -41,20 +41,20 @@ const CAMPAIGNS := {
 			"id": "cristaux", "title": "Convoi de cristaux", "enemy": "kharn", "size": 96, "credits": 2000, "ore": 2200,
 			"start_units": ["@0", "@1"],
 			"convoy": {"count": 5, "need": 4, "ambushes": 2, "start": 420.0, "ambush_size": 2},
-			"objectives": [{"type": "escort"}, {"type": "train", "count": 6}],
+			"objectives": [{"type": "escort"}, {"type": "train", "count": 6}, {"type": "harvest", "amount": 2500}],
 			"ai": {"slowdown": 1.6, "grace": 600.0, "pause": 80.0, "max_army": 10, "wave": 5, "credits": 1500, "ore": 1800},
-			"obj": "Escortez le convoi de cristaux : 4 camions sur 5 doivent arriver",
+			"obj": "Escortez le convoi (4 camions sur 5), formez 6 unités et récoltez 2500 Solaris",
 			"brief": "Cinq camions chargés de cristaux de focalisation doivent atteindre notre laboratoire. {ENEMY} a posté des embuscades : sécurisez la route avec votre armée et ne perdez qu'un camion au plus.",
 		},
 		{
-			"id": "sommet", "title": "Le sommet", "enemy": "kharn", "ally": true, "size": 112, "credits": 2500, "ore": 2500,
+			"id": "sommet", "title": "Le sommet", "enemy": "kharn", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 3,
 			"zone": {"units": 4, "time": 75.0},
-			"objectives": [{"type": "hold"}, {"type": "destroy_all"}],
+			"objectives": [{"type": "hold"}, {"type": "destroy_all"}, {"type": "train", "count": 10}],
 			"ai": {"slowdown": 1.15, "grace": 360.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
-			"ally_ai": {"slowdown": 1.3, "grace": 240.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 2000, "ore": 2200},
-			"obj": "Tenez la zone centrale 75 s, puis détruisez l'ennemi",
-			"brief": "Le grand sommet se tient au centre de la carte. Avec {ALLY}, tenez la zone, puis effacez {ENEMY} : la technologie de Solis décidera de l'issue.",
+			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
+			"obj": "Tenez la zone centrale, formez 10 unités et détruisez les deux camps adverses",
+			"brief": "Le grand sommet réunit trois maisons et aucune n'a d'allié. {ENEMY} et {RIVAL} se battent aussi entre eux : tenez la zone centrale, bâtissez une armée et ne laissez personne debout.",
 		},
 	],
 	# --- Légion Kharn : puissance brute, offensive ---
@@ -75,13 +75,14 @@ const CAMPAIGNS := {
 			"brief": "{ENEMY} abrite ses entrepôts derrière trois avant-postes. Pas de finesse : alignez vos blindés et rasez-les un par un.",
 		},
 		{
-			"id": "percee", "title": "La percée", "enemy": "solis", "size": 96, "credits": 2000, "ore": 2200,
-			"start_units": ["@0", "@1"],
+			"id": "percee", "title": "La percée", "rival": true, "enemy": "solis", "size": 96, "credits": 2000, "ore": 2200,
+			"ally_units": 2, "start_units": ["@0", "@1"],
 			"zone": {"units": 5, "time": 90.0},
-			"objectives": [{"type": "hold"}, {"type": "train", "count": 8}],
+			"objectives": [{"type": "hold"}, {"type": "train", "count": 8}, {"type": "harvest", "amount": 2500}],
 			"ai": {"slowdown": 1.5, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Tenez la zone centrale avec 5 unités pendant 90 s",
-			"brief": "Le col central contrôle toute la région. Occupez-le avec au moins cinq unités et défendez-le face aux contre-attaques de {ENEMY} pendant une minute et demie.",
+			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
+			"obj": "Tenez la zone centrale, formez 8 unités et récoltez 2500 Solaris",
+			"brief": "Le col central attire aussi {RIVAL}, qui n'est l'ami de personne. Occupez-le avec cinq unités face à {ENEMY} et aux pillards, sans négliger la récolte.",
 		},
 		{
 			"id": "guerre", "title": "Convoi de guerre", "enemy": "vael", "ally": true, "size": 96, "credits": 2000, "ore": 2200,
@@ -94,13 +95,13 @@ const CAMPAIGNS := {
 			"brief": "Un convoi de munitions doit rejoindre le front. {ENEMY} a tendu trois embuscades sur la route, plus nombreuses mais moins bien défendues : brisez-les. {ALLY} nous couvre à l'arrière.",
 		},
 		{
-			"id": "ecrasement", "title": "L'écrasement", "enemy": "solis", "ally": true, "size": 112, "credits": 2500, "ore": 2500,
+			"id": "ecrasement", "title": "L'écrasement", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 3,
-			"objectives": [{"type": "destroy_all"}, {"type": "train", "count": 12}],
+			"objectives": [{"type": "destroy_all"}, {"type": "train", "count": 12}, {"type": "harvest", "amount": 5000}],
 			"ai": {"slowdown": 1.1, "grace": 360.0, "pause": 50.0, "max_army": 24, "wave": 6, "credits": 2500, "ore": 2800},
-			"ally_ai": {"slowdown": 1.3, "grace": 240.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 2000, "ore": 2200},
-			"obj": "Détruisez toute la présence de l'ennemi",
-			"brief": "La campagne se joue ici. {ENEMY} concentre ses forces : écrasez-les avec l'appui de {ALLY} et ne laissez rien debout.",
+			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
+			"obj": "Détruisez les deux armées, formez 12 unités et récoltez 5000 Solaris",
+			"brief": "La campagne se joue ici et chacun pour soi : {ENEMY} et {RIVAL} s'entre-déchirent. Prenez-les l'un après l'autre, remplissez les caisses et ne laissez rien debout.",
 		},
 	],
 	# --- Cartel Vael : vitesse, ruse, commerce ---
@@ -131,22 +132,23 @@ const CAMPAIGNS := {
 			"brief": "{ALLY} nous paie pour tenir les assauts de {ENEMY}. Sept minutes : assez pour toucher la prime, pas assez pour laisser sa base tomber.",
 		},
 		{
-			"id": "entrepots", "title": "Les entrepôts", "enemy": "solis", "size": 112, "outposts": 4, "credits": 2000, "ore": 2200,
-			"start_units": ["@0", "@0", "@1"],
-			"objectives": [{"type": "outposts"}, {"type": "harvest", "amount": 3000}],
+			"id": "entrepots", "title": "Les entrepôts", "rival": true, "enemy": "solis", "size": 112, "outposts": 4, "credits": 2000, "ore": 2200,
+			"ally_units": 2, "start_units": ["@0", "@0", "@1"],
+			"objectives": [{"type": "outposts"}, {"type": "harvest", "amount": 3000}, {"type": "train", "count": 6}],
 			"ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1500, "ore": 1800},
-			"obj": "Pillez les 4 entrepôts fortifiés et récoltez 3000 Solaris",
-			"brief": "{ENEMY} stocke ses réserves dans quatre entrepôts fortifiés. Frappez vite, repartez vite, et remplissez les caisses du Cartel.",
+			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
+			"obj": "Pillez les 4 entrepôts, récoltez 3000 Solaris et formez 6 unités",
+			"brief": "{ENEMY} stocke ses réserves dans quatre entrepôts fortifiés, et {RIVAL} lorgne dessus aussi. Frappez vite, remplissez les caisses du Cartel et armez-vous contre les deux.",
 		},
 		{
-			"id": "braquage", "title": "Le grand braquage", "enemy": "solis", "ally": true, "size": 112, "credits": 2500, "ore": 2500,
+			"id": "braquage", "title": "Le grand braquage", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 3,
 			"zone": {"units": 3, "time": 45.0},
-			"objectives": [{"type": "hold"}, {"type": "destroy_all"}],
+			"objectives": [{"type": "hold"}, {"type": "destroy_all"}, {"type": "harvest", "amount": 4000}],
 			"ai": {"slowdown": 1.15, "grace": 360.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2500, "ore": 2800},
-			"ally_ai": {"slowdown": 1.3, "grace": 240.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 2000, "ore": 2200},
-			"obj": "Prenez la zone centrale 45 s, puis anéantissez l'ennemi",
-			"brief": "Le coup du siècle : avec {ALLY}, prenez le coffre central de {ENEMY} (quelques unités suffisent, mais vite), puis détruisez tout ce qui reste.",
+			"third_ai": {"slowdown": 1.5, "grace": 420.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
+			"obj": "Prenez la zone centrale 45 s, amassez 4000 Solaris et éliminez les deux camps adverses",
+			"brief": "Le coup du siècle : le coffre central de {ENEMY} intéresse aussi {RIVAL}. Prenez-le avant eux, remplissez les caisses, puis détruisez tout ce qui reste.",
 		},
 	],
 }
@@ -178,8 +180,10 @@ static func enemy_of(faction: String, m: int) -> String:
 	return CAMPAIGNS[faction][m]["enemy"]
 
 
-static func ally_of(faction: String, m: int) -> String:
-	if not CAMPAIGNS[faction][m].get("ally", false):
+## Troisième faction de la mission (allié ou rival), "" s'il n'y en a pas.
+static func third_of(faction: String, m: int) -> String:
+	var d: Dictionary = CAMPAIGNS[faction][m]
+	if not (d.get("ally", false) or d.get("rival", false)):
 		return ""
 	for k in GameData.FACTIONS.keys():
 		if k != faction and k != enemy_of(faction, m):
@@ -187,11 +191,22 @@ static func ally_of(faction: String, m: int) -> String:
 	return ""
 
 
+static func ally_of(faction: String, m: int) -> String:
+	return third_of(faction, m) if CAMPAIGNS[faction][m].get("ally", false) else ""
+
+
+## Second adversaire (chacun pour soi) : la troisième faction est hostile à tous.
+static func rival_of(faction: String, m: int) -> String:
+	return third_of(faction, m) if CAMPAIGNS[faction][m].get("rival", false) else ""
+
+
 static func briefing(faction: String, m: int) -> String:
 	var t: String = CAMPAIGNS[faction][m]["brief"]
 	t = t.replace("{ENEMY}", GameData.FACTIONS[enemy_of(faction, m)]["name"])
 	var ally := ally_of(faction, m)
 	t = t.replace("{ALLY}", GameData.FACTIONS[ally]["name"] if ally != "" else "")
+	var rival := rival_of(faction, m)
+	t = t.replace("{RIVAL}", GameData.FACTIONS[rival]["name"] if rival != "" else "")
 	return FLAVOR[faction] + "\n\n" + t
 
 
@@ -234,7 +249,10 @@ static func details(faction: String, m: int) -> Array:
 				var z: Dictionary = d["zone"]
 				obj.append("Tenir la zone centrale avec %d unités pendant %s" % [int(z["units"]), _mins(float(z["time"]))])
 			"destroy_all":
-				obj.append("Détruire toutes les unités et structures de %s" % enemy)
+				if rival_of(faction, m) != "":
+					obj.append("Détruire toutes les unités et structures de %s et de %s" % [enemy, GameData.FACTIONS[rival_of(faction, m)]["name"]])
+				else:
+					obj.append("Détruire toutes les unités et structures de %s" % enemy)
 			"protect_ally":
 				obj.append("Ne pas laisser tomber la base alliée (défaite sinon)")
 	obj.append("Défaite : perdre toute votre base et vos unités")
@@ -250,6 +268,8 @@ static func details(faction: String, m: int) -> Array:
 			names.append(String(GameData.UNITS[id]["name"]))
 		sit.append("Escorte de départ : " + ", ".join(names))
 	sit.append("Adversaire : %s" % enemy)
+	if rival_of(faction, m) != "":
+		sit.append("Second adversaire : %s (chacun pour soi : il attaque aussi bien vous que %s)" % [GameData.FACTIONS[rival_of(faction, m)]["name"], enemy])
 	if ally != "":
 		sit.append("Allié : %s (IA, démarre aussi avec un engin de chantier)" % GameData.FACTIONS[ally]["name"])
 	if d.has("convoy"):
