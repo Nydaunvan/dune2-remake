@@ -354,6 +354,20 @@ static func _mins(s: float) -> String:
 	return "%d min" % mn if sec == 0 else "%d min %02d s" % [mn, sec]
 
 
+## Nombre d'adversaires (factions hostiles au joueur) d'une mission.
+static func foe_count(faction: String, m: int) -> int:
+	return 2 if rival_of(faction, m) != "" else 1
+
+
+## « Adversaire : X » ou « Adversaires (2) : X et Y » (toutes les factions hostiles présentes).
+static func foes_text(faction: String, m: int) -> String:
+	var e: String = GameData.FACTIONS[enemy_of(faction, m)]["name"]
+	var r := rival_of(faction, m)
+	if r == "":
+		return "Adversaire : %s" % e
+	return "Adversaires (2) : %s et %s" % [e, GameData.FACTIONS[r]["name"]]
+
+
 ## Fiche détaillée d'une mission : liste de [titre, [lignes]].
 static func details(faction: String, m: int) -> Array:
 	var d: Dictionary = CAMPAIGNS[faction][m]
@@ -426,9 +440,9 @@ static func details(faction: String, m: int) -> Array:
 		for id in resolve_units(faction, su):
 			names.append(String(GameData.UNITS[id]["name"]))
 		sit.append("Escorte de départ : " + ", ".join(names))
-	sit.append("Adversaire : %s" % enemy)
+	sit.append(foes_text(faction, m))
 	if rival_of(faction, m) != "":
-		sit.append("Second adversaire : %s (chacun pour soi : il attaque aussi bien vous que %s)" % [GameData.FACTIONS[rival_of(faction, m)]["name"], enemy])
+		sit.append("Deux adversaires : toutes les factions présentes vous sont hostiles, et chacune attaque aussi l'autre (chacun pour soi)")
 	if ally != "":
 		sit.append("Allié : %s (IA, démarre aussi avec un engin de chantier)" % GameData.FACTIONS[ally]["name"])
 	if d.has("convoy"):

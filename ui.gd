@@ -107,23 +107,23 @@ func _build_topbar() -> void:
 	topbar = HudBar.new()
 	topbar.game = game
 	topbar.position = Vector2(6, 6)
-	topbar.size = Vector2(1384, 84)
+	topbar.size = Vector2(1480, 84)
 	root.add_child(topbar)
 	var menu_btn := NeonButton.new("MENU")
-	menu_btn.position = Vector2(1252, 22)
-	menu_btn.size = Vector2(112, 42)
+	menu_btn.position = Vector2(1284, 22)
+	menu_btn.size = Vector2(120, 42)
 	menu_btn.pressed.connect(game.open_pause_menu)
 	topbar.add_child(menu_btn)
 	var guide_btn := NeonButton.new("GUIDE")
 	guide_btn.accent = GameData.GREEN
-	guide_btn.position = Vector2(1034, 22)
-	guide_btn.size = Vector2(80, 42)
+	guide_btn.position = Vector2(1060, 22)
+	guide_btn.size = Vector2(90, 42)
 	guide_btn.pressed.connect(func() -> void: Guide.open(game, game.faction_id))
 	topbar.add_child(guide_btn)
 	var obj_btn := NeonButton.new("OBJECTIFS")
 	obj_btn.accent = GameData.AMBER
-	obj_btn.position = Vector2(1124, 22)
-	obj_btn.size = Vector2(118, 42)
+	obj_btn.position = Vector2(1160, 22)
+	obj_btn.size = Vector2(114, 42)
 	obj_btn.pressed.connect(toggle_objectives)
 	topbar.add_child(obj_btn)
 
@@ -483,7 +483,7 @@ class HudBar extends GlassPanel:
 				"%02d:%02d:%02d" % [int(t / 3600.0), int(t / 60.0) % 60, int(t) % 60], 24, Color.WHITE)
 		_sep(980)
 		UiStyle.text(self, Vector2(1000, 36), "FPS", 11, UiStyle.TEXT_DIM, true)
-		UiStyle.text(self, Vector2(1000, 64), str(Engine.get_frames_per_second()), 22, GameData.GREEN)
+		UiStyle.text(self, Vector2(1000, 64), "%d" % int(Engine.get_frames_per_second()), 22, GameData.GREEN)
 
 
 class SideHeader extends Control:

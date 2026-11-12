@@ -145,6 +145,9 @@ func _ready() -> void:
 		mission = Campaign.mission(faction_id, GameSession.mission)
 		credits = int(mission["credits"])
 		ore = int(mission["ore"])
+	elif _save.is_empty():
+		credits = int(credits * GameSession.skirm_res)
+		ore = int(ore * GameSession.skirm_res)
 	tier = GameSession.mission if GameSession.mode == "campaign" else Campaign.cleared(faction_id)
 	# Écran de chargement (la partie est en pause tant que tout n'est pas prêt)
 	if DisplayServer.get_name() != "headless":
@@ -240,6 +243,8 @@ func _setup_factions() -> void:
 	var others: Array = GameData.FACTIONS.keys().filter(func(k: String) -> bool: return k != faction_id)
 	others.shuffle()
 	var enemy: String = others[0]
+	if mission.is_empty() and GameSession.opponents < 2 and others.has(GameSession.skirm_foe):
+		enemy = GameSession.skirm_foe
 	if not mission.is_empty():
 		enemy = Campaign.enemy_of(faction_id, GameSession.mission)
 	team_factions = {0: faction_id, 1: enemy}
@@ -265,7 +270,7 @@ func _setup_factions() -> void:
 func _generate_layout() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map_seed
-	var size := 96
+	var size := GameSession.skirm_size if _save.is_empty() else 96
 	if not mission.is_empty():
 		size = int(mission.get("size", 96))
 	map_w = size
@@ -1195,6 +1200,11 @@ func _zoom(factor: float) -> void:
 # --- Entrées ------------------------------------------------------------------
 
 var panning := false
+const SKIRMISH_DIFF := [
+	{"slowdown": 2.0, "grace": 420.0, "pause": 90.0, "max_army": 14, "wave": 4},
+	{},
+	{"slowdown": 1.1, "grace": 150.0, "pause": 40.0, "max_army": 30, "wave": 8},
+]
 
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -2229,6 +2239,8 @@ func _setup_sides() -> void:
 		a.foe = nearest_foe_home(t) if nearest_foe_home(t).x >= 0 else start_cell
 		if not mission.is_empty():
 			a.configure(mission["ai"] if t == 1 else mission.get("third_ai", mission.get("ally_ai", mission["ai"])))
+		elif _save.is_empty() and GameSession.skirm_diff != 1:
+			a.configure(SKIRMISH_DIFF[GameSession.skirm_diff])
 		add_child(a)
 		ais[t] = a
 	ai = ais.get(1)

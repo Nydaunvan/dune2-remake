@@ -143,7 +143,7 @@ func _name(id: String) -> String:
 func _p_start() -> String:
 	return _h("Le but du jeu") + """Bâtissez une base sur la planète désertique, récoltez l'épice (Solaris) et le minerai, formez une armée puis détruisez vos adversaires. Il existe deux façons de jouer :
 • [b]Campagne[/b] : 10 missions par faction, chacune avec ses objectifs, son adversaire et son briefing. Les missions terminées débloquent de nouveaux bâtiments.
-• [b]Escarmouche[/b] : une carte aléatoire, un ou deux adversaires menés par l'IA. Tout se débloque en améliorant le Chantier. L'option « 3 camps » du menu principal ajoute un second adversaire : chacun pour soi.
+• [b]Escarmouche[/b] : une carte aléatoire, un ou deux adversaires menés par l'IA. Tout se débloque en améliorant le Chantier. La fenêtre de paramètres de l'escarmouche permet de choisir 1 ou 2 adversaires (avec 2 adversaires, chaque faction attaque toutes les autres : chacun pour soi), la faction adverse, la taille de la carte, les ressources de départ et la difficulté de l'IA.
 """ + _h("Vos premières minutes") + """1. Sélectionnez l'[b]engin de chantier[/b] et appuyez sur """ + _k("D") + """ (ou bouton DÉPLOYER) : il devient un Chantier, le cœur de votre base.
 2. Construisez une [b]Centrale[/b] : sans énergie, rien ne fonctionne correctement.
 3. Posez une [b]Raffinerie[/b] puis une [b]Fonderie[/b] : elles produisent un récolteur d'épice et un mineur qui travaillent seuls.

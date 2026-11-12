@@ -50,7 +50,11 @@ func _process(_d: float) -> bool:
 	if f == 5 and OS.has_environment("SHOT_CHANGELOG"):
 		Changelog.open(node)
 	if f == 5 and OS.has_environment("SHOT_OVERLAY"):
-		node._open_campaign()
+		if OS.get_environment("SHOT_OVERLAY") == "skirmish":
+			GameSession.opponents = int(OS.get_environment("SHOT_OPP")) if OS.has_environment("SHOT_OPP") else 1
+			node._open_skirmish()
+		else:
+			node._open_campaign()
 	if f == 3 and OS.has_environment("SHOT_FOCUS"):
 		var p := OS.get_environment("SHOT_FOCUS").split(",")
 		node.camera.zoom = Vector2(float(OS.get_environment("SHOT_ZOOM")), float(OS.get_environment("SHOT_ZOOM"))) if OS.has_environment("SHOT_ZOOM") else node.camera.zoom

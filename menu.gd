@@ -54,7 +54,7 @@ func _ready() -> void:
 	campaign.pressed.connect(_open_campaign)
 	var skirmish := GameUI.NeonButton.new("ESCARMOUCHE")
 	skirmish.accent = GameData.MAGENTA
-	skirmish.pressed.connect(_start)
+	skirmish.pressed.connect(_open_skirmish)
 	var load_btn := GameUI.NeonButton.new("CHARGER")
 	load_btn.accent = GameData.GREEN
 	load_btn.pressed.connect(_open_load)
@@ -67,14 +67,6 @@ func _ready() -> void:
 	for b in [campaign, skirmish, load_btn, guide_btn, quit]:
 		b.custom_minimum_size = Vector2(210, 58)
 		btns.add_child(b)
-
-	var opp := CheckButton.new()
-	opp.text = "Escarmouche à 3 camps (2 adversaires)"
-	opp.button_pressed = GameSession.opponents >= 2
-	opp.add_theme_font_size_override("font_size", 16)
-	opp.toggled.connect(func(on: bool) -> void: GameSession.opponents = 2 if on else 1)
-	opp.alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vb.add_child(opp)
 
 	_hint = _label("Campagne : 10 missions par faction — Escarmouche : détruisez la base adverse", 15,
 			Color(1, 1, 1, 0.55), false)
@@ -115,6 +107,114 @@ func _start() -> void:
 	GameSession.faction = selected
 	GameSession.mode = "skirmish"
 	get_tree().change_scene_to_file("res://main.tscn")
+
+
+# --- Paramètres de l'escarmouche ---------------------------------------------
+
+func _open_skirmish() -> void:
+	if _overlay != null:
+		_overlay.queue_free()
+	var fd: Dictionary = GameData.FACTIONS[selected]
+	var others: Array = GameData.FACTIONS.keys().filter(func(k: String) -> bool: return k != selected)
+	if GameSession.skirm_foe != "" and not others.has(GameSession.skirm_foe):
+		GameSession.skirm_foe = ""
+	_overlay = ColorRect.new()
+	(_overlay as ColorRect).color = Color(0.045, 0.024, 0.075, 1.0)
+	_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(_overlay)
+	var cc := CenterContainer.new()
+	cc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overlay.add_child(cc)
+	var vb := VBoxContainer.new()
+	vb.add_theme_constant_override("separation", 18)
+	cc.add_child(vb)
+	vb.add_child(_label("ESCARMOUCHE — " + String(fd["name"]).to_upper(), 44, fd["accent"], true))
+
+	var pc := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.07, 0.04, 0.13, 0.95)
+	sb.set_border_width_all(2)
+	sb.border_color = fd["color"]
+	sb.set_corner_radius_all(6)
+	sb.set_content_margin_all(26)
+	pc.add_theme_stylebox_override("panel", sb)
+	vb.add_child(pc)
+	var rows := VBoxContainer.new()
+	rows.add_theme_constant_override("separation", 20)
+	pc.add_child(rows)
+
+	var two := GameSession.opponents >= 2
+	rows.add_child(_option_row("NOMBRE D'ADVERSAIRES", [
+		["1 ADVERSAIRE", not two, func() -> void: GameSession.opponents = 1],
+		["2 ADVERSAIRES", two, func() -> void: GameSession.opponents = 2]]))
+	var foe_opts: Array = [["ALÉATOIRE", GameSession.skirm_foe == "", func() -> void: GameSession.skirm_foe = ""]]
+	for k in others:
+		foe_opts.append([String(GameData.FACTIONS[k]["name"]).to_upper(), GameSession.skirm_foe == k,
+				func() -> void: GameSession.skirm_foe = k])
+	if two:
+		rows.add_child(_info_row("FACTIONS ADVERSES", "Les deux autres factions : %s et %s — chacune est hostile à tous (chacun pour soi)" % [
+				GameData.FACTIONS[others[0]]["name"], GameData.FACTIONS[others[1]]["name"]]))
+	else:
+		rows.add_child(_option_row("FACTION ADVERSE", foe_opts))
+	rows.add_child(_option_row("TAILLE DE LA CARTE", [
+		["PETITE (80)", GameSession.skirm_size == 80, func() -> void: GameSession.skirm_size = 80],
+		["MOYENNE (96)", GameSession.skirm_size == 96, func() -> void: GameSession.skirm_size = 96],
+		["GRANDE (112)", GameSession.skirm_size == 112, func() -> void: GameSession.skirm_size = 112]]))
+	rows.add_child(_option_row("RESSOURCES DE DÉPART", [
+		["RÉDUITES", is_equal_approx(GameSession.skirm_res, 0.6), func() -> void: GameSession.skirm_res = 0.6],
+		["NORMALES", is_equal_approx(GameSession.skirm_res, 1.0), func() -> void: GameSession.skirm_res = 1.0],
+		["ABONDANTES", is_equal_approx(GameSession.skirm_res, 1.6), func() -> void: GameSession.skirm_res = 1.6]]))
+	rows.add_child(_option_row("DIFFICULTÉ DE L'IA", [
+		["FACILE", GameSession.skirm_diff == 0, func() -> void: GameSession.skirm_diff = 0],
+		["NORMALE", GameSession.skirm_diff == 1, func() -> void: GameSession.skirm_diff = 1],
+		["DIFFICILE", GameSession.skirm_diff == 2, func() -> void: GameSession.skirm_diff = 2]]))
+
+	var hb := HBoxContainer.new()
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_theme_constant_override("separation", 24)
+	vb.add_child(hb)
+	var back := GameUI.NeonButton.new("RETOUR")
+	back.accent = GameData.RED
+	back.custom_minimum_size = Vector2(250, 56)
+	back.pressed.connect(func() -> void: _overlay.queue_free(); _overlay = null)
+	hb.add_child(back)
+	var go := GameUI.NeonButton.new("LANCER")
+	go.accent = fd["accent"]
+	go.custom_minimum_size = Vector2(250, 56)
+	go.pressed.connect(_start)
+	hb.add_child(go)
+
+
+## Ligne de réglage : titre + boutons exclusifs [texte, actif, action].
+func _option_row(title: String, opts: Array) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	box.add_child(_left(title, 14, GameData.GOLD))
+	var hb := HBoxContainer.new()
+	hb.add_theme_constant_override("separation", 12)
+	box.add_child(hb)
+	for o in opts:
+		var b := GameUI.NeonButton.new(o[0])
+		b.custom_minimum_size = Vector2(250, 48)
+		b.active = o[1]
+		var act: Callable = o[2]
+		b.pressed.connect(func() -> void:
+			act.call()
+			_open_skirmish())
+		hb.add_child(b)
+	return box
+
+
+func _info_row(title: String, text: String) -> Control:
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 8)
+	box.add_child(_left(title, 14, GameData.GOLD))
+	var l := _left(text, 16, Color(1, 0.55, 0.5))
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.custom_minimum_size = Vector2(786, 48)
+	box.add_child(l)
+	return box
 
 
 # --- Chargement d'une sauvegarde ---------------------------------------------
@@ -226,15 +326,17 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	v.add_child(_left(String(m["title"]).to_upper(), 24, Color.WHITE))
 	var br := _left(Campaign.briefing(selected, i), 14, Color(1, 1, 1, 0.8))
 	br.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	br.custom_minimum_size = Vector2(300, 330)
+	br.custom_minimum_size = Vector2(300, 290)
 	v.add_child(br)
 	v.add_child(_left("OBJECTIF", 13, GameData.GOLD))
 	var ob := _left(String(m["obj"]), 15, Color.WHITE)
 	ob.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ob.custom_minimum_size = Vector2(300, 40)
 	v.add_child(ob)
-	v.add_child(_left("Adversaire : " + String(GameData.FACTIONS[Campaign.enemy_of(selected, i)]["name"]), 15,
-			Color(1, 0.55, 0.5)))
+	var foes := _left(Campaign.foes_text(selected, i), 15, Color(1, 0.55, 0.5))
+	foes.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	foes.custom_minimum_size = Vector2(300, 40)
+	v.add_child(foes)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(spacer)
@@ -417,7 +519,10 @@ class FactionCard extends Control:
 			var u: Dictionary = GameData.UNITS[uid]
 			draw_colored_polygon(PackedVector2Array([Vector2(34, y - 5), Vector2(39, y - 10), Vector2(44, y - 5), Vector2(39, y)]), acc)
 			UiStyle.text(self, Vector2(54, y), String(u["name"]), 17, Color.WHITE, true)
-			UiStyle.text(self, Vector2(196, y), String(u["desc"]), 13, Color(1, 1, 1, 0.62))
+			var ds := 13
+			while ds > 9 and UiStyle.text_width(String(u["desc"]), ds) > size.x - 196.0 - 14.0:
+				ds -= 1 # le texte doit tenir dans la carte
+			UiStyle.text(self, Vector2(196, y), String(u["desc"]), ds, Color(1, 1, 1, 0.62))
 			y += 28.0
 		# Pied : état de sélection
 		var fy := size.y - 24.0
