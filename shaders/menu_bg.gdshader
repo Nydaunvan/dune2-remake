@@ -130,18 +130,35 @@ mat2 rot2(float a) {
 }
 
 // Distance signée d'un véhicule (repère local : x vers l'avant, y vers le haut, sol à y = 0)
+float dot2(vec2 v) {
+	return dot(v, v);
+}
+
+// Trapèze symétrique : demi-largeur r1 en bas (y = -he), r2 en haut (y = +he)
+float sd_trap(vec2 p, float r1, float r2, float he) {
+	vec2 k1 = vec2(r2, he);
+	vec2 k2 = vec2(r2 - r1, 2.0 * he);
+	p.x = abs(p.x);
+	vec2 ca = vec2(p.x - min(p.x, (p.y < 0.0) ? r1 : r2), abs(p.y) - he);
+	vec2 cb = p - k1 + k2 * clamp(dot(k1 - p, k2) / dot2(k2), 0.0, 1.0);
+	float sg = (cb.x < 0.0 && ca.y < 0.0) ? -1.0 : 1.0;
+	return sg * sqrt(min(dot2(ca), dot2(cb)));
+}
+
 float sd_vehicle(vec2 p, int kind) {
-	if (kind == 0) { // char
-		float d = sd_box(p - vec2(0.0, 0.13), vec2(0.72, 0.13), 0.12);                 // chenilles
-		d = min(d, sd_box(p - vec2(0.0, 0.36), vec2(0.58, 0.14), 0.05));               // caisse
-		d = min(d, sd_box(p - vec2(0.04, 0.62), vec2(0.28, 0.13), 0.06));              // tourelle
-		d = min(d, sd_box(p - vec2(0.66, 0.64), vec2(0.40, 0.035), 0.02));             // canon
+	if (kind == 0) { // char : silhouette anguleuse (chenilles biseautées, caisse et tourelle en trapèze)
+		float d = sd_box(p - vec2(0.0, 0.13), vec2(0.74, 0.13), 0.015);                // chenilles
+		d = max(d, (abs(p.x) - 0.74 + 0.12 - p.y) * 0.7071);                            // biseau des extrémités
+		d = min(d, sd_trap(p - vec2(0.0, 0.37), 0.62, 0.46, 0.11));                    // caisse inclinée
+		d = min(d, sd_trap(p - vec2(0.04, 0.60), 0.30, 0.17, 0.12));                   // tourelle à pans
+		d = min(d, sd_box(p - vec2(0.68, 0.62), vec2(0.40, 0.03), 0.004));             // canon
+		d = min(d, sd_box(p - vec2(1.06, 0.62), vec2(0.07, 0.05), 0.004));             // frein de bouche
 		return d;
 	}
 	if (kind == 1) { // récolteur
-		float d = sd_box(p - vec2(-0.05, 0.14), vec2(0.78, 0.14), 0.12);
-		d = min(d, sd_box(p - vec2(-0.12, 0.50), vec2(0.52, 0.24), 0.06));             // cuve
-		d = min(d, sd_box(p - vec2(0.58, 0.40), vec2(0.20, 0.18), 0.05));              // cabine
+		float d = sd_box(p - vec2(-0.05, 0.14), vec2(0.78, 0.14), 0.03);
+		d = min(d, sd_box(p - vec2(-0.12, 0.50), vec2(0.52, 0.24), 0.02));             // cuve
+		d = min(d, sd_box(p - vec2(0.58, 0.40), vec2(0.20, 0.18), 0.02));              // cabine
 		d = min(d, length(p - vec2(0.88, 0.16)) - 0.16);                               // tambour
 		return d;
 	}
@@ -240,7 +257,7 @@ vec4 over(vec4 dst, vec3 c, float a) {
 }
 
 // Passages : toutes les 40 s un événement différent — colonne de chars (0), récolteur escorté (1),
-// buggy rapide (2), aéronef dans le ciel (3) ou rien (4). Les véhicules suivent le relief du sable
+// buggy rapide (2) ou rien (3, 4). Les véhicules suivent le relief du sable
 // et disparaissent derrière les buttes (test de profondeur contre le sol touché par le rayon).
 vec4 walkers(vec2 uv, float ar, float t, vec3 ro, float terr, vec2 px) {
 	float horizon = 0.56;
@@ -319,41 +336,6 @@ vec4 walkers(vec2 uv, float ar, float t, vec3 ro, float terr, vec2 px) {
 	return res;
 }
 
-// Aéronef qui traverse le ciel (événement 3) : silhouette à ailes battantes, feu clignotant.
-vec4 flyer(vec2 uv, float ar, float t) {
-	float cyc = floor(t / 40.0);
-	float ph = t - cyc * 40.0;
-	if (int(hash(vec2(cyc, 5.1)) * 5.0) != 3) {
-		return vec4(0.0);
-	}
-	float u = (ph - 3.0) / 20.0;
-	if (u < 0.0 || u > 1.0) {
-		return vec4(0.0);
-	}
-	float dir = hash(vec2(cyc, 9.7)) > 0.5 ? 1.0 : -1.0;
-	vec2 c = vec2(mix(-0.1, 1.1, dir > 0.0 ? u : 1.0 - u), 0.30 + 0.05 * sin(u * 5.0) - 0.04 * u);
-	float sc = 0.020;
-	vec2 l = vec2((uv.x - c.x) * ar * dir, -(uv.y - c.y)) / sc;
-	if (abs(l.x) > 4.0 || abs(l.y) > 3.0) {
-		return vec4(0.0);
-	}
-	float aa = 1.2 / (1080.0 * sc);
-	float d = (length(l * vec2(1.0, 2.4)) - 1.7) * 0.4;                    // fuselage
-	d = min(d, sd_box(l - vec2(-1.8, 0.1), vec2(0.8, 0.08), 0.04));         // poutre de queue
-	for (int k = 0; k < 4; k++) {
-		float fk = float(k);
-		float hx = 0.8 - fk * 0.5;
-		float ang = 0.75 * sin(t * 17.0 + fk * 1.7) + (fk < 2.0 ? 0.35 : -0.35);
-		vec2 wp = rot2(-ang) * (l - vec2(hx, 0.35));
-		d = min(d, sd_box(wp - vec2(0.0, 0.9), vec2(0.07, 0.9), 0.03));
-	}
-	float a = smoothstep(aa, -aa, d);
-	vec3 col = vec3(0.06, 0.035, 0.10) + vec3(1.0, 0.6, 0.35) * smoothstep(-0.3, 0.0, d) * 0.35;
-	float blink = step(0.5, fract(t * 1.3));
-	col += vec3(1.0, 0.15, 0.1) * exp(-dot(l - vec2(-2.5, 0.1), l - vec2(-2.5, 0.1)) * 14.0) * blink * 2.0;
-	return vec4(col, a);
-}
-
 // Un échantillon du désert complet : sable, puis véhicule éventuel ; `sky` si le rayon ne touche rien.
 vec3 desert_px(vec2 uv, float ar, float t, vec3 ro, vec3 sky, vec2 px, out float dist_out) {
 	dist_out = -1.0;
@@ -426,8 +408,6 @@ void fragment() {
 	// ----- Désert (voir desert()) avec antialiasing adaptatif sur les arêtes ------------------
 	// Un échantillon au centre ; là où la profondeur ou la couleur varient vite (crêtes, silhouettes),
 	// on moyenne quatre échantillons sous-pixel : plus aucun effet d'escalier sur les dunes.
-	vec4 fl = flyer(uv, ar, t);
-	col = mix(col, fl.rgb, fl.a);
 	if (uv.y >= horizon - 0.02) {
 		vec2 px = SCREEN_PIXEL_SIZE;
 		vec3 ro = vec3(0.0, 5.2, 0.0); // la scène est immobile : seul le vent anime le sable
