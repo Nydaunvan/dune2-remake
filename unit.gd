@@ -79,6 +79,9 @@ var _pause_t := 0.0   # courte pause après plusieurs contournements : on laisse
 var _seek_started := false
 var _retry := 0.0
 var _flee_timer := 0.0
+var heal_rate := 0.0 # PV/s rendus aux alliés proches (unités de soutien)
+var heal_range := 0.0
+var _heal_acc := 0.0
 var _hurt_t := 0.0 # >0 : vient d'être attaqué, reste à l'abri près de la base
 var _dust: CPUParticles2D
 var _work_fx: CPUParticles2D
@@ -113,6 +116,8 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	weapon = d.get("weapon", "")
 	dps = float(d.get("dps", 0))
 	w_range = float(d.get("range", 0)) * 32.0
+	heal_rate = float(d.get("heal", 0.0))
+	heal_range = float(d.get("heal_range", 4)) * 32.0
 	_scan_t = randf() * 0.4 # évite que toutes les unités scrutent à la même image
 	_dust = Fx.make_dust(Color(0.85, 0.65, 0.5), 10, 0.9, 0.35)
 	add_child(_dust)
@@ -351,6 +356,20 @@ func pick_radius() -> float:
 
 
 ## Dégâts reçus : blindage et type d'arme comptent. Riposte ou fuite.
+## Unité de soutien : soigne les alliés proches (toutes les 0,5 s).
+func _heal_tick(delta: float) -> void:
+	_heal_acc += delta
+	if _heal_acc < 0.5:
+		return
+	var dt := _heal_acc
+	_heal_acc = 0.0
+	for u in game.units:
+		if u != self and u.alive and not u.carried and u.team == team and u.hp < u.max_hp \
+				and u.position.distance_to(position) < heal_range:
+			u.hp = minf(u.max_hp, u.hp + heal_rate * dt)
+			u.queue_redraw()
+
+
 func take_damage(raw: float, wpn: String, attacker = null) -> void:
 	if not alive:
 		return
@@ -617,6 +636,8 @@ func _physics_process(delta: float) -> void:
 	if rg > 0.0 and hp < max_hp:
 		hp = minf(max_hp, hp + rg * delta) # cristal vivant : régénération lente
 		queue_redraw()
+	if heal_rate > 0.0:
+		_heal_tick(delta)
 	if emerging:
 		_emerge(delta)
 		return
@@ -779,8 +800,6 @@ func _arrived() -> void:
 		"move":
 			state = "seek" if is_worker() else "idle"
 			_seek_started = false
-			if role == "transport" and not cargo_units.is_empty():
-				unload_all()
 		"amove":
 			amove_goal = Vector2i(-1, -1)
 			state = "idle"

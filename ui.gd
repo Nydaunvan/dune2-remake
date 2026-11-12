@@ -535,7 +535,8 @@ class SideHeader extends Control:
 class InfoPanel extends GlassPanel:
 	const ARMOR := {"light": "Léger", "medium": "Moyen", "heavy": "Lourd", "building": "Structure"}
 	const WEAPON := {"autocannon": "Autocanon", "cannon": "Canon", "rocket": "Roquettes",
-			"sonic": "Onde sonique", "acid": "Acide", "control": "Contrôle mental"}
+			"sonic": "Onde sonique", "acid": "Acide", "control": "Contrôle mental", "shard": "Éclats de cristal",
+			"mortar": "Mortier", "flame": "Lance-flammes", "plasma": "Plasma", "laser": "Laser"}
 	const COL2 := 430.0
 	const PANEL_SCALE := 0.78
 
@@ -839,6 +840,9 @@ class InfoPanel extends GlassPanel:
 			var mult := 1.0 + GameData.RANK_DMG * u.rank
 			y += _row(34, y, "Arme", String(WEAPON.get(u.weapon, u.weapon)) + (" — air + sol" if GameData.can_hit_air(u.id) else " — sol seulement"))
 			_row(34, y, "Dégâts", "%.0f /s    Portée %d cases" % [u.dps * mult, int(u.w_range / 32.0)])
+		elif u.heal_rate > 0.0:
+			y += _row(34, y, "Soins", "%d PV/s aux alliés" % int(u.heal_rate))
+			_row(34, y, "Rayon", "%d cases" % int(u.heal_range / 32.0))
 		elif u.role == "transport":
 			y += _row(34, y, "Soute", "%d / %d unités" % [u.cargo_units.size(), u.slots])
 			_row(34, y, "Vol", "Ignore le terrain")
@@ -862,11 +866,34 @@ class InfoPanel extends GlassPanel:
 				y2 = _c2(y2 + 2.0, "Chaque rang : +15 % dégâts et PV", 13, UiStyle.TEXT_DIM)
 		elif u.role == "transport":
 			y2 = _c2(y2, "Clic droit sur une unité : l'embarquer", 13, UiStyle.TEXT)
-			y2 = _c2(y2 + 2.0, "Clic droit au sol : y aller et déposer (U)", 13, UiStyle.TEXT)
+			y2 = _c2(y2 + 2.0, "Clic droit au sol : y aller. Bouton DÉCHARGER (U) pour déposer", 13, UiStyle.TEXT)
 		else:
 			y2 = _c2(y2, "Récolte automatiquement et rapporte à la " + ("Raffinerie" if u.cargo_kind == "spice" else "Fonderie") + ".", 14, UiStyle.TEXT)
 		if _tech_line(u) != "":
 			_c2(y2 + 2.0, _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
+
+	## Lignes d'info des bâtiments sans cas particulier : déduites de leurs caractéristiques.
+	func _generic_rows(rows: Array, b: Building, d: Dictionary) -> void:
+		if b.weapon != "":
+			rows.append(["Dégâts", "%.0f /s%s" % [b.dps, " (zone)" if float(GameData.WEAPONS[b.weapon]["splash"]) > 0.0 else ""]])
+			rows.append(["Portée", "%d cases — %s" % [int(b.w_range / 32.0), "air + sol" if d.get("aa", false) else "sol seulement"]])
+		if d.has("income"):
+			rows.append(["Revenu", "+%.1f Solaris/s" % float(d["income"])])
+		if d.has("ore_income"):
+			rows.append(["Revenu", "+%.1f minerai/s" % float(d["ore_income"])])
+		if d.has("heal"):
+			rows.append(["Soins", "%d PV/s sur %d cases" % [int(d["heal"]), int(d["heal_range"])]])
+		if d.has("aura_regen"):
+			rows.append(["Aura", "%d PV/s aux bâtiments (%d cases)" % [int(d["aura_regen"]), int(d.get("aura_range", 6))]])
+		if d.has("storage"):
+			rows.append(["Stockage", String(d["storage"])])
+		if d.get("wall", false):
+			rows.append(["Rôle", "Barrière"])
+		if d.has("vision") and int(d["vision"]) > 12:
+			rows.append(["Détection", "%d cases" % int(d["vision"])])
+		if b.power > 0:
+			rows.append(["Énergie", "+%d" % b.power])
+
 
 	func _draw_building(b: Building) -> void:
 		var d := GameData.def(b.id)
@@ -909,9 +936,11 @@ class InfoPanel extends GlassPanel:
 				rows.append(["Revenu", "+%d minerai/s" % int(d["ore_income"])])
 			"mur", "mur_acier", "mur_cristal":
 				rows.append(["Rôle", "Barrière"])
+			_:
+				_generic_rows(rows, b, d)
 		if b.power < 0:
 			rows.append(["Consomme", "%d énergie" % -b.power])
-		elif b.power == 0 and b.id != "mur" and b.id != "mur_acier" and b.id != "mur_cristal":
+		elif b.power == 0 and b.id != "mur" and b.id != "mur_acier" and b.id != "mur_cristal" and not d.get("wall", false):
 			rows.append(["Consomme", "0 énergie"])
 		rows.append(["Vision", "%d cases" % b.vision])
 		if b.offline:
@@ -923,7 +952,10 @@ class InfoPanel extends GlassPanel:
 			UiStyle.section(self, Vector2(COL2, 128), 340, "NIVEAU SUIVANT" if b.level < GameData.MAX_LEVEL else "ÉVOLUTION", UiStyle.GOLD)
 			if b.level < GameData.MAX_LEVEL:
 				var yy := 154.0
-				var parts: Array = Array(String(GameData.UPGRADES.get(b.id, "")).split(", "))
+				var up_txt: String = String(GameData.UPGRADES.get(b.id, ""))
+				if up_txt == "":
+					up_txt = "+40 % PV" + (", +25 % de dégâts" if b.weapon != "" else "")
+				var parts: Array = Array(up_txt.split(", "))
 				var dp := GameData.power_at(b.id, b.level + 1) - GameData.power_at(b.id, b.level)
 				if dp < 0:
 					parts.append("consomme %d énergie de plus" % -dp)
