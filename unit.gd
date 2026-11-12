@@ -79,6 +79,7 @@ var _pause_t := 0.0   # courte pause après plusieurs contournements : on laisse
 var _seek_started := false
 var _retry := 0.0
 var _flee_timer := 0.0
+var _hurt_t := 0.0 # >0 : vient d'être attaqué, reste à l'abri près de la base
 var _dust: CPUParticles2D
 var _work_fx: CPUParticles2D
 var _work_fx2: CPUParticles2D # éclats d'épice / de minerai au-dessus du nuage
@@ -200,6 +201,19 @@ func stop() -> void:
 ## Alerte ver : fuit vers la roche la plus proche (ouvriers).
 func flee() -> void:
 	if not is_worker() or not alive:
+		return
+	# Attaqué : on rentre d'abord à la base (raffinerie / fonderie), à défaut on fuit sur la roche
+	var dock = game.find_dock(cargo_kind, position, team)
+	if dock != null:
+		_hurt_t = 12.0
+		var from: Vector2i = game.world_to_cell(position)
+		follow(game.path_to(position, game.dock_cell(dock, from)))
+		if path.is_empty():
+			path = PackedVector2Array([position])
+		state = "return"
+		_seek_started = false
+		if _work_fx != null:
+			_set_work_fx(false)
 		return
 	var cell: Vector2i = game.find_safe_cell(game.world_to_cell(position))
 	if cell.x < 0:
@@ -349,7 +363,8 @@ func take_damage(raw: float, wpn: String, attacker = null) -> void:
 		return
 	if _valid(attacker) and attacker.team != team:
 		if is_worker():
-			if state != "flee":
+			_hurt_t = 12.0
+			if state != "flee" and not (state == "return" and not path.is_empty()):
 				flee()
 		elif weapon != "" and not forced and (state == "idle" or state == "amove" or (state == "attack" and not _valid(target))):
 			_set_target(attacker, false)
@@ -778,6 +793,7 @@ func _arrived() -> void:
 func _work(delta: float) -> void:
 	if not is_worker():
 		return
+	_hurt_t = maxf(0.0, _hurt_t - delta)
 	# Plein : on va toujours se vider avant de repartir en récolte
 	if cargo >= cargo_cap - 0.01 and (state == "seek" or state == "harvest" or (state == "idle" and path.is_empty())):
 		_start_return()
@@ -802,6 +818,8 @@ func _work(delta: float) -> void:
 func _seek(delta: float) -> void:
 	if _seek_started:
 		return
+	if _hurt_t > 0.0:
+		return # reste à l'abri quelques secondes après une attaque
 	_retry -= delta
 	if _retry > 0.0:
 		return
