@@ -2085,7 +2085,7 @@ func upgrade_time(b: Building) -> float:
 
 ## Raison pour laquelle on ne peut pas améliorer le bâtiment ("" si c'est possible).
 func upgrade_block(b: Building, money: int) -> String:
-	if GameData.def(b.id).get("no_upgrade", false):
+	if not GameData.can_upgrade(b.id):
 		return "Non améliorable"
 	if b.up_left > 0.0:
 		return "Amélioration en cours"

@@ -736,7 +736,7 @@ class InfoPanel extends GlassPanel:
 			return
 		_focus = _find_focus()
 		visible = _focus != null
-		var is_b: bool = _focus is Building and _focus.team == 0 and not GameData.def(_focus.id).get("no_upgrade", false)
+		var is_b: bool = _focus is Building and _focus.team == 0 and GameData.can_upgrade(_focus.id)
 		var is_u: bool = _focus is Unit and _focus.team == 0 and GameData.UNIT_TECH.has(_focus.id)
 		btn.visible = is_b or is_u
 		if is_b:
@@ -1032,7 +1032,7 @@ class InfoPanel extends GlassPanel:
 		_hp_block(GameData.name_of(b.id, game.faction_id_of(b.team)), _building_sub(b, mine), b.hp, b.max_hp, mine)
 		UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 		var rows: Array = []
-		if not d.get("wall", false) and not d.get("no_upgrade", false):
+		if not d.get("wall", false) and GameData.can_upgrade(b.id):
 			rows.append(["Niveau", "%d / %d" % [b.level, GameData.MAX_LEVEL]])
 		match b.id:
 			"chantier":
@@ -1080,7 +1080,7 @@ class InfoPanel extends GlassPanel:
 		var y := 152.0
 		for r in rows:
 			y += _row(34, y, r[0], r[1], GameData.RED if r[0] == "État" else UiStyle.TEXT)
-		if mine and not d.get("no_upgrade", false):
+		if mine and GameData.can_upgrade(b.id):
 			UiStyle.section(self, Vector2(COL2, 128), 340, "NIVEAU SUIVANT" if b.level < GameData.MAX_LEVEL else "ÉVOLUTION", UiStyle.GOLD)
 			if b.level < GameData.MAX_LEVEL:
 				var yy := 154.0
@@ -1197,7 +1197,7 @@ class BuildIcon extends Control:
 			var pw: int = int(d.get("power", 0))
 			tip += "\nÉnergie : " + ("produit +%d" % pw if pw > 0 else ("consomme %d" % -pw if pw < 0 else "aucune consommation"))
 			var up := GameData.upgrade_power(id)
-			if up > 0 and not d.get("no_upgrade", false):
+			if up > 0 and GameData.can_upgrade(id):
 				tip += " (+%d par niveau)" % up
 		if GameData.desc_of(id, game.faction_id) != "":
 			tip += "\n" + GameData.desc_of(id, game.faction_id)

@@ -1174,6 +1174,11 @@ static func desc_of(id: String, faction: String) -> String:
 	return String(d.get("desc", "")) if not d.is_empty() else ""
 
 
+## Un bâtiment est évolutif s'il n'est pas marqué « no_upgrade » et possède des bonus d'amélioration.
+static func can_upgrade(id: String) -> bool:
+	return not def(id).get("no_upgrade", false) and (id == "chantier" or UPGRADES.has(id))
+
+
 static func def(id: String) -> Dictionary:
 	if BUILDINGS.has(id):
 		return BUILDINGS[id]
