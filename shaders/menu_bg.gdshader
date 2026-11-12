@@ -145,7 +145,37 @@ float sd_trap(vec2 p, float r1, float r2, float he) {
 	return sg * sqrt(min(dot2(ca), dot2(cb)));
 }
 
-float sd_vehicle(vec2 p, int kind) {
+// Détails fins (0..1) : galets, chenille animée, joints de plaques, trappes
+float veh_detail(vec2 p, int kind, float t) {
+	float dtl = 0.0;
+	if (kind == 0) {
+		for (int w = 0; w < 6; w++) {
+			vec2 c = vec2(-0.55 + 0.22 * float(w), 0.135);
+			float rr = length(p - c);
+			dtl = max(dtl, smoothstep(0.014, 0.0, abs(rr - 0.088)) * 0.9);
+			dtl = max(dtl, smoothstep(0.03, 0.0, rr) * 0.7);                       // moyeu
+		}
+		float tread = step(0.5, fract(p.x * 11.0 - t * 2.4));                     // maillons de chenille qui défilent
+		dtl = max(dtl, tread * step(0.255, p.y) * step(p.y, 0.285) * 0.55);
+		dtl = max(dtl, smoothstep(0.008, 0.0, abs(p.y - 0.40)) * 0.5);               // joint caisse
+		dtl = max(dtl, smoothstep(0.008, 0.0, abs(p.x + 0.12)) * step(0.64, p.y) * step(p.y, 0.74) * 0.6);
+	} else if (kind == 1) {
+		for (int w = 0; w < 4; w++) {
+			vec2 c = vec2(-0.55 + 0.30 * float(w), 0.14);
+			dtl = max(dtl, smoothstep(0.014, 0.0, abs(length(p - c) - 0.09)) * 0.8);
+		}
+		float a = t * 3.0;
+		vec2 q = p - vec2(0.88, 0.16);
+		float sp = abs(sin(atan(q.y, q.x) * 3.0 + a));                              // tambour qui tourne
+		dtl = max(dtl, smoothstep(0.17, 0.12, length(q)) * smoothstep(0.7, 0.9, sp) * 0.7);
+	} else {
+		dtl = max(dtl, smoothstep(0.012, 0.0, abs(length(p - vec2(-0.30, 0.13)) - 0.075)) * 0.8);
+		dtl = max(dtl, smoothstep(0.012, 0.0, abs(length(p - vec2(0.30, 0.13)) - 0.075)) * 0.8);
+	}
+	return dtl;
+}
+
+float sd_vehicle(vec2 p, int kind, float rc) {
 	if (kind == 0) { // char : galets, bande de roulement, glacis incliné, tourelle à pans, canon avec frein de bouche
 		float qx = abs(p.x);
 		float d = sd_box(p - vec2(0.0, 0.14), vec2(0.76, 0.14), 0.0);                  // chenilles
@@ -157,12 +187,17 @@ float sd_vehicle(vec2 p, int kind) {
 		d = min(d, sd_trap(p - vec2(-0.02, 0.60), 0.32, 0.21, 0.11));                  // tourelle à pans
 		d = min(d, sd_box(p - vec2(-0.12, 0.74), vec2(0.07, 0.035), 0.005));           // coupole
 		d = min(d, sd_box(p - vec2(0.30, 0.60), vec2(0.07, 0.085), 0.005));            // masque de canon
-		d = min(d, sd_box(p - vec2(0.80, 0.61), vec2(0.46, 0.026), 0.004));            // tube
-		d = min(d, sd_box(p - vec2(1.22, 0.61), vec2(0.05, 0.042), 0.004));            // frein de bouche
+		d = min(d, sd_box(p - vec2(0.80 - rc, 0.61), vec2(0.46, 0.026), 0.004));       // tube (recul)
+		d = min(d, sd_box(p - vec2(1.22 - rc, 0.61), vec2(0.05, 0.042), 0.004));       // frein de bouche
+		d = min(d, sd_box(p - vec2(0.62 - rc, 0.61), vec2(0.07, 0.04), 0.004));        // manchon d'évacuation
+		d = min(d, sd_box(p - vec2(-0.50, 0.75), vec2(0.007, 0.26), 0.003));           // antenne fouet
+		d = min(d, sd_box(p - vec2(-0.28, 0.70), vec2(0.10, 0.03), 0.01));             // projecteur / boîte de rangement
+		d = min(d, sd_box(p - vec2(-0.55, 0.50), vec2(0.12, 0.05), 0.01));             // coffre arrière
 		return d;
 	}
 	if (kind == 1) { // récolteur
 		float d = sd_box(p - vec2(-0.05, 0.14), vec2(0.78, 0.14), 0.03);
+		d = min(d, sd_box(p - vec2(0.0, 0.76), vec2(0.30, 0.03), 0.01));   // rampe de chargement
 		d = min(d, sd_box(p - vec2(-0.12, 0.50), vec2(0.52, 0.24), 0.02));             // cuve
 		d = min(d, sd_box(p - vec2(0.58, 0.40), vec2(0.20, 0.18), 0.02));              // cabine
 		d = min(d, length(p - vec2(0.88, 0.16)) - 0.16);                               // tambour
@@ -275,8 +310,8 @@ vec4 walkers(vec2 uv, float ar, float t, vec3 ro, float terr, vec2 px) {
 	}
 	float dir = hash(vec2(cyc, 9.7)) > 0.5 ? 1.0 : -1.0;
 	int n = ev == 0 ? 3 : (ev == 1 ? 2 : 1);
-	float zc = ev == 0 ? 6.6 : (ev == 1 ? 7.4 : 6.2); // au premier plan : visible sous l'interface
-	const float VS = 0.70;                          // échelle des silhouettes
+	float zc = ev == 0 ? 8.2 : (ev == 1 ? 8.8 : 8.0); // au premier plan : visible sous l'interface
+	const float VS = 1.05;                          // échelle des silhouettes
 	float dur = ev == 2 ? 15.0 : 30.0;
 	float half_w = 0.5 * ar * 0.85 * zc + 3.0;
 	vec4 res = vec4(0.0);
@@ -284,12 +319,12 @@ vec4 walkers(vec2 uv, float ar, float t, vec3 ro, float terr, vec2 px) {
 		if (i >= n) {
 			break;
 		}
-		float u = (ph - 2.0 - float(i) * 1.7) / dur;
+		float u = (ph - 2.0 - float(i) * 3.2) / dur;
 		if (u < 0.0 || u > 1.0) {
 			continue;
 		}
 		float x = dir * mix(-half_w, half_w, u);
-		float z = zc + 0.5 * float(i % 2);
+		float z = zc + 0.9 * float(i % 2);
 		float y = terrain(vec2(x, z));
 		vec3 dv = vec3(x, y, z) - ro;
 		float ux = 0.5 + (dv.x / dv.z) / (ar * 0.85);
@@ -318,19 +353,28 @@ vec4 walkers(vec2 uv, float ar, float t, vec3 ro, float terr, vec2 px) {
 		vec2 p = rot2(-tilt) * l;
 		p.x *= dir;
 		p.y += 0.04;
-		float d = sd_vehicle(p, kind);
+		float rc = (kind == 0 && fract(t / 7.0 + float(i) * 0.31) < 0.06) ? 0.09 * (1.0 - fract(t / 7.0 + float(i) * 0.31) / 0.06) : 0.0;
+		float d = sd_vehicle(p, kind, rc);
 		if (!hidden) {
 			float a = smoothstep(aa, -aa, d);
 			if (a > 0.0) {
 				// éclairage rasant du couchant : liseré orangé côté soleil
 				float e = 0.02;
-				vec2 g = vec2(sd_vehicle(p + vec2(e, 0.0), kind) - sd_vehicle(p - vec2(e, 0.0), kind),
-						sd_vehicle(p + vec2(0.0, e), kind) - sd_vehicle(p - vec2(0.0, e), kind));
+				vec2 g = vec2(sd_vehicle(p + vec2(e, 0.0), kind, rc) - sd_vehicle(p - vec2(e, 0.0), kind, rc),
+						sd_vehicle(p + vec2(0.0, e), kind, rc) - sd_vehicle(p - vec2(0.0, e), kind, rc));
 				g = normalize(g + 1e-5);
 				g.x *= dir;
 				g = rot2(tilt) * g;
-				float rimk = smoothstep(0.0, 0.9, dot(g, normalize(vec2(0.92, 0.35)))) * smoothstep(-0.12, 0.0, d);
-				vec3 body = vec3(0.075, 0.04, 0.10) + vec3(1.0, 0.58, 0.30) * rimk * 0.85;
+				float rimk = smoothstep(0.0, 0.9, dot(g, normalize(vec2(0.92, 0.35)))) * smoothstep(-0.045, 0.0, d);
+				// dégradé de lumière du ciel + éclat du couchant + détails fins
+				vec3 body = mix(vec3(0.05, 0.028, 0.075), vec3(0.17, 0.085, 0.15), smoothstep(0.0, 0.85, p.y));
+				body += vec3(1.0, 0.58, 0.30) * rimk * 0.9;
+				body += vec3(0.55, 0.30, 0.34) * veh_detail(p, kind, t) * 0.55 * smoothstep(0.02, -0.03, d);
+				// éclat du tir : lueur à la bouche du canon, liée au recul
+				if (rc > 0.0) {
+					vec2 mz = p - vec2(1.36, 0.61);
+					body += vec3(1.0, 0.75, 0.40) * exp(-dot(mz, mz) * 25.0) * (rc / 0.09) * 1.4;
+				}
 				// feu d'avant : petite lueur
 				float lamp = exp(-dot(p - vec2(kind == 1 ? 0.62 : (kind == 2 ? 0.42 : 0.30), 0.50), p - vec2(kind == 1 ? 0.62 : (kind == 2 ? 0.42 : 0.30), 0.50)) * 90.0);
 				body += vec3(1.0, 0.8, 0.5) * lamp * 0.8;
