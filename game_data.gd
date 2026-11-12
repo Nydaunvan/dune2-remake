@@ -171,6 +171,7 @@ const BUILDINGS := {
 		"weapon": "cannon", "dps": 22, "range": 7, "vision": 9,
 		"aa": true,
 		"vs_air": 0.8,
+		"max": 8,
 	},
 	# --- Bâtiments débloqués par la campagne ("unlock" = mission à terminer avant) ---
 	"mur": {
@@ -182,32 +183,38 @@ const BUILDINGS := {
 		"name": "Silo d'épice", "cost": 300, "time": 9.0, "size": Vector2i(2, 2), "power": -10,
 		"requires": ["raffinerie"], "hp": 700, "armor": "building", "unlock": 1, "no_upgrade": true,
 		"spice_bonus": 0.10, "desc": "+2000 de stockage (Solaris et minerai), +10 % de Solaris par récolte (3 silos max.)",
+		"max": 3,
 	},
 	"radar": {
 		"name": "Station radar", "cost": 450, "time": 11.0, "size": Vector2i(2, 2), "power": -30,
 		"requires": ["centrale"], "hp": 600, "armor": "building", "vision": 20, "unlock": 2,
 		"desc": "Vision étendue : repère les ennemis de loin (+3 cases par niveau)",
+		"max": 2,
 	},
 	"reparation": {
 		"name": "Centre de réparation", "cost": 500, "time": 12.0, "size": Vector2i(3, 2), "power": -25,
 		"requires": ["usine"], "hp": 800, "armor": "building", "unlock": 2, "no_upgrade": true,
 		"heal": 18.0, "heal_range": 5.0, "desc": "Soigne les unités alliées proches",
+		"req_level": {"usine": 2}, "max": 2,
 	},
 	"reacteur": {
 		"name": "Réacteur", "cost": 700, "time": 12.0, "size": Vector2i(2, 2), "power": 260,
 		"requires": ["centrale", "usine"], "hp": 700, "armor": "building", "unlock": 3,
 		"no_upgrade": true, "desc": "Grosse production d'énergie",
+		"req_level": {"centrale": 2, "usine": 2}, "max": 2,
 	},
 	"batterie": {
 		"aa": true, "name": "Batterie de roquettes", "cost": 600, "time": 12.0, "size": Vector2i(2, 2), "power": -25,
 		"requires": ["usine", "radar"], "hp": 750, "armor": "building", "unlock": 3, "no_upgrade": true,
 		"weapon": "rocket", "dps": 38, "range": 11, "vision": 10, "desc": "Défense longue portée",
 		"vs_air": 1.2,
+		"req_level": {"usine": 2}, "max": 4,
 	},
 	"aerodrome": {
 		"name": "Aérodrome", "cost": 600, "time": 12.0, "size": Vector2i(3, 2), "power": -30,
 		"requires": ["usine"], "hp": 800, "armor": "building", "unlock": 2, "no_upgrade": true,
 		"desc": "Construit les unités volantes",
+		"req_level": {"usine": 2}, "max": 2,
 	},
 	# --- Spécifiques à une faction ---
 	"tour_sonique": {
@@ -215,17 +222,20 @@ const BUILDINGS := {
 		"requires": ["usine"], "hp": 650, "armor": "building", "unlock": 3, "no_upgrade": true,
 		"faction": "solis", "weapon": "sonic", "dps": 34, "range": 8, "vision": 9,
 		"desc": "Onde de zone (Solis)",
+		"req_level": {"usine": 2}, "max": 6,
 	},
 	"relais_solaire": {
 		"name": "Relais solaire", "cost": 450, "time": 10.0, "size": Vector2i(2, 2), "power": 160,
 		"requires": ["centrale"], "hp": 500, "armor": "building", "unlock": 4, "no_upgrade": true,
 		"faction": "solis", "desc": "Énergie bon marché (Solis)",
+		"req_level": {"centrale": 2}, "max": 3,
 	},
 	"bunker": {
 		"name": "Bunker", "cost": 650, "time": 12.0, "size": Vector2i(2, 2), "power": -15,
 		"requires": ["usine"], "hp": 2000, "armor": "building", "unlock": 3, "no_upgrade": true,
 		"faction": "kharn", "weapon": "cannon", "dps": 34, "range": 6, "vision": 9,
 		"desc": "Fortin ultra-résistant (Kharn)",
+		"req_level": {"usine": 2}, "max": 5,
 	},
 	"mur_acier": {
 		"name": "Mur d'acier", "cost": 90, "time": 3.5, "size": Vector2i(1, 1), "power": 0, "requires": [],
@@ -237,11 +247,13 @@ const BUILDINGS := {
 		"requires": ["usine"], "hp": 600, "armor": "building", "unlock": 3, "no_upgrade": true,
 		"faction": "vael", "weapon": "acid", "dps": 34, "range": 7, "vision": 9,
 		"desc": "Perce les blindages (Vael)",
+		"req_level": {"usine": 2}, "max": 6,
 	},
 	"marche": {
 		"name": "Marché noir", "cost": 550, "time": 12.0, "size": Vector2i(3, 2), "power": -20,
 		"requires": ["raffinerie"], "hp": 700, "armor": "building", "unlock": 4, "no_upgrade": true,
 		"faction": "vael", "income": 4.0, "desc": "+4 Solaris par seconde (Vael)",
+		"req_level": {"raffinerie": 2}, "max": 2,
 	},
 }
 

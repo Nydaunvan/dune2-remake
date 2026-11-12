@@ -1578,7 +1578,26 @@ func worker_block(id: String, team := 0) -> String:
 	return ""
 
 
+## Contraintes des bâtiments évolués : niveau de bâtiments requis et nombre maximal.
+func building_block(id: String, team := 0) -> String:
+	var d: Dictionary = GameData.def(id)
+	var rl: Dictionary = d.get("req_level", {})
+	for rid in rl:
+		if best_level(rid, team) < int(rl[rid]):
+			return "%s niv. %d" % [GameData.def(rid)["name"], int(rl[rid])]
+	var mx := int(d.get("max", 0))
+	if mx > 0:
+		var n := count_buildings(id, team)
+		if team == 0:
+			n += queued_count(id)
+		if n >= mx:
+			return "Maximum %d" % mx
+	return ""
+
+
 func unit_level_block(id: String, team := 0) -> String:
+	if GameData.BUILDINGS.has(id):
+		return building_block(id, team)
 	if worker_block(id, team) != "":
 		return worker_block(id, team)
 	var need: int = int(GameData.def(id).get("level", 1))
@@ -2180,7 +2199,10 @@ func on_item_clicked(id: String, button: int) -> void:
 		ui.toast("%s : %d maximum avec ce niveau de Chantier — améliorez le Chantier pour en avoir plus" % [d["name"], worker_cap(id)], GameData.AMBER)
 		return
 	if unit_level_block(id) != "":
-		ui.toast("%s : améliorez l'Usine au niveau %d" % [d["name"], int(d["level"])], GameData.AMBER)
+		if GameData.BUILDINGS.has(id):
+			ui.toast("%s : %s requis" % [d["name"], unit_level_block(id)], GameData.AMBER)
+		else:
+			ui.toast("%s : améliorez l'Usine au niveau %d" % [d["name"], int(d["level"])], GameData.AMBER)
 		return
 	if not is_available(id):
 		ui.toast("Prérequis manquant", GameData.RED)

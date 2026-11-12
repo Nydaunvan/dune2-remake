@@ -1005,9 +1005,9 @@ class BuildIcon extends Control:
 
 	func _draw() -> void:
 		var d := GameData.def(id)
-		var avail: bool = game.is_available(id)
 		var p: Dictionary = game.production_for(id)
 		var ready: bool = (not p.is_empty()) and bool(p["ready"])
+		var avail: bool = game.is_available(id) or ready
 		var busy: bool = (not p.is_empty()) and not bool(p["ready"])
 		var t := Time.get_ticks_msec() / 1000.0
 		var pulse := 0.5 + 0.5 * sin(t * 5.0)
@@ -1028,7 +1028,7 @@ class BuildIcon extends Control:
 		_draw_icon(c, avail)
 		if avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
 			UiStyle.text(self, Vector2(12, 24), "ÉNERGIE", 11, GameData.RED, true)
-		if GameData.UNITS.has(id) and game.unit_level_block(id) != "":
+		if game.unit_level_block(id) != "" and (GameData.UNITS.has(id) or game.is_unlocked(id)):
 			UiStyle.text(self, Vector2(0, 84), String(game.unit_level_block(id)).to_upper(), 11, GameData.AMBER, true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		elif GameData.UNITS.has(id) and not avail:
