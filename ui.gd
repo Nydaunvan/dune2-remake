@@ -389,6 +389,17 @@ class HudBar extends GlassPanel:
 	var shown_ore := 0.0
 	var _init_done := false
 
+	## Dégradé bleu (marge) → ambre → rouge (seuil critique) selon la charge 0..1.
+	func _power_color(f: float) -> Color:
+		var blue := GameData.CYAN
+		var amber := GameData.AMBER_HDR
+		var red := GameData.RED
+		if f < 0.6:
+			return blue.lerp(amber, f / 0.6 * 0.5)
+		if f < 0.85:
+			return blue.lerp(amber, 0.5 + (f - 0.6) / 0.25 * 0.5)
+		return amber.lerp(red, clampf((f - 0.85) / 0.15, 0.0, 1.0))
+
 	func _init() -> void:
 		super(8.0, 4.0, Color(0.75, 0.55, 0.15), Color(1.0, 0.85, 0.4), 18.0)
 
@@ -440,13 +451,30 @@ class HudBar extends GlassPanel:
 		# Énergie : jauge segmentée
 		var prod: int = game.power_produced()
 		var used: int = game.power_used()
-		var ratio := 1.0 if used <= 0 else clampf(float(prod) / float(used), 0.0, 1.0)
+		# Jauge de charge : consommation / production. Bleu = large marge, rouge = seuil critique.
+		var load_f := 0.0
+		if prod > 0:
+			load_f = clampf(float(used) / float(prod), 0.0, 1.0)
+		elif used > 0:
+			load_f = 1.0
 		var ok := prod >= used
-		var gcol := GameData.CYAN if ok else GameData.RED
-		UiStyle.glyph(self, "power", Vector2(472, 54), 14.0, gcol)
+		var load_col := _power_color(load_f)
+		UiStyle.glyph(self, "power", Vector2(472, 54), 14.0, load_col)
 		UiStyle.text(self, Vector2(490, 36), "ÉNERGIE", 11, UiStyle.TEXT_DIM, true)
-		UiStyle.text(self, Vector2(490, 64), "%d / %d" % [prod, used], 22, Color.WHITE if ok else GameData.RED)
-		UiStyle.seg_bar(self, Rect2(590, 50, 196, 12), ratio, gcol, 8.0, 3.0)
+		UiStyle.text(self, Vector2(490, 64), "%d / %d" % [used, prod], 22, Color.WHITE if ok else GameData.RED)
+		var bar := Rect2(590, 50, 196, 12)
+		var cell := 8.0
+		var gap := 3.0
+		var n := int(floor((bar.size.x + gap) / (cell + gap)))
+		var lit := int(round(load_f * n))
+		for i in n:
+			var x := bar.position.x + i * (cell + gap)
+			if i < lit:
+				var c := _power_color(float(i + 1) / n)
+				draw_rect(Rect2(x, bar.position.y, cell, bar.size.y), c)
+				draw_rect(Rect2(x, bar.position.y, cell, 2.0), Color(1, 1, 1, 0.35))
+			else:
+				draw_rect(Rect2(x, bar.position.y, cell, bar.size.y), Color(1, 1, 1, 0.08))
 		_sep(812)
 
 		var t: float = game.game_time
