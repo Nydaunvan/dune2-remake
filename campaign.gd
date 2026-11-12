@@ -687,7 +687,7 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 	if d.has("convoy"):
 		d["convoy"]["ambushes"] = int(d["convoy"]["ambushes"]) + int(g * 3.0)
 		d["convoy"]["ambush_size"] = int(d["convoy"]["ambush_size"]) + int(g * 3.0)
-	d["obj"] = _obj_short(d, faction)
+	d["obj"] = _fnames(_obj_short(d, faction), faction)
 	return d
 
 
@@ -772,7 +772,21 @@ static func briefing(faction: String, m: int) -> String:
 	t = t.replace("{ENEMY}", GameData.FACTIONS[enemy_of(faction, m)]["name"])
 	t = t.replace("{RIVAL}", GameData.FACTIONS[rival]["name"] if rival != "" else "")
 	t = t.replace("{FOURTH}", GameData.FACTIONS[f4]["name"] if f4 != "" else "")
-	return FLAVOR[faction] + "\n\n" + t
+	return FLAVOR[faction] + "\n\n" + _fnames(t, faction)
+
+
+## Remplace les noms génériques des bâtiments cités dans un texte par ceux de la faction.
+static func _fnames(t: String, faction: String) -> String:
+	for id in ["chantier", "usine", "centrale", "raffinerie", "fonderie"]:
+		var nm: String = GameData.name_of(id, faction)
+		var cap: String = String(id).capitalize()
+		if nm == cap:
+			continue
+		# Articles neutralisés : le genre du nom propre à la faction est inconnu
+		for art in [["de l'", "de « %s »"], ["du ", "de « %s »"], ["de la ", "de « %s »"], ["l'", "« %s »"], ["la ", "« %s »"], ["le ", "« %s »"]]:
+			t = t.replace(String(art[0]) + cap, String(art[1]) % nm)
+		t = t.replace(cap, "« %s »" % nm)
+	return t
 
 
 static func _mins(s: float) -> String:
@@ -912,13 +926,13 @@ static func details(faction: String, m: int) -> Array:
 		tech.append("Bâtiments : " + ", ".join(PackedStringArray(["centrale", "raffinerie", "fonderie", "usine", "tourelle"].map(func(i: String) -> String: return GameData.name_of(i, faction)))))
 	var un: PackedStringArray = []
 	for id in fd["units"]:
-		un.append("%s (Usine niv. %d)" % [GameData.name_of(id, faction), int(GameData.UNITS[id].get("level", 1))])
+		un.append("%s (%s niv. %d)" % [GameData.name_of(id, faction), GameData.name_of("usine", faction), int(GameData.UNITS[id].get("level", 1))])
 	tech.append("Unités : " + ", ".join(un))
 	var ua: PackedStringArray = []
 	for id in fd["air"]:
-		ua.append("%s (Usine niv. %d)" % [GameData.name_of(id, faction), int(GameData.UNITS[id].get("level", 1))])
-	tech.append(("Unités volantes (Aérodrome, dès la mission %d) : " % (mission_for_unlock(faction, 2) + 1)) + ", ".join(ua))
-	tech.append("Les unités plus puissantes demandent d'améliorer l'Usine")
+		ua.append("%s (%s niv. %d)" % [GameData.name_of(id, faction), GameData.name_of("usine", faction), int(GameData.UNITS[id].get("level", 1))])
+	tech.append(("Unités volantes (%s, dès la mission %d) : " % [GameData.name_of("aerodrome", faction), mission_for_unlock(faction, 2) + 1]) + ", ".join(ua))
+	tech.append("Les unités plus puissantes demandent d'améliorer : %s" % GameData.name_of("usine", faction))
 	out.append(["TECHNOLOGIE", tech])
 	return out
 

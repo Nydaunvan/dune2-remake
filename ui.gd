@@ -929,7 +929,7 @@ class InfoPanel extends GlassPanel:
 			_row(34, yr, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
 			UiStyle.section(self, Vector2(COL2, 128), 340, "RÔLE", UiStyle.GOLD)
 			if u.role == "mcv":
-				_c2(154.0, "Placez-le sur un sol rocheux dégagé puis cliquez sur DÉPLOYER pour créer votre Chantier (3x3 cases).", 14, UiStyle.TEXT)
+				_c2(154.0, "Placez-le sur un sol rocheux dégagé puis cliquez sur DÉPLOYER pour créer votre " + GameData.dname("chantier") + " (3x3 cases).", 14, UiStyle.TEXT)
 			else:
 				_c2(154.0, "Cargaison à livrer au point cyan indiqué sur la carte et le radar.", 14, UiStyle.TEXT)
 			return
@@ -969,7 +969,7 @@ class InfoPanel extends GlassPanel:
 			y2 = _c2(y2, "Clic droit sur une unité : l'embarquer", 13, UiStyle.TEXT)
 			y2 = _c2(y2 + 2.0, "Clic droit au sol : y aller. Bouton DÉCHARGER (U) pour déposer", 13, UiStyle.TEXT)
 		else:
-			y2 = _c2(y2, "Récolte automatiquement et rapporte à la " + ("Raffinerie" if u.cargo_kind == "spice" else "Fonderie") + ".", 14, UiStyle.TEXT)
+			y2 = _c2(y2, "Récolte automatiquement et rapporte à : " + GameData.dname("raffinerie" if u.cargo_kind == "spice" else "fonderie") + ".", 14, UiStyle.TEXT)
 		if _tech_line(u) != "":
 			_c2(y2 + 2.0, _tech_line(u), 13, GameData.GREEN if u.tech > 0 else UiStyle.TEXT)
 

@@ -1405,7 +1405,7 @@ func _left_pressed() -> void:
 			production["building"].pop_front()
 			placing_id = ""
 		else:
-			ui.toast("Emplacement invalide : roche libre, dans la zone du Chantier (une seconde base demande un engin de chantier)", GameData.RED)
+			ui.toast("Emplacement invalide : roche libre, dans la zone de %s (une seconde base demande un engin de chantier)" % GameData.dname("chantier"), GameData.RED)
 	elif command_mode == "move":
 		order_move(get_global_mouse_position())
 		command_mode = ""
@@ -1623,7 +1623,7 @@ func worker_block(id: String, team := 0) -> String:
 			if it["id"] == id:
 				n += 1
 	if n >= cap:
-		return "Limite %d (Chantier)" % cap
+		return "Limite %d (%s)" % [cap, GameData.dname("chantier")]
 	return ""
 
 
@@ -1677,7 +1677,7 @@ func unit_level_block(id: String, team := 0) -> String:
 		return worker_block(id, team)
 	var need: int = int(GameData.def(id).get("level", 1))
 	if GameData.UNITS.has(id) and best_level("usine", team) < need:
-		return "Usine niveau %d" % need
+		return "%s niveau %d" % [GameData.name_of("usine", faction_id_of(team)), need]
 	return ""
 
 
@@ -1875,7 +1875,7 @@ func upgrade_block(b: Building, money: int) -> String:
 	if b.level >= GameData.MAX_LEVEL:
 		return "Niveau maximum atteint"
 	if b.id != "chantier" and b.level + 1 >= 3 and best_level("chantier", b.team) < 2:
-		return "Améliorez d'abord le Chantier (niveau 2)"
+		return "Améliorez d'abord %s (niveau 2)" % GameData.dname("chantier")
 	if money < upgrade_cost(b) * (START_FRAC if b.team == 0 else 1.0):
 		return "Minerai insuffisant"
 	var extra := -(GameData.power_at(b.id, b.level + 1) - GameData.power_at(b.id, b.level))
@@ -1916,7 +1916,7 @@ func unit_upgrade_block(u: Unit) -> String:
 	if u.tech_left > 0.0:
 		return "Modernisation en cours"
 	if best_level("usine", u.team) < 2:
-		return "Usine niveau 2 requise"
+		return "%s niveau 2 requis" % GameData.dname("usine")
 	if credits < GameData.tech_cost(u.id) * START_FRAC:
 		return "Solaris insuffisants"
 	return ""
@@ -2019,7 +2019,7 @@ func unit_repair_block(u: Unit) -> String:
 	if u.state == "repair":
 		return "Réparation en cours"
 	if find_repair_site(0, u.position) == null:
-		return "Il faut une Usine ou un Centre de réparation"
+		return "Il faut %s ou %s" % [GameData.dname("usine"), GameData.dname("reparation")]
 	if credits < 10:
 		return "Solaris insuffisants"
 	return ""
@@ -2302,24 +2302,24 @@ func on_item_clicked(id: String, button: int) -> void:
 		return
 	if not is_unlocked(id):
 		if mission.is_empty():
-			ui.toast("%s : améliorez le Chantier au niveau %d" % [GameData.dname(id), chantier_needed(id)], GameData.AMBER)
+			ui.toast("%s : améliorez %s au niveau %d" % [GameData.dname(id), GameData.dname("chantier"), chantier_needed(id)], GameData.AMBER)
 		else:
 			ui.toast("%s : débloqué après la mission %d de la campagne" % [GameData.dname(id), Campaign.mission_for_unlock(faction_id, int(d.get("unlock", 0)))], GameData.AMBER)
 		return
 	if worker_block(id) != "":
-		ui.toast("%s : %d maximum avec ce niveau de Chantier — améliorez le Chantier pour en avoir plus" % [GameData.dname(id), worker_cap(id)], GameData.AMBER)
+		ui.toast("%s : %d maximum avec ce niveau de %s — améliorez-le pour en avoir plus" % [GameData.dname(id), worker_cap(id), GameData.dname("chantier")], GameData.AMBER)
 		return
 	if unit_level_block(id) != "":
 		if GameData.BUILDINGS.has(id):
 			ui.toast("%s : %s requis" % [GameData.dname(id), unit_level_block(id)], GameData.AMBER)
 		else:
-			ui.toast("%s : améliorez l'Usine au niveau %d" % [GameData.dname(id), int(d["level"])], GameData.AMBER)
+			ui.toast("%s : améliorez %s au niveau %d" % [GameData.dname(id), GameData.dname("usine"), int(d["level"])], GameData.AMBER)
 		return
 	if not is_available(id):
 		ui.toast("Prérequis manquant", GameData.RED)
 		return
 	if q.size() >= queue_max(cat):
-		ui.toast("File d'attente pleine (%d) — améliorez %s" % [q.size(), "le Chantier" if cat == "building" else "l'Usine"], GameData.AMBER)
+		ui.toast("File d'attente pleine (%d) — améliorez %s" % [q.size(), GameData.dname("chantier") if cat == "building" else GameData.dname("usine")], GameData.AMBER)
 		return
 	if not can_afford(id):
 		var lack := "Solaris insuffisants"
@@ -2544,7 +2544,7 @@ func deploy_mcv(u: Unit, search := false) -> bool:
 	var b := _place_building("chantier", cell, team)
 	Fx.burst(self, b.world_center(), Color(0.85, 0.65, 0.5), 30, 1.4)
 	if team == 0 and ui != null:
-		ui.toast("Chantier déployé — vous pouvez construire", GameData.GREEN)
+		ui.toast("%s déployé — vous pouvez construire" % GameData.dname("chantier"), GameData.GREEN)
 		sfx.play_ui("ready")
 	return true
 
