@@ -58,11 +58,14 @@ func _ready() -> void:
 	var load_btn := GameUI.NeonButton.new("CHARGER")
 	load_btn.accent = GameData.GREEN
 	load_btn.pressed.connect(_open_load)
+	var guide_btn := GameUI.NeonButton.new("GUIDE")
+	guide_btn.accent = GameData.AMBER
+	guide_btn.pressed.connect(func() -> void: Guide.open(self, selected))
 	var quit := GameUI.NeonButton.new("QUITTER")
 	quit.accent = GameData.RED
 	quit.pressed.connect(get_tree().quit)
-	for b in [campaign, skirmish, load_btn, quit]:
-		b.custom_minimum_size = Vector2(250, 58)
+	for b in [campaign, skirmish, load_btn, guide_btn, quit]:
+		b.custom_minimum_size = Vector2(210, 58)
 		btns.add_child(b)
 
 	var opp := CheckButton.new()
@@ -468,3 +471,8 @@ class FactionCard extends Control:
 					draw_circle(c + look, 12.0, col)
 					draw_circle(c + look, 5.0, Color.BLACK)
 					draw_circle(c + look + Vector2(-3, -3), 2.0, Color(1, 1, 1, 0.8))
+
+
+func _unhandled_key_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and event.keycode == KEY_F1:
+		Guide.open(self, selected)

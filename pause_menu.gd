@@ -46,6 +46,11 @@ func setup(p_game) -> void:
 	resume.custom_minimum_size = Vector2(250, 56)
 	resume.pressed.connect(close)
 	hb.add_child(resume)
+	var guide := GameUI.NeonButton.new("GUIDE")
+	guide.accent = GameData.GREEN
+	guide.custom_minimum_size = Vector2(160, 56)
+	guide.pressed.connect(func() -> void: Guide.open(game, game.faction_id))
+	hb.add_child(guide)
 	var menu := GameUI.NeonButton.new("MENU PRINCIPAL")
 	menu.accent = GameData.RED
 	menu.custom_minimum_size = Vector2(250, 56)

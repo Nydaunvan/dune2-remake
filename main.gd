@@ -1156,6 +1156,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				placing_id = ""
 				command_mode = ""
 				_clear_focus()
+			KEY_F1:
+				Guide.open(self, faction_id)
 			KEY_O:
 				ui.toggle_objectives()
 			KEY_P:

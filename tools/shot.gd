@@ -9,6 +9,7 @@ var frames := 90
 
 func _initialize() -> void:
 	GameSession.faction = OS.get_environment("FACTION") if OS.has_environment("FACTION") else "solis"
+	GameSession.instant_bases = OS.has_environment("SHOT_BASE")
 	var sc := OS.get_environment("SHOT_SCENE") if OS.has_environment("SHOT_SCENE") else "main"
 	if OS.has_environment("SHOT_FRAMES"):
 		frames = int(OS.get_environment("SHOT_FRAMES"))
@@ -43,6 +44,9 @@ func _process(_d: float) -> bool:
 				node.selected.append(u)
 	if f == 8 and OS.has_environment("SHOT_ALLYVIEW"):
 		node.center_camera(node.ally_cell * 32.0)
+	if f == 5 and OS.has_environment("SHOT_GUIDE"):
+		var g = Guide.open(node, GameSession.faction)
+		g._show(OS.get_environment("SHOT_GUIDE"))
 	if f == 5 and OS.has_environment("SHOT_OVERLAY"):
 		node._open_campaign()
 	if f == 3 and OS.has_environment("SHOT_FOCUS"):
@@ -75,6 +79,19 @@ func _process(_d: float) -> bool:
 						b.upgrade()
 				x += size.x + 1
 		node.center_camera(node.start_cell * 32.0 + Vector2(120, -190))
+	if f >= 10 and OS.has_environment("SHOT_HARVEST"):
+		for u in node.units:
+			if u.team == 0 and u.id == "recolteur":
+				if f == 10:
+					var n: Vector2i = node.find_resource("spice", node.world_to_cell(u.position), 60)
+					u.position = Vector2(n) * 32.0 + Vector2(16, 16)
+					u.work_cell = n
+					u.state = "harvest"
+					u.cargo = 0.0
+					node.center_camera(u.position)
+				u.state = "harvest"
+				u.cargo = minf(u.cargo, 1.0)
+				break
 	if f == 10 and OS.has_environment("SHOT_SELECT"):
 		for b in node.buildings:
 			if b.team == 0 and b.id == OS.get_environment("SHOT_SELECT"):

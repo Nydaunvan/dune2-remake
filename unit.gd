@@ -66,6 +66,7 @@ var _retry := 0.0
 var _flee_timer := 0.0
 var _dust: CPUParticles2D
 var _work_fx: CPUParticles2D
+var _work_fx2: CPUParticles2D # éclats d'épice / de minerai au-dessus du nuage
 
 var selected := false:
 	set(value):
@@ -99,9 +100,37 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	add_child(_dust)
 	if is_worker():
 		var c := Color(0.95, 0.5, 0.15) if cargo_kind == "spice" else Color(0.6, 0.75, 1.0)
-		_work_fx = Fx.make_dust(c, 14, 0.7, 0.3)
+		# Nuage de poussière qui monte devant l'engin (derrière lui : il reste bien visible)
+		_work_fx = Fx.make_dust(Color(0.88, 0.7, 0.5) if cargo_kind == "spice" else Color(0.7, 0.72, 0.8), 26, 1.5, 0.9)
+		_work_fx.position = Vector2(16, 0)
+		_work_fx.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+		_work_fx.emission_sphere_radius = 12.0
+		_work_fx.direction = Vector2(0, -1)
+		_work_fx.spread = 70.0
+		_work_fx.initial_velocity_min = 14.0
+		_work_fx.initial_velocity_max = 38.0
+		_work_fx.scale_amount_max = 2.2
+		_work_fx.damping_min = 10.0
+		_work_fx.damping_max = 22.0
+		_work_fx.color_ramp.colors = PackedColorArray([Color(0.88, 0.72, 0.52, 0.5), Color(0.88, 0.72, 0.52, 0.0)])
 		add_child(_work_fx)
+		# Éclats lumineux (épice orangée / minerai bleuté)
+		_work_fx2 = Fx.make_dust(c, 16, 0.8, 0.22)
+		_work_fx2.position = Vector2(16, 0)
+		_work_fx2.initial_velocity_min = 30.0
+		_work_fx2.initial_velocity_max = 70.0
+		_work_fx2.gravity = Vector2(0, 60)
+		_work_fx2.color_ramp.colors = PackedColorArray([Color(c.r * 1.6, c.g * 1.6, c.b * 1.6, 0.9), Color(c.r, c.g, c.b, 0.0)])
+		_work_fx2.show_behind_parent = false
+		add_child(_work_fx2)
 		state = "seek"
+
+
+func _set_work_fx(on: bool) -> void:
+	if _work_fx != null:
+		_work_fx.emitting = on
+	if _work_fx2 != null:
+		_work_fx2.emitting = on
 
 
 func is_worker() -> bool:
@@ -119,7 +148,7 @@ func order_path(new_path: PackedVector2Array) -> void:
 	follow(new_path)
 	state = "move"
 	if _work_fx != null:
-		_work_fx.emitting = false
+		_set_work_fx(false)
 
 
 func follow(new_path: PackedVector2Array) -> void:
@@ -138,7 +167,7 @@ func stop() -> void:
 	state = "idle" # un ordre de déplacement relance ensuite le travail
 	_seek_started = false
 	if _work_fx != null:
-		_work_fx.emitting = false
+		_set_work_fx(false)
 
 
 ## Alerte ver : fuit vers la roche la plus proche (ouvriers).
@@ -152,7 +181,7 @@ func flee() -> void:
 	state = "flee"
 	_flee_timer = 22.0
 	if _work_fx != null:
-		_work_fx.emitting = false
+		_set_work_fx(false)
 
 
 ## Ordre d'attaque du joueur : poursuit et détruit la cible.
@@ -355,7 +384,7 @@ func order_repair(site) -> void:
 		follow(game.path_to(position, game.dock_cell(site, game.world_to_cell(position))))
 	state = "repair"
 	if _work_fx != null:
-		_work_fx.emitting = false
+		_set_work_fx(false)
 
 
 func _repair(delta: float) -> void:
@@ -627,7 +656,7 @@ func _seek(delta: float) -> void:
 
 func _harvest(delta: float) -> void:
 	if _work_fx != null:
-		_work_fx.emitting = true
+		_set_work_fx(true)
 	var room := cargo_cap - cargo
 	var got: float = game.extract(work_cell, minf(harvest_rate * delta, room))
 	cargo += got
@@ -653,7 +682,7 @@ func _harvest(delta: float) -> void:
 
 func _start_return() -> void:
 	if _work_fx != null:
-		_work_fx.emitting = false
+		_set_work_fx(false)
 	var from: Vector2i = game.world_to_cell(position)
 	var dock = game.find_dock(cargo_kind, from, team)
 	if dock == null:

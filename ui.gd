@@ -114,6 +114,12 @@ func _build_topbar() -> void:
 	menu_btn.size = Vector2(112, 42)
 	menu_btn.pressed.connect(game.open_pause_menu)
 	topbar.add_child(menu_btn)
+	var guide_btn := NeonButton.new("GUIDE")
+	guide_btn.accent = GameData.GREEN
+	guide_btn.position = Vector2(1034, 22)
+	guide_btn.size = Vector2(80, 42)
+	guide_btn.pressed.connect(func() -> void: Guide.open(game, game.faction_id))
+	topbar.add_child(guide_btn)
 	var obj_btn := NeonButton.new("OBJECTIFS")
 	obj_btn.accent = GameData.AMBER
 	obj_btn.position = Vector2(1124, 22)
