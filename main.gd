@@ -46,6 +46,8 @@ var spice_fields: Array = []           # bassins de sable à épice (cases)
 var ore_fields: Array = []             # filons sur plateaux rocheux
 var corridor_w := 5.5
 var corridors: Array = []              # couloirs garantis (sans montagne)
+var ridges: Array = []                 # chaînes de montagnes [a, b] (avec brèches)
+var carves: Array = []                 # passages creusés pour garantir la connexité
 var plateaus: Array = []               # [centre, rayon] des plateaux rocheux
 var team_factions := {}                # équipe -> faction
 var ais := {}                          # équipe -> IA
@@ -358,6 +360,24 @@ func _generate_layout() -> void:
 			if f.distance_to(k) < f.distance_to(best):
 				best = k
 		corridors.append([best, f])
+	# Chaînes de montagnes : barrent la route directe entre deux camps (avec une ou deux brèches)
+	ridges = []
+	carves = []
+	var n_ridge := 3 + size / 32
+	for i in n_ridge:
+		var k1: Vector2 = keys[rng.randi() % keys.size()]
+		var k2: Vector2 = keys[rng.randi() % keys.size()]
+		if k1.distance_to(k2) < 12.0:
+			continue
+		var mid := k1.lerp(k2, rng.randf_range(0.35, 0.65))
+		var dir := (k2 - k1).normalized().orthogonal()
+		var half := rng.randf_range(0.14, 0.26) * size
+		var a := mid - dir * half
+		var b := mid + dir * half
+		var gap_t := rng.randf_range(0.3, 0.7)
+		var gap := 4.0 / (half * 2.0)
+		ridges.append([a, a.lerp(b, gap_t - gap)])
+		ridges.append([a.lerp(b, gap_t + gap), b])
 
 
 ## Point aléatoire éloigné des autres (distance en fraction de la demi-carte autour du centre).
@@ -422,6 +442,21 @@ func _height(p: Vector2) -> float:
 		h = lerpf(h, 0.28, smoothstep(7.0, 3.5, p.distance_to(orf)))     # plateaux à minerai
 	for cor in corridors:
 		h = lerpf(h, minf(h, 0.2), smoothstep(corridor_w, corridor_w * 0.55, _seg_dist(p, cor[0], cor[1])))
+	if not ridges.is_empty():
+		var m := 1.0
+		for pl in plateaus:
+			m = minf(m, smoothstep(float(pl[1]) * 0.9, float(pl[1]) * 1.5, p.distance_to(pl[0])))
+		for sf in spice_fields:
+			m = minf(m, smoothstep(5.0, 9.0, p.distance_to(sf)))
+		for orf in ore_fields:
+			m = minf(m, smoothstep(4.0, 8.0, p.distance_to(orf)))
+		if m > 0.0:
+			var rd := 99.0
+			for r in ridges:
+				rd = minf(rd, _seg_dist(p, r[0], r[1]))
+			h = lerpf(h, maxf(h, 0.85), smoothstep(3.2, 1.8, rd) * m)
+	for cv in carves:
+		h = lerpf(h, minf(h, 0.2), smoothstep(3.0, 1.6, _seg_dist(p, cv[0], cv[1])))
 	var edge := minf(minf(p.x, map_w - p.x), minf(p.y, map_h - p.y))
 	h = lerpf(h, 0.7, smoothstep(3.0, 0.5, edge))                       # chaîne de bord de carte
 	return h
@@ -463,10 +498,63 @@ func _cell_type(c: Vector2i) -> int:
 
 
 func _generate_terrain() -> void:
-	for x in map_w:
-		terrain.append([])
-		for y in map_h:
-			terrain[x].append(_cell_type(Vector2i(x, y)))
+	for pass_i in 8:
+		terrain = []
+		for x in map_w:
+			terrain.append([])
+			for y in map_h:
+				terrain[x].append(_cell_type(Vector2i(x, y)))
+		if not _carve_connections():
+			break
+
+
+## Vérifie que chaque camp, champ et point d'intérêt est joignable depuis le premier camp ;
+## sinon creuse un passage vers la zone atteinte la plus proche. Renvoie true si on a creusé.
+func _carve_connections() -> bool:
+	var seen := {}
+	var queue: Array[Vector2i] = []
+	var s0 := Vector2i(start_cell)
+	# une case non montagneuse près du départ
+	for r in range(0, 6):
+		for dx in range(-r, r + 1):
+			for dy in range(-r, r + 1):
+				var c := s0 + Vector2i(dx, dy)
+				if queue.is_empty() and c.x >= 0 and c.y >= 0 and c.x < map_w and c.y < map_h and terrain[c.x][c.y] != T.MOUNTAIN:
+					queue.append(c)
+					seen[c] = true
+	var qi := 0
+	while qi < queue.size():
+		var c: Vector2i = queue[qi]
+		qi += 1
+		for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+			var n: Vector2i = c + d
+			if n.x < 0 or n.y < 0 or n.x >= map_w or n.y >= map_h or seen.has(n):
+				continue
+			if terrain[n.x][n.y] == T.MOUNTAIN:
+				continue
+			seen[n] = true
+			queue.append(n)
+	var targets: Array = []
+	for pl in plateaus:
+		targets.append(pl[0])
+	targets.append_array(spice_fields)
+	targets.append_array(ore_fields)
+	var dug := false
+	for t in targets:
+		var tc := Vector2i(t).clamp(Vector2i.ZERO, Vector2i(map_w - 1, map_h - 1))
+		if seen.has(tc):
+			continue
+		var best: Vector2i = s0
+		var bd := INF
+		for c in queue:
+			var dd := Vector2(c).distance_squared_to(Vector2(tc))
+			if dd < bd:
+				bd = dd
+				best = c
+		carves.append([Vector2(tc), Vector2(best)])
+		dug = true
+		break  # un passage à la fois, puis on recalcule
+	return dug
 
 
 func _init_resources() -> void:
