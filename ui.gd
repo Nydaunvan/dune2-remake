@@ -671,7 +671,8 @@ class InfoPanel extends GlassPanel:
 				rbtn.tooltip_text = game.unit_repair_block(ru)
 		queue_redraw()
 
-	## Les commandes ne s'affichent que pour des unités à soi.
+	## Les commandes ne s'affichent que pour des unités à soi, et seulement celles qui ont un sens
+	## pour la sélection (pas d'ATTAQUER sans unité armée ; VIDER pour les ouvriers).
 	func _update_commands() -> void:
 		var show := false
 		if _focus is Unit and _focus.team == 0 and not _focus.convoy:
@@ -680,23 +681,44 @@ class InfoPanel extends GlassPanel:
 			show = true
 		var has_mcv := false
 		var has_loaded := false
+		var has_worker := false
+		var has_armed := false
 		for u in game.selected:
 			if u.role == "mcv":
 				has_mcv = true
 			if u.role == "transport" and not u.cargo_units.is_empty():
 				has_loaded = true
-		for cb in cmd_btns:
-			cb.visible = show
+			if u.is_worker():
+				has_worker = true
+			if u.weapon != "":
+				has_armed = true
+		var last: GameUI.NeonButton = cmd_btns[3]
+		if has_mcv:
+			last.text = "DÉPLOYER"
+			last.set_meta("cmd", "deploy")
+			last.enabled = true
+		elif has_loaded:
+			last.text = "DÉCHARGER"
+			last.set_meta("cmd", "unload")
+			last.enabled = true
+		elif has_worker:
+			last.text = "VIDER"
+			last.set_meta("cmd", "unload")
+			last.enabled = true
+			last.tooltip_text = "Retourne au dépôt décharger la cargaison, même incomplète (U)"
+		else:
+			last.text = "DÉPLOYER"
+			last.set_meta("cmd", "deploy")
+			last.enabled = false
+		var show_last := has_mcv or has_loaded or has_worker
+		var vis := [show, show, show and has_armed, show and show_last]
+		var x := 398.0
+		for i in cmd_btns.size():
+			cmd_btns[i].visible = vis[i]
+			if vis[i]:
+				cmd_btns[i].position = Vector2(x, 14)
+				x += 96.0
 		if show:
-			var last: GameUI.NeonButton = cmd_btns[3]
-			if has_loaded and not has_mcv:
-				last.text = "DÉCHARGER"
-				last.set_meta("cmd", "unload")
-				last.enabled = true
-			else:
-				last.text = "DÉPLOYER"
-				last.set_meta("cmd", "deploy")
-				last.enabled = has_mcv
 			cmd_btns[1].active = game.command_mode == "move"
 			cmd_btns[2].active = game.command_mode == "attack"
 

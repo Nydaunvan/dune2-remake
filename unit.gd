@@ -146,6 +146,15 @@ func is_worker() -> bool:
 
 # --- Ordres -------------------------------------------------------------------
 
+## Ordre « vider » : retourne tout de suite au dépôt décharger, même sans être plein, puis reprend la récolte.
+func force_return() -> bool:
+	if not is_worker() or not alive or cargo <= 0.0:
+		return false
+	_seek_started = false
+	_start_return()
+	return state == "return"
+
+
 ## Ordre du joueur : va quelque part, puis reprend le travail (ouvriers).
 func order_path(new_path: PackedVector2Array) -> void:
 	load_target = null

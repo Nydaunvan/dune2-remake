@@ -1409,13 +1409,20 @@ func on_command(cmd: String) -> void:
 			if not any:
 				ui.toast("Sélectionnez l'engin de chantier", GameData.AMBER)
 		"unload":
+			# Transport chargé : dépose ses passagers ; récolteur / mineur : retourne vider sa cargaison
 			var any2 := false
+			var empty_workers := 0
 			for u in selected:
 				if u.role == "transport" and not u.cargo_units.is_empty():
 					u.unload_all()
 					any2 = true
+				elif u.is_worker():
+					if u.force_return():
+						any2 = true
+					else:
+						empty_workers += 1
 			if not any2:
-				ui.toast("Sélectionnez un transport chargé", GameData.AMBER)
+				ui.toast("Déjà vide" if empty_workers > 0 else "Sélectionnez un transport chargé ou un ouvrier", GameData.AMBER)
 		"stop":
 			for u in selected:
 				u.stop()
@@ -1423,6 +1430,13 @@ func on_command(cmd: String) -> void:
 			placing_id = ""
 			command_mode = "move"
 		"attack":
+			var armed := false
+			for u in selected:
+				if u.weapon != "":
+					armed = true
+			if not armed:
+				ui.toast("Aucune unité armée sélectionnée", GameData.AMBER)
+				return
 			placing_id = ""
 			command_mode = "attack"
 

@@ -111,6 +111,7 @@ const UPGRADES := {
 	"fonderie": "+12 % de minerai par récolte, +25 % PV",
 	"usine": "Débloque de nouvelles unités, +2 places en file, production +25 % plus rapide, +25 % PV",
 	"tourelle": "+25 % de dégâts, +25 % PV",
+	"radar": "+3 cases de vision et de détection, +25 % PV",
 }
 # Modernisation d'une unité (une fois, à l'Usine niveau 2) : bonus propres à chaque type.
 # Clés : hp/dps/speed/cap/rate = multiplicateurs, range/vision = cases en plus.
@@ -184,8 +185,8 @@ const BUILDINGS := {
 	},
 	"radar": {
 		"name": "Station radar", "cost": 450, "time": 11.0, "size": Vector2i(2, 2), "power": -30,
-		"requires": ["centrale"], "hp": 600, "armor": "building", "vision": 17, "unlock": 2,
-		"no_upgrade": true, "desc": "Vision très étendue",
+		"requires": ["centrale"], "hp": 600, "armor": "building", "vision": 20, "unlock": 2,
+		"desc": "Vision étendue : repère les ennemis de loin (+3 cases par niveau)",
 	},
 	"reparation": {
 		"name": "Centre de réparation", "cost": 500, "time": 12.0, "size": Vector2i(3, 2), "power": -25,

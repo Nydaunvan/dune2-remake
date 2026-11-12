@@ -105,8 +105,15 @@ func upgrade() -> void:
 	power = GameData.power_at(id, level)
 	if weapon != "":
 		dps = base_dps * (1.0 + 0.25 * (level - 1))
+	_apply_vision()
 	Fx.burst(game, world_center(), GameData.GOLD, 24, 1.3)
 	queue_redraw()
+
+
+## La Station radar voit plus loin à chaque niveau.
+func _apply_vision() -> void:
+	if id == "radar":
+		vision = int(GameData.def(id).get("vision", GameData.BUILDING_VISION)) + 3 * (level - 1)
 
 
 func world_center() -> Vector2:
@@ -389,6 +396,7 @@ func restore_state(s: Dictionary) -> void:
 	power = GameData.power_at(id, level)
 	if weapon != "":
 		dps = base_dps * (1.0 + 0.25 * (level - 1))
+	_apply_vision()
 	hp = minf(float(s["hp"]), max_hp)
 	up_left = float(s["up_left"])
 	up_total = float(s["up_total"])
