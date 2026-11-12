@@ -1036,8 +1036,8 @@ func on_unit_lost(u: Unit) -> void:
 				GameStats.inc(stats.foes_eaten, u.id)
 			elif u.last_attacker_team == 0:
 				GameStats.inc(stats.foes_killed, u.id)
-	if hostile(u.team, 0) and u.id != "mcv":
-		kills += 1
+	if hostile(u.team, 0) and u.id != "mcv" and u.last_attacker_team == 0 and not u.eaten:
+		kills += 1  # seules les victimes du joueur comptent (pas celles d'une autre IA ou des vers)
 	units.erase(u)
 	selected.erase(u)
 
@@ -1272,8 +1272,8 @@ func notify_attack(b: Building) -> void:
 
 func on_building_destroyed(b: Building) -> void:
 	if hostile(b.team, 0):
-		destroyed[b.id] = int(destroyed.get(b.id, 0)) + 1
 		if b.last_attacker_team == 0:
+			destroyed[b.id] = int(destroyed.get(b.id, 0)) + 1
 			GameStats.inc(stats.b_foe, b.id)
 	elif b.team == 0 and not b.demolished:
 		GameStats.inc(stats.b_lost, b.id)
