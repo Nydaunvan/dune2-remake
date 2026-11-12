@@ -864,17 +864,31 @@ class InfoPanel extends GlassPanel:
 
 	func _hp_block(name_s: String, sub: String, hp: float, hp_max: float, mine: bool, tag := "") -> void:
 		var col := Color.WHITE if mine else GameData.RED
-		UiStyle.text(self, Vector2(34, 58), name_s.to_upper(), 24, col, true)
+		# Le titre ne doit jamais déborder sur les boutons (AMÉLIORER, RÉPARER…) : corps réduit si besoin
+		var max_w := 700.0
+		if btn.visible:
+			max_w = (COL2 if _focus is Building else 398.0) - 34.0 - 22.0
+		var title := name_s.to_upper()
+		var fs := 24
+		while fs > 14 and UiStyle.text_width(title, fs, true) > max_w:
+			fs -= 1
+		UiStyle.text(self, Vector2(34, 58), title, fs, col, true)
+		var tag_in_title := false
 		if tag != "":
-			var w := UiStyle.text_width(name_s.to_upper(), 24, true)
-			UiStyle.text(self, Vector2(34 + w + 14, 58), tag, 14, UiStyle.GOLD, true)
+			var w := UiStyle.text_width(title, fs, true)
+			tag_in_title = w + 14.0 + UiStyle.text_width(tag, 14) <= max_w
+			if tag_in_title:
+				UiStyle.text(self, Vector2(34 + w + 14, 58), tag, 14, UiStyle.GOLD, true)
 		if sub != "":
-			var sl := UiStyle.wrap_lines(sub, 13, 730.0)
+			var sl := UiStyle.wrap_lines(sub, 13, minf(max_w + 20.0, 730.0))
 			for i in mini(sl.size(), 2):
 				var ln: String = sl[i]
 				if i == 1 and sl.size() > 2:
 					ln = ln.substr(0, maxi(ln.length() - 1, 1)) + "…"
 				UiStyle.text(self, Vector2(34, 76 + 15 * i), ln, 13, UiStyle.TEXT_DIM)
+		if tag != "" and not tag_in_title:
+			var sw := UiStyle.text_width(sub, 13) if sub != "" else 0.0
+			UiStyle.text(self, Vector2(34 + minf(sw, 200.0) + (14.0 if sub != "" else 0.0), 76), tag, 13, UiStyle.GOLD, true)
 		UiStyle.seg_bar(self, Rect2(34, 96, 340, 11), hp / maxf(hp_max, 1.0), GameData.GREEN if mine else GameData.RED, 8.0, 3.0)
 		UiStyle.text(self, Vector2(386, 106), "%d / %d" % [int(hp), int(hp_max)], 13, UiStyle.TEXT)
 

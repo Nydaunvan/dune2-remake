@@ -330,7 +330,10 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	if i < done:
 		tag += "  —  TERMINÉE"
 	v.add_child(_left(tag, 15, GameData.GOLD))
-	v.add_child(_left(String(m["title"]).to_upper(), 24, Color.WHITE))
+	var ttl := _left(String(m["title"]).to_upper(), 22, Color.WHITE)
+	ttl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	ttl.custom_minimum_size = Vector2(300, 56) # deux lignes réservées : un long titre ne déborde plus
+	v.add_child(ttl)
 	var lvl := Campaign.level_of(selected, i)
 	var dcol := Color(0.4, 1.0, 0.6).lerp(Color(1.0, 0.3, 0.25), float(lvl - 1) / 9.0)
 	v.add_child(_left("DIFFICULTÉ  %s%s  %d/10" % ["◆".repeat(lvl), "◇".repeat(10 - lvl), lvl], 13, dcol))
