@@ -267,16 +267,16 @@ func _p_factions() -> String:
 
 func _p_campaign() -> String:
 	var s := _h("Les campagnes")
-	s += "Chaque faction a sa propre campagne de %d missions, avec ses adversaires et son style : défense et précision pour Solis, offensive pour Kharn, vitesse et commerce pour Vael. Une mission terminée débloque la suivante et de nouveaux bâtiments.\n" % Campaign.count(faction)
-	s += "\n[b]La difficulté monte de 1 à 10[/b] : adversaires plus rapides, plus nombreux et plus agressifs, objectifs plus longs et délais plus exigeants. Les premières missions se jouent en une dizaine de minutes ; les dernières peuvent durer une heure ou plus, et la dixième oppose trois camps déjà installés.\n"
+	s += "Chaque faction a sa propre campagne de %d missions, avec ses adversaires et son style : défense et précision pour Solis, offensive pour Kharn, vitesse et commerce pour Vael, cristal et endurance pour le Conclave. Une mission terminée débloque la suivante et de nouveaux bâtiments.\n" % Campaign.count(faction)
+	s += "\n[b]La difficulté monte de 1 à 10[/b] : adversaires plus rapides, plus nombreux et plus agressifs, objectifs plus longs et délais plus exigeants. Les premières missions se jouent en une dizaine de minutes ; les dernières peuvent durer une heure ou plus, et la dixième oppose quatre camps déjà installés (vous et trois adversaires).\n"
 	s += "\nTypes d'objectifs : construire, récolter Solaris ou minerai, produire des unités, une flotte aérienne ou de l'énergie, améliorer des bâtiments, survivre, abattre un nombre d'ennemis, détruire des bâtiments précis, des avant-postes ou tout l'ennemi, escorter un convoi.
-Certaines missions imposent un [b]temps limite[/b], démarrent avec une [b]base déjà bâtie[/b] (la vôtre, celle de l'ennemi, ou les deux), ou déchaînent les vers de sable.\nCertaines missions ont [b]2, 3 objectifs ou plus[/b], à remplir tous ; d'autres opposent trois camps où chacun est l'ennemi de tous.\n"
+Certaines missions imposent un [b]temps limite[/b], démarrent avec une [b]base déjà bâtie[/b] (la vôtre, celle de l'ennemi, ou les deux), ou déchaînent les vers de sable.\nCertaines missions ont [b]2, 3 objectifs ou plus[/b], à remplir tous ; d'autres opposent trois ou quatre camps où chacun est l'ennemi de tous.\n"
 	s += _h("Missions de " + GameData.FACTIONS[faction]["name"])
 	var i := 0
 	for m in Campaign.missions(faction):
 		var tag := ""
 		if m.get("rival", false):
-			tag = " [color=#ff9966](3 camps)[/color]"
+			tag = " [color=#ff9966](%d camps)[/color]" % (Campaign.foe_count(faction, i) + 1)
 		s += "\n[b]%d. %s[/b]%s\n    %s\n" % [i + 1, m["title"], tag, m["obj"]]
 		i += 1
 	return s
@@ -298,7 +298,7 @@ func _p_system() -> String:
 • Quatre emplacements sont disponibles ; chacun indique la faction, le mode, le temps de jeu et la date.
 • Charger : depuis le menu pause, la touche F7 ou le bouton CHARGER du menu principal.
 • La carte est reconstruite à l'identique ; bâtiments, unités, ressources, files de production, brouillard exploré et IA sont restaurés.
-""" + _h("Menu principal") + """Choisissez votre faction, puis CAMPAGNE (liste des missions avec briefing détaillé), ESCARMOUCHE (option 3 camps), CHARGER ou GUIDE. Les emblèmes des factions s'animent lorsque vous les survolez.
+""" + _h("Menu principal") + """Choisissez votre faction, puis CAMPAGNE (liste des missions avec briefing détaillé), ESCARMOUCHE (jusqu'à 3 adversaires), CHARGER ou GUIDE. Les emblèmes des factions s'animent lorsque vous les survolez.
 """ + _h("Astuces") + """• Construisez votre Centrale avant tout, puis surveillez l'énergie en haut de l'écran.
 • Placez les défenses entre votre base et l'ennemi, et des défenses antiaériennes si l'adversaire a un Aérodrome.
 • Groupez vos unités avant de lancer un assaut ; ATTAQUER fait avancer le groupe en tirant sur tout ce qu'il croise.

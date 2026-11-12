@@ -1,6 +1,6 @@
 extends Control
 ## Menu principal : choix de la faction, puis lancement de la partie.
-## Campagnes : à venir. Escarmouche : affrontement contre une IA.
+## Escarmouche : affrontement contre 1 à 3 IA.
 
 var selected := GameSession.faction
 var cards := {}
@@ -146,14 +146,15 @@ func _open_skirmish() -> void:
 
 	var two := GameSession.opponents >= 2
 	rows.add_child(_option_row("NOMBRE D'ADVERSAIRES", [
-		["1 ADVERSAIRE", not two, func() -> void: GameSession.opponents = 1],
-		["2 ADVERSAIRES", two, func() -> void: GameSession.opponents = 2]]))
+		["1 ADVERSAIRE", GameSession.opponents <= 1, func() -> void: GameSession.opponents = 1],
+		["2 ADVERSAIRES", GameSession.opponents == 2, func() -> void: GameSession.opponents = 2],
+		["3 ADVERSAIRES", GameSession.opponents >= 3, func() -> void: GameSession.opponents = 3]]))
 	var foe_opts: Array = [["ALÉATOIRE", GameSession.skirm_foe == "", func() -> void: GameSession.skirm_foe = ""]]
 	for k in others:
 		foe_opts.append([String(GameData.FACTIONS[k]["name"]).to_upper(), GameSession.skirm_foe == k,
 				func() -> void: GameSession.skirm_foe = k])
 	if two:
-		rows.add_child(_info_row("FACTIONS ADVERSES", "Deux factions adverses tirées au sort parmi les autres — chacune est hostile à tous (chacun pour soi)"))
+		rows.add_child(_info_row("FACTIONS ADVERSES", ("Les trois autres factions s'affrontent toutes : quatre camps, chacun pour soi" if GameSession.opponents >= 3 else "Deux factions adverses tirées au sort parmi les autres — chacune est hostile à tous (chacun pour soi)")))
 	else:
 		rows.add_child(_option_row("FACTION ADVERSE", foe_opts))
 	rows.add_child(_option_row("TAILLE DE LA CARTE", [

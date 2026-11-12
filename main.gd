@@ -40,6 +40,7 @@ var world_size := Vector2(96, 96) * TILE
 var start_cell := Vector2(48, 80)      # case de départ du joueur
 var enemy_cell := Vector2(48, 16)      # case de départ de l'adversaire
 var ally_cell := Vector2(-1, -1)       # case de départ du 3e camp (-1 : absent)
+var fourth_cell := Vector2(-1, -1)     # case de départ du 4e camp (-1 : absent)
 var third_hostile := false             # le 3e camp est un second adversaire (chacun pour soi)
 var spice_fields: Array = []           # bassins de sable à épice (cases)
 var ore_fields: Array = []             # filons sur plateaux rocheux
@@ -239,7 +240,7 @@ func _load_step(frac: float, text: String) -> void:
 
 # --- Camps, carte procédurale ------------------------------------------------
 
-## Factions de chaque équipe : 0 = joueur, 1 = adversaire, 2 = second adversaire.
+## Factions de chaque équipe : 0 = joueur, 1 = adversaire, 2 = second adversaire, 3 = troisième adversaire.
 func _setup_factions() -> void:
 	var others: Array = GameData.FACTIONS.keys().filter(func(k: String) -> bool: return k != faction_id)
 	others.shuffle()
@@ -254,11 +255,15 @@ func _setup_factions() -> void:
 	if not mission.is_empty() and mission.get("rival", false):
 		third_hostile = true
 		team_factions[2] = Campaign.third_of(faction_id, GameSession.mission)
+		var f4 := Campaign.fourth_of(faction_id, GameSession.mission)
+		if f4 != "":
+			team_factions[3] = f4
 	elif mission.is_empty() and GameSession.opponents >= 2:
 		third_hostile = true
-		for k in others:
-			if k != enemy:
-				team_factions[2] = k
+		var rest: Array = others.filter(func(k: String) -> bool: return k != enemy)
+		team_factions[2] = rest[0]
+		if GameSession.opponents >= 3 and rest.size() > 1:
+			team_factions[3] = rest[1]
 	if not _save.is_empty():
 		third_hostile = bool(_save.get("third_hostile", third_hostile))
 		team_factions = {}
@@ -286,7 +291,16 @@ func _generate_layout() -> void:
 	plateaus = [[start_cell, 9.0], [enemy_cell, 9.0]]
 	var keys: Array = [start_cell, enemy_cell]
 	ally_cell = Vector2(-1, -1)
-	if team_factions.has(2):
+	fourth_cell = Vector2(-1, -1)
+	if team_factions.has(3):
+		# Quatre camps : aux quatre coins, en croix
+		ally_cell = (c + Vector2.from_angle(a0 + PI / 2.0) * radius * 0.97).round()
+		fourth_cell = (c + Vector2.from_angle(a0 - PI / 2.0) * radius * 0.97).round()
+		plateaus.append([ally_cell, 9.0])
+		plateaus.append([fourth_cell, 9.0])
+		keys.append(ally_cell)
+		keys.append(fourth_cell)
+	elif team_factions.has(2):
 		var da := rng.randf_range(1.0, 1.4) * (1.0 if rng.randf() < 0.5 else -1.0)
 		ally_cell = (c + Vector2.from_angle(a0 + da) * radius * 0.95).round()
 		plateaus.append([ally_cell, 9.0])
@@ -312,7 +326,7 @@ func _generate_layout() -> void:
 	# Champs : un d'épice et un de minerai par base (assez loin), puis des champs neutres
 	spice_fields = []
 	ore_fields = []
-	for base in [start_cell, enemy_cell, ally_cell]:
+	for base in [start_cell, enemy_cell, ally_cell, fourth_cell]:
 		if base.x < 0:
 			continue
 		var p1 := _field_near(rng, base, 15.0, 19.0, spice_fields + ore_fields, size)
@@ -1011,6 +1025,8 @@ func faction_id_of(team: int) -> String:
 func side_of(team: int) -> int:
 	if team == 2 and third_hostile:
 		return 2
+	if team == 3:
+		return 3
 	return 1 if team == 1 else 0
 
 
@@ -1047,6 +1063,8 @@ func home_of(team: int) -> Vector2i:
 			return Vector2i(start_cell)
 		1:
 			return Vector2i(enemy_cell)
+		3:
+			return Vector2i(fourth_cell)
 	return Vector2i(ally_cell)
 
 
@@ -2386,7 +2404,7 @@ func _setup_sides() -> void:
 		var home := home_of(t)
 		if not _save.is_empty():
 			pass # les bâtiments et unités viennent de la sauvegarde
-		elif GameSession.instant_bases or (not mission.is_empty() and mission.get(["start_base", "enemy_base", "third_base"][t], false)):
+		elif GameSession.instant_bases or (not mission.is_empty() and mission.get(["start_base", "enemy_base", "third_base", "fourth_base"][t], false)):
 			_place_base(Vector2(home), t)
 			_spawn_base_units(Vector2(home), t)
 		else:

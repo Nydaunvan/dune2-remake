@@ -280,8 +280,8 @@ const CAMPAIGNS := {
 					{"type": "upgrade", "id": "chantier", "level": 3}],
 			"ai": {"slowdown": 1.2, "grace": 300.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2800, "ore": 3000},
 			"third_ai": {"slowdown": 1.4, "grace": 360.0, "pause": 60.0, "max_army": 18, "wave": 6, "credits": 2400, "ore": 2600},
-			"obj": "En 25 minutes : 8000 Solaris, Chantier niveau 3, 4 appareils et la destruction des deux camps",
-			"brief": "Trois bases, déjà bâties, une seule couronne. Le Cartel doit tout faire à la fois : remplir les caisses, moderniser, bâtir une flotte et effacer {ENEMY} et {RIVAL} avant que le temps ne s'écoule. Qui tient le désert tient le commerce.",
+			"obj": "En 25 minutes : 8000 Solaris, Chantier niveau 3, 4 appareils et la destruction des trois camps",
+			"brief": "Quatre bases, déjà bâties, une seule couronne. Le Cartel doit tout faire à la fois : remplir les caisses, moderniser, bâtir une flotte et effacer {ENEMY}, {RIVAL} et {FOURTH} avant que le temps ne s'écoule. Qui tient le désert tient le commerce.",
 		},
 	],
 	# --- Conclave Obsidien : cristal, régénération, endurance ---
@@ -373,8 +373,8 @@ const CAMPAIGNS := {
 					{"type": "upgrade", "id": "chantier", "level": 3}],
 			"ai": {"slowdown": 1.2, "grace": 300.0, "pause": 50.0, "max_army": 22, "wave": 6, "credits": 2800, "ore": 3000},
 			"third_ai": {"slowdown": 1.4, "grace": 360.0, "pause": 60.0, "max_army": 18, "wave": 6, "credits": 2400, "ore": 2600},
-			"obj": "En 25 minutes : 8000 Solaris, Chantier niveau 3, 4 appareils et la destruction des deux camps",
-			"brief": "Trois bases, déjà bâties, un seul trône de verre noir. Le Conclave doit tout faire à la fois : remplir ses réserves, moderniser, bâtir une flotte et effacer {ENEMY} et {RIVAL} avant que le temps ne s'écoule.",
+			"obj": "En 25 minutes : 8000 Solaris, Chantier niveau 3, 4 appareils et la destruction des trois camps",
+			"brief": "Quatre bases, déjà bâties, un seul trône de verre noir. Le Conclave doit tout faire à la fois : remplir ses réserves, moderniser, bâtir une flotte et effacer {ENEMY}, {RIVAL} et {FOURTH} avant que le temps ne s'écoule.",
 		},
 	],
 }
@@ -456,6 +456,8 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 		d["rival"] = true
 		if d.get("rival", false):
 			d["third_base"] = true
+			d["quad"] = true # la finale oppose quatre camps : le joueur et trois adversaires
+			d["fourth_base"] = true
 	# Objectifs plus longs et plus exigeants avec le niveau (jusqu'à plusieurs fois la durée de base)
 	for o in d["objectives"]:
 		match o["type"]:
@@ -530,6 +532,17 @@ static func _third(faction: String, d: Dictionary) -> String:
 	return ""
 
 
+## Quatrième faction de la mission (troisième adversaire), "" s'il n'y en a pas.
+static func fourth_of(faction: String, m: int) -> String:
+	var d: Dictionary = mission(faction, m)
+	if not d.get("quad", false):
+		return ""
+	for k in GameData.FACTIONS.keys():
+		if k != faction and k != d["enemy"] and k != _third(faction, d):
+			return k
+	return ""
+
+
 ## Second adversaire (chacun pour soi) : la troisième faction est hostile à tous.
 static func rival_of(faction: String, m: int) -> String:
 	return third_of(faction, m) if mission(faction, m).get("rival", false) else ""
@@ -537,9 +550,16 @@ static func rival_of(faction: String, m: int) -> String:
 
 static func briefing(faction: String, m: int) -> String:
 	var t: String = mission(faction, m)["brief"]
-	t = t.replace("{ENEMY}", GameData.FACTIONS[enemy_of(faction, m)]["name"])
 	var rival := rival_of(faction, m)
+	var f4 := fourth_of(faction, m)
+	# Camps supplémentaires non cités dans le briefing d'origine (finale à quatre camps)
+	if rival != "" and not t.contains("{RIVAL}"):
+		t += " {RIVAL} est aussi de la partie, hostile à tous."
+	if f4 != "" and not t.contains("{FOURTH}"):
+		t += " {FOURTH} entre aussi dans la mêlée : quatre camps, chacun pour soi."
+	t = t.replace("{ENEMY}", GameData.FACTIONS[enemy_of(faction, m)]["name"])
 	t = t.replace("{RIVAL}", GameData.FACTIONS[rival]["name"] if rival != "" else "")
+	t = t.replace("{FOURTH}", GameData.FACTIONS[f4]["name"] if f4 != "" else "")
 	return FLAVOR[faction] + "\n\n" + t
 
 
@@ -553,7 +573,12 @@ static func _mins(s: float) -> String:
 
 ## Nombre d'adversaires (factions hostiles au joueur) d'une mission.
 static func foe_count(faction: String, m: int) -> int:
-	return 2 if rival_of(faction, m) != "" else 1
+	var n := 1
+	if rival_of(faction, m) != "":
+		n += 1
+	if fourth_of(faction, m) != "":
+		n += 1
+	return n
 
 
 ## « Adversaire : X » ou « Adversaires (2) : X et Y » (toutes les factions hostiles présentes).
@@ -562,6 +587,9 @@ static func foes_text(faction: String, m: int) -> String:
 	var r := rival_of(faction, m)
 	if r == "":
 		return "Adversaire : %s" % e
+	var f4 := fourth_of(faction, m)
+	if f4 != "":
+		return "Adversaires (3) : %s, %s et %s" % [e, GameData.FACTIONS[r]["name"], GameData.FACTIONS[f4]["name"]]
 	return "Adversaires (2) : %s et %s" % [e, GameData.FACTIONS[r]["name"]]
 
 
@@ -631,7 +659,7 @@ static func details(faction: String, m: int) -> Array:
 	if d.get("enemy_base", false):
 		sit.append("La base de l'adversaire est déjà bâtie et opérationnelle")
 	if d.get("third_base", false):
-		sit.append("La base du second adversaire est aussi déjà bâtie")
+		sit.append("Les bases des autres adversaires sont aussi déjà bâties" if d.get("quad", false) else "La base du second adversaire est aussi déjà bâtie")
 	if d.has("worm_rate"):
 		sit.append("Les vers de sable sont %d fois plus fréquents : surveillez vos récolteurs" % int(d["worm_rate"]))
 	var su: Array = d.get("start_units", [])
