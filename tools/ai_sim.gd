@@ -27,4 +27,11 @@ func _process(_d: float) -> bool:
 		for u in a._army(): st[u.state] = int(st.get(u.state, 0)) + 1
 		s += " wave=%d grace=%d states=%s tgt=%s" % [a.wave_size, a.wave_grace, str(st), str(a._pick_target() != null)]
 		print(s)
-	return frame >= 5000
+		var m := ""
+		for u in main.units:
+			if u.team == 1 and u.is_worker():
+				m += " %s:%s c=%.0f p=%d" % [u.id, u.state, u.cargo, u.path.size()]
+		var pick: String = a._pick_ground_unit()
+		print("   pick=%s avail=%s cost=%d ore_cost=%d armylim=%d under=%s harv=%d miners=%d" % [pick, str(a._available(pick)) if pick != "" else "-", a._cost(pick) if pick != "" else 0, a._ore_cost(pick) if pick != "" else 0, a._army_limit(), str(a._under_cap()), a._count("recolteur"), a._count("mineur")])
+		print("   ore=%d cr=%d%s q=%s goal=%s bq=%s bld=%s" % [a.ore, a.credits, m, str(a.unit_q.get("id", "-")), a.goal_text, str(a.build_q.get("id", "-")), str(main.buildings.filter(func(b): return b.team == 1).map(func(b): return b.id + str(b.level)))])
+	return frame >= 3700

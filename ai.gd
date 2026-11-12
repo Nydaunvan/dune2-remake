@@ -55,6 +55,7 @@ var air_wave: Array = []
 var air_ended := 0.0
 var _hp_seen := {}      # PV de nos bâtiments à la dernière analyse (détecte une attaque)
 var _alert_until := 0.0
+var _save_since := -1.0 # début de la mise de côté pour une amélioration
 var _w_hp := {}         # PV des ouvriers à la dernière analyse (détecte une attaque)
 var stage_of := {}      # point d'attente propre à chaque unité (manœuvre de flanc)
 
@@ -458,6 +459,8 @@ func _think_build() -> void:
 ## Améliorations qui débloquent des unités et des bâtiments : prioritaires dès que leur heure est venue.
 func _priority_upgrade() -> bool:
 	var t: float = game.game_time
+	if _economy_first():
+		return false
 	var plan: Array = []
 	if skill >= 0.2:
 		plan.append(["usine", 2, 150.0])
@@ -477,13 +480,36 @@ func _priority_upgrade() -> bool:
 				ore -= game.upgrade_cost(b)
 				game.begin_upgrade(b)
 				return true
-			# faute de minerai : on met de côté plutôt que de le dépenser ailleurs
-			return why == "Minerai insuffisant" or (why == "" and ore < game.upgrade_cost(b) + 100)
+			# faute de minerai : on met de côté plutôt que de le dépenser ailleurs (90 s au plus, pas de blocage)
+			var saving: bool = why == "Minerai insuffisant" or (why == "" and ore < game.upgrade_cost(b) + 100)
+			if not saving:
+				_save_since = -1.0
+				return false
+			if _save_since < 0.0:
+				_save_since = t
+			if t - _save_since > 90.0:
+				if t - _save_since > 150.0:
+					_save_since = -1.0
+				return false
+			return true
 	return false
 
 
 ## Une fois la base construite, l'IA améliore ses bâtiments quand elle a du minerai en réserve.
+## Pénurie de minerai : avant d'améliorer quoi que ce soit, assez de mineurs et une armée minimale.
+func _economy_first() -> bool:
+	if not game.has_building("fonderie", team):
+		return false
+	var t: float = game.game_time
+	var miners := _count("mineur")
+	if miners < (1 if t < 200.0 else 2) and game.worker_cap("mineur", team) > miners:
+		return true
+	return t > 240.0 and _army().size() < 3 and ore < 700
+
+
 func _try_upgrade() -> void:
+	if _economy_first():
+		return
 	var order := ["usine", "chantier", "centrale", "raffinerie", "fonderie", "tourelle", "radar"]
 	var reserve := 400 if skill < 0.5 else 250
 	for id in order:
@@ -555,12 +581,19 @@ func _think_units() -> void:
 	var harv := _count("recolteur")
 	var miners := _count("mineur")
 	var harv_goal := 2 + (1 if _count("raffinerie") >= 2 else 0) + (1 if skill > 0.6 and game.game_time > 600.0 else 0)
-	var miner_goal := 1 + (1 if skill > 0.4 and game.game_time > 400.0 else 0)
+	# Le minerai nourrit bâtiments, améliorations ET unités : plus de mineurs, surtout si on en manque
+	var miner_goal := 1 + (1 if skill > 0.25 and game.game_time > 120.0 else 0) \
+			+ (1 if skill > 0.45 and game.game_time > 420.0 else 0)
+	if ore < 150 and credits > 600 and miners >= miner_goal:
+		miner_goal += 1
 	if unit_q.is_empty():
 		var want := ""
-		if game.has_building("raffinerie", team) and harv < harv_goal:
+		# Un ouvrier plafonné ou indisponible ne doit jamais bloquer la production du reste
+		if game.has_building("raffinerie", team) and harv < harv_goal and _available("recolteur") \
+				and game.worker_cap("recolteur", team) > harv:
 			want = "recolteur"
-		elif game.has_building("fonderie", team) and miners < miner_goal:
+		elif game.has_building("fonderie", team) and miners < miner_goal and _available("mineur") \
+				and game.worker_cap("mineur", team) > miners:
 			want = "mineur"
 		elif game.has_building("usine", team) and _army().size() < _army_limit() and _under_cap():
 			want = _pick_ground_unit()
@@ -611,6 +644,10 @@ func _pick_ground_unit() -> String:
 		if GameData.can_hit_air(id) and d.get("aa", false):
 			w *= 3.0 if enemy_air >= 2 else (0.8 if enemy_air == 0 else 1.6)
 		w /= 1.0 + 0.18 * float(mine.get(id, 0))
+		# en pénurie de minerai, on préfère ce qu'on peut payer tout de suite
+		var oc := float(_ore_cost(id))
+		if oc > 0.0 and ore < oc * 2.0:
+			w *= clampf(float(ore) / (oc * 2.0), 0.15, 1.0)
 		w *= 0.75 + randf() * 0.5
 		if w > best_w:
 			best_w = w
