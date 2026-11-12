@@ -674,7 +674,7 @@ class InfoPanel extends GlassPanel:
 	## Les commandes ne s'affichent que pour des unités à soi.
 	func _update_commands() -> void:
 		var show := false
-		if _focus is Unit and _focus.team == 0:
+		if _focus is Unit and _focus.team == 0 and not _focus.convoy:
 			show = true
 		elif _focus is String:
 			show = true

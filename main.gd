@@ -1290,8 +1290,8 @@ func _finish_selection(end: Vector2) -> void:
 	var rect := Rect2(drag_start, end - drag_start).abs()
 	var is_click := rect.size.length() < 6.0
 	for u in units:
-		if u.team != 0 or u.carried:
-			continue
+		if u.team != 0 or u.carried or u.convoy or u.role == "convoy":
+			continue # le convoi de mission avance seul : on ne le commande pas
 		var up: Vector2 = u.visual_center()
 		var hit := up.distance_to(end) < u.pick_radius() if is_click \
 				else rect.has_point(up)
