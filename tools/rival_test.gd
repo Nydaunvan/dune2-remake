@@ -21,6 +21,7 @@ func _process(_d: float) -> bool:
 			if u.team == 1:
 				u.alive = false
 		print("foes alive after team1 dead:", main._foes_alive())
+		print("objectifs:", main.ui.objective_panel._items())
 		var st: Dictionary = main._collect_state()
 		print("saved third_hostile:", st["third_hostile"])
 		return true

@@ -68,7 +68,7 @@ func _ready() -> void:
 		b.custom_minimum_size = Vector2(210, 58)
 		btns.add_child(b)
 
-	_hint = _label("Campagne : 10 missions par faction — Escarmouche : détruisez la base adverse", 15,
+	_hint = _label("Campagne : 10 missions par faction — Escarmouche : détruisez la ou les bases adverses", 15,
 			Color(1, 1, 1, 0.55), false)
 	vb.add_child(_hint)
 

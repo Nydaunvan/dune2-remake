@@ -343,12 +343,20 @@ class ObjectivePanel extends GlassPanel:
 	func _items() -> Array:
 		if not game.mission.is_empty():
 			return game.objectives_status()
-		var n := 0
-		for b in game.buildings:
-			if b.alive and game.hostile(b.team, 0):
-				n += 1
-		var foe_alive: bool = game._side_alive(1)
-		return [{"text": "Détruire la base adverse : %d structure(s)" % n, "frac": 0.0 if foe_alive else 1.0, "done": not foe_alive}]
+		var out: Array = []
+		var teams: Array = game.team_factions.keys().filter(func(t: int) -> bool: return game.hostile(t, 0))
+		teams.sort()
+		for t in teams:
+			var n := 0
+			for b in game.buildings:
+				if b.alive and b.team == t:
+					n += 1
+			var alive: bool = game._team_alive(t)
+			var fname: String = game.fdata_of(t)["name"]
+			var txt := "Détruire la base %s : %d structure(s)" % [fname, n] if teams.size() > 1 \
+					else "Détruire la base adverse : %d structure(s)" % n
+			out.append({"text": txt, "frac": 0.0 if alive else 1.0, "done": not alive})
+		return out
 
 	func _init(p_game) -> void:
 		super(8.0, 4.0, p_game.fdata["color"], p_game.fdata["accent"], 14.0)
