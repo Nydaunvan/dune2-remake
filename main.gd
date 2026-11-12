@@ -1277,9 +1277,9 @@ func _zoom(factor: float) -> void:
 
 var panning := false
 const SKIRMISH_DIFF := [
-	{"slowdown": 2.0, "grace": 420.0, "pause": 90.0, "max_army": 14, "wave": 4, "skill": 0.25},
-	{"skill": 0.6},
-	{"slowdown": 1.1, "grace": 150.0, "pause": 40.0, "max_army": 30, "wave": 8, "skill": 0.95},
+	{"slowdown": 2.0, "grace": 600.0, "pause": 120.0, "max_army": 14, "wave": 4, "skill": 0.25},
+	{"grace": 430.0, "pause": 90.0, "skill": 0.6},
+	{"slowdown": 1.1, "grace": 300.0, "pause": 60.0, "max_army": 30, "wave": 8, "skill": 0.95},
 ]
 
 
@@ -1595,9 +1595,32 @@ func building_block(id: String, team := 0) -> String:
 	return ""
 
 
+## Escarmouche : nombre maximal d'unités de combat selon les niveaux de Chantier et d'Usine
+## (0 : pas de limite — campagne). Empêche de submerger l'adversaire sans investir dans sa base.
+func army_cap(team := 0) -> int:
+	if not mission.is_empty():
+		return 0
+	return 8 + 5 * best_level("chantier", team) + 3 * (best_level("usine", team) - 1)
+
+
+func army_count(team := 0) -> int:
+	var n := 0
+	for u in units:
+		if u.team == team and u.alive and u.role == "combat" and not u.convoy:
+			n += 1
+	if team == 0:
+		for it in production["unit"]:
+			if GameData.def(it["id"]).get("role", "combat") == "combat":
+				n += 1
+	return n
+
+
 func unit_level_block(id: String, team := 0) -> String:
 	if GameData.BUILDINGS.has(id):
 		return building_block(id, team)
+	var cap := army_cap(team)
+	if cap > 0 and GameData.UNITS.has(id) and GameData.def(id).get("role", "combat") == "combat" and army_count(team) >= cap:
+		return "Armée max. %d" % cap
 	if worker_block(id, team) != "":
 		return worker_block(id, team)
 	var need: int = int(GameData.def(id).get("level", 1))

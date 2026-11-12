@@ -444,6 +444,18 @@ func _has_gap(cell: Vector2i, size: Vector2i) -> bool:
 
 # --- Production d'unités --------------------------------------------------------------
 
+## Montée en puissance progressive : l'IA ne peut pas aligner d'emblée toute son armée.
+## La taille autorisée croît avec le temps de jeu (plus vite pour une IA habile).
+func _army_limit() -> int:
+	var ramp := 4 + int(game.game_time / 80.0 * (0.5 + skill))
+	return mini(max_army, ramp)
+
+
+func _under_cap() -> bool:
+	var cap: int = game.army_cap(team)
+	return cap <= 0 or game.army_count(team) < cap
+
+
 func _think_units() -> void:
 	var harv := _count("recolteur")
 	var miners := _count("mineur")
@@ -455,7 +467,7 @@ func _think_units() -> void:
 			want = "recolteur"
 		elif game.has_building("fonderie", team) and miners < miner_goal:
 			want = "mineur"
-		elif game.has_building("usine", team) and _army().size() < max_army:
+		elif game.has_building("usine", team) and _army().size() < _army_limit() and _under_cap():
 			want = _pick_ground_unit()
 		if want != "" and _available(want) and credits >= _cost(want):
 			credits -= _cost(want)
@@ -662,6 +674,8 @@ func _muster(army: Array, now: float) -> void:
 	if skill >= 0.3 and mine < 0.75 * defend and now - wave_ended < wave_pause * 3.0:
 		return # trop faible : on attend du renfort
 	squad = idle.duplicate()
+	if skill >= 0.4 and squad.size() >= 6:
+		squad = squad.slice(0, int(squad.size() * 0.8)) # une réserve reste à la base
 	squad_start = squad.size()
 	target_b = tgt
 	wave_started = now

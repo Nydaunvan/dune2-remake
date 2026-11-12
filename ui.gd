@@ -235,9 +235,11 @@ func _process(_delta: float) -> void:
 	elif game.command_mode == "attack":
 		info_label.text = "Cliquez : les unités avancent en attaquant tout sur leur route."
 	else:
-		info_label.text = "File : bâtiments %d/%d — unités %d/%d\nClic droit : ordre / annuler une icône\nÉchap pause — O objectifs — M son" \
+		var cap: int = game.army_cap()
+		info_label.text = "File : bâtiments %d/%d — unités %d/%d%s\nClic droit : ordre / annuler une icône\nÉchap pause — O objectifs — M son" \
 				% [game.production["building"].size(), game.queue_max("building"),
-				game.production["unit"].size(), game.queue_max("unit")]
+				game.production["unit"].size(), game.queue_max("unit"),
+				(" — armée %d/%d" % [game.army_count(), cap]) if cap > 0 else ""]
 
 
 ## Écran de fin de partie.
