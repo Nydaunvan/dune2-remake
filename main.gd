@@ -1515,26 +1515,137 @@ func _friendly_ground_at(world_pos: Vector2):
 
 func order_amove(world_pos: Vector2) -> void:
 	var target := _world_to_cell(world_pos)
-	for i in selected.size():
-		var cell := target + _formation_offset(i, selected.size())
-		if not _is_walkable(cell) and not selected[i].air:
-			cell = target
-		if _is_walkable(cell) or selected[i].air:
-			selected[i].order_amove(cell)
+	var slots := _assign_slots(selected, target)
+	for u in selected:
+		var cell: Vector2i = slots.get(u, target)
+		if _is_walkable(cell) or u.air:
+			u.order_amove(cell)
 
 
 func order_move(world_pos: Vector2) -> void:
 	var target := _world_to_cell(world_pos)
-	for i in selected.size():
-		var cell := target + _formation_offset(i, selected.size())
-		if selected[i].air:
-			selected[i].order_path(PackedVector2Array([selected[i].position, _cell_to_world(cell)]))
+	var slots := _assign_slots(selected, target)
+	for u in selected:
+		var cell: Vector2i = slots.get(u, target)
+		if u.air:
+			u.order_path(PackedVector2Array([u.position, _cell_to_world(cell)]))
 			continue
 		if not _is_walkable(cell):
-			cell = target
-		if not _is_walkable(cell):
 			continue
-		selected[i].order_path(path_to(selected[i].position, cell))
+		u.order_path(path_to(u.position, cell))
+
+
+## Un véhicule immobile (hors liste `skip`) occupe-t-il déjà ce point ?
+func _spot_taken(p: Vector2, skip: Array, r := 20.0) -> bool:
+	for v in units:
+		if v.alive and not v.air and not v.carried and v not in skip and v.path.is_empty() \
+				and v.position.distance_to(p) < r:
+			return true
+	return false
+
+
+## Emplacements d'arrivée d'un groupe : cases libres les plus proches de la cible, une par unité,
+## puis affectation de chaque unité à l'emplacement le plus proche d'elle (aucun croisement inutile).
+func _assign_slots(group: Array, target: Vector2i) -> Dictionary:
+	var out := {}
+	var ground: Array = group.filter(func(u: Unit) -> bool: return not u.air)
+	var air_units: Array = group.filter(func(u: Unit) -> bool: return u.air)
+	for i in air_units.size():
+		out[air_units[i]] = target + _formation_offset(i, air_units.size())
+	var n := ground.size()
+	if n == 0:
+		return out
+	if n == 1:
+		var c1 := target
+		if not _is_walkable(c1):
+			c1 = _nearest_walkable(target)
+		out[ground[0]] = c1
+		return out
+	# cases candidates triées par distance au point visé
+	var rad := ceili(sqrt(float(n))) + 3
+	var cand: Array[Vector2i] = []
+	for dx in range(-rad, rad + 1):
+		for dy in range(-rad, rad + 1):
+			var c := target + Vector2i(dx, dy)
+			if dx * dx + dy * dy <= rad * rad and _is_walkable(c) and not _spot_taken(_cell_to_world(c), group, 16.0):
+				cand.append(c)
+	cand.sort_custom(func(a: Vector2i, b: Vector2i) -> bool:
+		return Vector2(a - target).length_squared() < Vector2(b - target).length_squared())
+	if cand.size() > n:
+		cand.resize(n)
+	if cand.is_empty():
+		for u in ground:
+			out[u] = target
+		return out
+	# affectation gloutonne : les paires les plus proches d'abord
+	var pairs: Array = []
+	for u in ground:
+		for c in cand:
+			pairs.append([u.position.distance_squared_to(_cell_to_world(c)), u, c])
+	pairs.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var used_c := {}
+	for p in pairs:
+		if out.has(p[1]) or used_c.has(p[2]):
+			continue
+		out[p[1]] = p[2]
+		used_c[p[2]] = true
+	for u in ground:
+		if not out.has(u):
+			out[u] = cand[0]
+	return out
+
+
+func _nearest_walkable(c: Vector2i) -> Vector2i:
+	for r in range(1, 8):
+		for dx in range(-r, r + 1):
+			for dy in range(-r, r + 1):
+				var q := c + Vector2i(dx, dy)
+				if _is_walkable(q):
+					return q
+	return c
+
+
+## Route d'attaque d'un groupe : chaque tireur vise son propre point sur un arc autour de la cible,
+## à bonne distance de tir, au lieu de s'entasser tous au même endroit.
+func path_to_attack(u: Unit, target) -> PackedVector2Array:
+	var group: Array = []
+	for v in units:
+		if v.team == u.team and v.alive and not v.air and v.state == "attack" and v.target == target:
+			group.append(v)
+	if group.size() < 2 or u not in group:
+		return path_to_target(u.position, target)
+	group.sort_custom(func(a: Unit, b: Unit) -> bool: return a.get_instance_id() < b.get_instance_id())
+	var tp: Vector2 = target.world_center()
+	var trad := float(target.radius_px())
+	var cen := Vector2.ZERO
+	for v in group:
+		cen += v.position
+	cen /= float(group.size())
+	var r := trad + u.w_range * 0.7
+	var n := group.size()
+	var step := minf(clampf(34.0 / maxf(r, 40.0), 0.12, 0.8), TAU / float(n))
+	var k: int = group.find(u)
+	var ang := (cen - tp).angle() + (float(k) - float(n - 1) * 0.5) * step
+	var spot := tp + Vector2.from_angle(ang) * r
+	var cell := _world_to_cell(spot)
+	if not _is_walkable(cell) or _spot_taken(_cell_to_world(cell), group, 18.0):
+		var found := false
+		for rr in range(1, 4):
+			for dx in range(-rr, rr + 1):
+				for dy in range(-rr, rr + 1):
+					var q := cell + Vector2i(dx, dy)
+					if _is_walkable(q) and not _spot_taken(_cell_to_world(q), group, 18.0) \
+							and _cell_to_world(q).distance_to(tp) - trad < u.w_range:
+						cell = q
+						found = true
+						break
+				if found:
+					break
+			if found:
+				break
+		if not found:
+			return path_to_target(u.position, target)
+	return grid.get_point_path(_world_to_cell(u.position), cell)
 
 
 @warning_ignore("integer_division")

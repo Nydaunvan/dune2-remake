@@ -54,6 +54,8 @@ var kills := 0
 var rank := 0
 var tech := 0        # modernisation faite (0/1)
 var _sep_t := 0.0
+var _direct_t := 0.0
+var _slot_used := false
 var tech_left := 0.0 # modernisation en cours : secondes restantes
 var tech_total := 0.0
 var tech_cost := 0.0 # prix restant à prélever progressivement ; 0 : déjà payé
@@ -714,12 +716,20 @@ func _attack(delta: float) -> void:
 				_go_amove()
 			return
 		_repath -= delta
+		_direct_t -= delta
 		if _repath <= 0.0 or path.is_empty():
 			_repath = 0.7
 			if air:
 				follow(PackedVector2Array([position, tp]))
 			else:
-				follow(game.path_to_target(position, target))
+				# arrivé à son emplacement de tir mais encore hors de portée : on fonce droit sur la cible
+				if path.is_empty() and _slot_used:
+					_direct_t = 5.0
+				_slot_used = _direct_t <= 0.0
+				if _slot_used:
+					follow(game.path_to_attack(self, target))
+				else:
+					follow(game.path_to_target(position, target))
 		return
 	path = PackedVector2Array()
 	var want := (tp - position).angle()
