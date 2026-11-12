@@ -511,9 +511,9 @@ const CAMPAIGNS := {
 		{
 			"id": "monolithes", "title": "La ligne des monolithes", "enemy": "kharn", "size": 112, "credits": 3000, "ore": 3000,
 			"start_units": ["@0", "@0", "@1"],
-			"objectives": [{"type": "build", "label": "la ligne", "ids": {"tourelle": 4, "bunker": 2}}, {"type": "survive", "time": 540.0}, {"type": "kills", "count": 20}],
-			"obj": "Bâtissez 4 tourelles et 2 bunkers, tenez 9 minutes et abattez 20 unités",
-			"brief": "Les monolithes forment une ligne que rien ne doit franchir. Doublez-la de tourelles et de bunkers : {ENEMY} y viendra mourir, et le Conclave regénérera pendant ce temps.",
+			"objectives": [{"type": "build", "label": "la ligne", "ids": {"tourelle": 4, "tour_geode": 2}}, {"type": "survive", "time": 540.0}, {"type": "kills", "count": 20}],
+			"obj": "Bâtissez 4 tourelles et 2 tours géodes, tenez 9 minutes et abattez 20 unités",
+			"brief": "Les monolithes forment une ligne que rien ne doit franchir. Doublez-la de tourelles et de tours géodes : {ENEMY} y viendra mourir, et le Conclave regénérera pendant ce temps.",
 		},
 		{
 			"id": "faille", "title": "La faille", "enemy": "kharn", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
@@ -629,6 +629,32 @@ static func _curve(g: float) -> Dictionary:
 ## bâtiments (« unlock » 1 à 4) se débloquent progressivement, quelle que soit la longueur.
 static func tier_of(faction: String, m: int) -> int:
 	return int(round(float(m) * 9.0 / float(count(faction) - 1)))
+
+
+## Palier minimal pour que tous les bâtiments exigés par les objectifs (et leurs prérequis) soient bâtissables.
+static func needed_tier(faction: String, m: int) -> int:
+	var t := tier_of(faction, m)
+	for o in mission(faction, m)["objectives"]:
+		var ids: Array = []
+		if o["type"] == "build":
+			ids = o["ids"].keys()
+		elif o["type"] == "upgrade":
+			ids = [o["id"]]
+		elif o["type"] == "air":
+			ids = ["aerodrome"]
+		for id in ids:
+			t = maxi(t, _chain_tier(String(id)))
+	return t
+
+
+static func _chain_tier(id: String) -> int:
+	if not GameData.BUILDINGS.has(id):
+		return 0
+	var d: Dictionary = GameData.BUILDINGS[id]
+	var t := int(d.get("unlock", 0))
+	for r in d["requires"]:
+		t = maxi(t, _chain_tier(String(r)))
+	return t
 
 
 ## Numéro (1 = après la première mission terminée) de la mission après laquelle un

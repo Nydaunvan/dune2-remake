@@ -153,7 +153,7 @@ func _ready() -> void:
 	elif _save.is_empty():
 		credits = int(credits * GameSession.skirm_res)
 		ore = int(ore * GameSession.skirm_res)
-	tier = Campaign.tier_of(faction_id, GameSession.mission) if GameSession.mode == "campaign" else Campaign.tier_of(faction_id, Campaign.cleared(faction_id))
+	tier = Campaign.needed_tier(faction_id, GameSession.mission) if GameSession.mode == "campaign" else Campaign.tier_of(faction_id, Campaign.cleared(faction_id))
 	# Écran de chargement (la partie est en pause tant que tout n'est pas prêt)
 	if DisplayServer.get_name() != "headless":
 		loading = LoadingScreen.new(fdata["color"])
@@ -2936,10 +2936,13 @@ func objective_info(i: int) -> Dictionary:
 		"build":
 			var need := 0
 			var have := 0
+			var names: PackedStringArray = []
 			for id in o["ids"]:
 				need += int(o["ids"][id])
 				have += mini(count_buildings(id), int(o["ids"][id]))
-			return {"text": "Construire %s : %d/%d" % [o["label"], have, need], "frac": float(have) / need}
+				var n := int(o["ids"][id])
+				names.append(("%d × %s" % [n, GameData.dname(id)]) if n > 1 else GameData.dname(id))
+			return {"text": "Construire %s (%s) : %d/%d" % [o["label"], ", ".join(names), have, need], "frac": float(have) / need}
 		"harvest":
 			var a: int = o["amount"]
 			return {"text": "Récolter %d Solaris : %d" % [a, mini(earned, a)], "frac": clampf(float(earned) / a, 0.0, 1.0)}
