@@ -235,7 +235,8 @@ const BUILDINGS := {
 	"tour_sonique": {
 		"name": "Tour sonique", "cost": 520, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
 		"requires": ["usine"], "hp": 650, "armor": "building", "unlock": 3, "no_upgrade": true,
-		"faction": "solis", "weapon": "sonic", "dps": 34, "range": 8, "vision": 9,
+		"faction": "solis", "aa": true, "vs_air": 0.8,
+		"weapon": "sonic", "dps": 34, "range": 8, "vision": 9,
 		"desc": "Onde de zone (Solis)",
 		"req_level": {"usine": 2}, "max": 6,
 	},
@@ -248,7 +249,8 @@ const BUILDINGS := {
 	"bunker": {
 		"name": "Bunker", "cost": 650, "time": 12.0, "size": Vector2i(2, 2), "power": -15,
 		"requires": ["usine"], "hp": 2000, "armor": "building", "unlock": 3, "no_upgrade": true,
-		"faction": "kharn", "weapon": "cannon", "dps": 34, "range": 6, "vision": 9,
+		"faction": "kharn", "aa": true, "vs_air": 0.8,
+		"weapon": "cannon", "dps": 34, "range": 6, "vision": 9,
 		"desc": "Fortin ultra-résistant (Kharn)",
 		"req_level": {"usine": 2}, "max": 5,
 	},
@@ -260,7 +262,8 @@ const BUILDINGS := {
 	"tour_acide": {
 		"name": "Tour acide", "cost": 500, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
 		"requires": ["usine"], "hp": 600, "armor": "building", "unlock": 3, "no_upgrade": true,
-		"faction": "vael", "weapon": "acid", "dps": 34, "range": 7, "vision": 9,
+		"faction": "vael", "aa": true, "vs_air": 0.8,
+		"weapon": "acid", "dps": 34, "range": 7, "vision": 9,
 		"desc": "Perce les blindages (Vael)",
 		"req_level": {"usine": 2}, "max": 6,
 	},
@@ -273,7 +276,8 @@ const BUILDINGS := {
 	"tour_prisme": {
 		"name": "Tour prisme", "cost": 540, "time": 11.0, "size": Vector2i(2, 2), "power": -20,
 		"requires": ["usine"], "hp": 650, "armor": "building", "unlock": 3, "no_upgrade": true,
-		"faction": "conclave", "weapon": "shard", "dps": 36, "range": 8, "vision": 9,
+		"faction": "conclave", "aa": true, "vs_air": 0.8,
+		"weapon": "shard", "dps": 36, "range": 8, "vision": 9,
 		"desc": "Éclats de cristal en zone (Conclave)", "req_level": {"usine": 2}, "max": 6,
 	},
 	"serre": {
