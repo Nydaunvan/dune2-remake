@@ -227,7 +227,7 @@ func _ready() -> void:
 			loading.set_progress(_overall(), "Préparation des modèles 3D…" if not bank.ready_all else "Génération des sons…")
 			await get_tree().process_frame
 		sfx.warm_wait()
-		loading.set_progress(1.0, "Prêt")
+		await loading.finish("Prêt")
 		loading.queue_free()
 		loading = null
 		DisplayServer.window_set_vsync_mode(_vsync_before)
