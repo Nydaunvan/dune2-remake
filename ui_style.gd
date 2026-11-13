@@ -74,6 +74,21 @@ static func fix_gamma(in_game := false) -> void:
 	RenderingServer.global_shader_parameter_set("gamma_fix", g)
 
 
+## Logo du jeu (assets/logo.png, fond transparent).
+static var _logo: Texture2D
+static func logo() -> Texture2D:
+	if _logo == null:
+		var path := "res://assets/logo.png"
+		if ResourceLoader.exists(path):
+			_logo = load(path)
+		else:
+			var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+			if img != null:
+				img.generate_mipmaps()
+				_logo = ImageTexture.create_from_image(img)
+	return _logo
+
+
 static func body_font() -> Font:
 	if _body == null:
 		_body = FontVariation.new()

@@ -71,7 +71,13 @@ func _draw_ui() -> void:
 			var h := 260.0 + 120.0 * (1.0 - k)
 			draw_rect_band(c.y + 10.0, h, 0.06 + 0.025 * k)
 		_canvas.draw_rect(Rect2(0, sz.y - 120, sz.x, 120), Color(0, 0, 0, 0.6))
-	UiStyle.text(_canvas, Vector2(0, c.y - 90), "THE BUILDING OF A DYNASTY", 54, Color.WHITE, true, HORIZONTAL_ALIGNMENT_CENTER, sz.x)
+	var logo := UiStyle.logo()
+	if logo != null:
+		var lh := minf(210.0, c.y - 40.0)
+		var lw := lh * float(logo.get_width()) / float(logo.get_height())
+		_canvas.draw_texture_rect(logo, Rect2(c.x - lw / 2.0, c.y - 60.0 - lh, lw, lh), false)
+	else:
+		UiStyle.text(_canvas, Vector2(0, c.y - 90), "THE BUILDING OF A DYNASTY", 54, Color.WHITE, true, HORIZONTAL_ALIGNMENT_CENTER, sz.x)
 	var bar := Rect2(c.x - 340, c.y - 20, 680, 18)
 	UiStyle.frame(_canvas, bar.grow(8), 12.0, Color(_faction_color.r, _faction_color.g, _faction_color.b, 0.7), UiStyle.PANEL, 0.2, 0.3)
 	UiStyle.seg_bar(_canvas, bar, _shown, _faction_color * 1.3, 14.0, 4.0)

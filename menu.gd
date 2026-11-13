@@ -466,51 +466,25 @@ func _left(text: String, size: int, color: Color) -> Label:
 # --- Carte de faction ---------------------------------------------------------
 
 class TitleBanner extends Control:
-	## Titre du jeu : reflet qui parcourt les lettres, filets et losanges de part et d'autre.
-	const TITLE := "THE BUILDING OF A DYNASTY"
+	## Titre du jeu : logo illustré (assets/logo.png).
 
 	func _init() -> void:
-		custom_minimum_size = Vector2(1000, 132)
+		custom_minimum_size = Vector2(1000, 190)
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 
 	func _process(_d: float) -> void:
 		queue_redraw()
 
 	func _draw() -> void:
+		var logo := UiStyle.logo()
+		if logo == null:
+			return
+		var h := minf(size.y, 190.0)
+		var w := h * float(logo.get_width()) / float(logo.get_height())
 		var t := Time.get_ticks_msec() / 1000.0
-		var f := UiStyle.title_font()
-		var fs := 66
-		var total := 0.0
-		var adv: Array = []
-		for ch in TITLE:
-			var w := f.get_string_size(ch, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs).x + 3.0
-			adv.append(w)
-			total += w
-		var x := (size.x - total) * 0.5
-		var y := 78.0
-		var wave := fmod(t * 0.28, 1.6) * (total + 300.0) - 150.0
-		for i in TITLE.length():
-			var ch := TITLE[i]
-			var k := clampf(1.0 - absf((x - (size.x - total) * 0.5) - wave) / 130.0, 0.0, 1.0)
-			var col := Color(0.97, 0.93, 0.88).lerp(Color(1.0, 0.78, 0.35), k)
-			draw_string_outline(f, Vector2(x, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs, 10, Color(0, 0, 0, 0.85))
-			draw_string(f, Vector2(x + 2, y + 3), ch, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs, Color(0.85, 0.2, 0.3, 0.35))
-			draw_string(f, Vector2(x, y), ch, HORIZONTAL_ALIGNMENT_LEFT, -1.0, fs, col)
-			x += adv[i]
-		# Filets ornementaux
-		var cx := size.x * 0.5
-		var ly := 108.0
-		var half := total * 0.5
-		for sgn in [-1.0, 1.0]:
-			draw_line(Vector2(cx + sgn * 70.0, ly), Vector2(cx + sgn * half, ly), Color(1.0, 0.8, 0.4, 0.55), 1.4, true)
-			draw_line(Vector2(cx + sgn * 70.0, ly + 5), Vector2(cx + sgn * (half - 60.0), ly + 5), Color(1.0, 0.8, 0.4, 0.25), 1.0, true)
-			var d := Vector2(cx + sgn * half, ly)
-			draw_colored_polygon(PackedVector2Array([d + Vector2(0, -5), d + Vector2(5, 0), d + Vector2(0, 5), d + Vector2(-5, 0)]), UiStyle.GOLD)
-		var c := Vector2(cx, ly)
-		var pulse := 0.8 + 0.2 * sin(t * 2.5)
-		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -8), c + Vector2(8, 0), c + Vector2(0, 8), c + Vector2(-8, 0)]),
-				Color(UiStyle.GOLD.r, UiStyle.GOLD.g, UiStyle.GOLD.b, pulse))
-		draw_colored_polygon(PackedVector2Array([c + Vector2(0, -3), c + Vector2(3, 0), c + Vector2(0, 3), c + Vector2(-3, 0)]), Color.WHITE)
+		var lum := 1.0 + 0.04 * sin(t * 1.6) # très léger scintillement
+		draw_texture_rect(logo, Rect2((size.x - w) * 0.5, (size.y - h) * 0.5, w, h), false, Color(lum, lum, lum, 1.0))
 
 
 class FactionCard extends Control:
