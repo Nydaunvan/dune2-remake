@@ -261,6 +261,9 @@ func _open_load() -> void:
 var _overlay: Control
 
 
+const CARD_W := 380
+
+
 func _open_campaign() -> void:
 	if _overlay != null:
 		_overlay.queue_free()
@@ -275,11 +278,11 @@ func _open_campaign() -> void:
 	cc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_overlay.add_child(cc)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 24)
+	vb.add_theme_constant_override("separation", 10)
 	cc.add_child(vb)
 	vb.add_child(_label("CAMPAGNE — " + String(fd["name"]).to_upper(), 46, fd["accent"], true))
 	var scroll := ScrollContainer.new()
-	scroll.custom_minimum_size = Vector2(1500, 670)
+	scroll.custom_minimum_size = Vector2(1500, 600)
 	scroll.vertical_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	vb.add_child(scroll)
 	var row := HBoxContainer.new()
@@ -289,39 +292,37 @@ func _open_campaign() -> void:
 		row.add_child(_mission_card(i, done, fd))
 	# On amène la première mission jouable à l'écran
 	var first_open := mini(done, Campaign.count(selected) - 1)
-	scroll.set_deferred("scroll_horizontal", maxi(first_open - 1, 0) * 354)
+	scroll.set_deferred("scroll_horizontal", maxi(first_open - 1, 0) * (CARD_W + 14))
 	vb.add_child(_label("Faites défiler (molette / glisser) : %d missions" % Campaign.count(selected), 14, Color(1, 1, 1, 0.5), false))
-	var back := GameUI.NeonButton.new("RETOUR")
-	back.accent = GameData.RED
-	back.custom_minimum_size = Vector2(250, 56)
+	var back := PlateButton.new("RETOUR", 1)
+	back.custom_minimum_size = Vector2(250, 62)
 	back.pressed.connect(func() -> void: _overlay.queue_free(); _overlay = null)
-	var hb := HBoxContainer.new()
-	hb.alignment = BoxContainer.ALIGNMENT_CENTER
-	hb.add_theme_constant_override("separation", 20)
-	for dir in [-1, 1]:
-		var arrow := GameUI.NeonButton.new("◀  MISSIONS" if dir < 0 else "MISSIONS  ▶")
-		arrow.accent = fd["accent"]
-		arrow.custom_minimum_size = Vector2(190, 56)
-		arrow.pressed.connect(func() -> void:
-			var tw := create_tween()
-			tw.tween_property(scroll, "scroll_horizontal", clampi(scroll.scroll_horizontal + dir * 1062, 0, 100000), 0.35))
-		hb.add_child(arrow)
-		if dir < 0:
-			hb.add_child(back)
-	var rst := GameUI.NeonButton.new("RÉINITIALISER")
-	rst.accent = GameData.AMBER
-	rst.custom_minimum_size = Vector2(210, 56)
+	var rst := PlateButton.new("RÉINITIALISER", 2)
+	rst.custom_minimum_size = Vector2(250, 62)
 	rst.enabled = done > 0
 	rst.pressed.connect(_confirm_reset)
+	var hb := HBoxContainer.new()
+	hb.alignment = BoxContainer.ALIGNMENT_CENTER
+	hb.add_theme_constant_override("separation", 30)
+	hb.add_child(back)
 	hb.add_child(rst)
 	vb.add_child(hb)
+	# Défilement à la molette et au glisser (les flèches ont disparu)
+	scroll.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and (e.button_index == MOUSE_BUTTON_WHEEL_DOWN or e.button_index == MOUSE_BUTTON_WHEEL_UP):
+			var dir := 1 if e.button_index == MOUSE_BUTTON_WHEEL_DOWN else -1
+			var tw := create_tween()
+			tw.tween_property(scroll, "scroll_horizontal", clampi(scroll.scroll_horizontal + dir * (CARD_W + 14), 0, 100000), 0.25)
+		elif e is InputEventMouseMotion and (e.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
+			scroll.scroll_horizontal = clampi(scroll.scroll_horizontal - int(e.relative.x), 0, 100000))
 
 
 func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	var m: Dictionary = Campaign.mission(selected, i)
 	var unlocked := i <= done
 	var pc := PanelContainer.new()
-	pc.custom_minimum_size = Vector2(340, 640)
+	pc.custom_minimum_size = Vector2(CARD_W, 600)
+	pc.mouse_filter = Control.MOUSE_FILTER_PASS
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.07, 0.04, 0.13, 0.95)
 	sb.set_border_width_all(2)
@@ -330,7 +331,7 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	sb.set_content_margin_all(20)
 	pc.add_theme_stylebox_override("panel", sb)
 	var v := VBoxContainer.new()
-	v.add_theme_constant_override("separation", 14)
+	v.add_theme_constant_override("separation", 10)
 	pc.add_child(v)
 	var tag := "MISSION %d" % (i + 1)
 	if i < done:
@@ -338,77 +339,93 @@ func _mission_card(i: int, done: int, fd: Dictionary) -> Control:
 	v.add_child(_left(tag, 15, GameData.GOLD))
 	var ttl := _left(String(m["title"]).to_upper(), 22, Color.WHITE)
 	ttl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	ttl.custom_minimum_size = Vector2(300, 56) # deux lignes réservées : un long titre ne déborde plus
+	ttl.custom_minimum_size = Vector2(CARD_W - 40, 56) # deux lignes réservées : un long titre ne déborde plus
 	v.add_child(ttl)
 	var lvl := Campaign.level_of(selected, i)
 	var dcol := Color(0.4, 1.0, 0.6).lerp(Color(1.0, 0.3, 0.25), float(lvl - 1) / 9.0)
 	v.add_child(_left("DIFFICULTÉ  %s%s  %d/10" % ["◆".repeat(lvl), "◇".repeat(10 - lvl), lvl], 13, dcol))
 	var br := _left(Campaign.briefing(selected, i), 14, Color(1, 1, 1, 0.8))
 	br.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	br.custom_minimum_size = Vector2(300, 260)
+	br.custom_minimum_size = Vector2(CARD_W - 40, 190)
 	v.add_child(br)
 	v.add_child(_left("OBJECTIF", 13, GameData.GOLD))
 	var ob := _left(String(m["obj"]), 15, Color.WHITE)
 	ob.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	ob.custom_minimum_size = Vector2(300, 40)
+	ob.custom_minimum_size = Vector2(CARD_W - 40, 40)
 	v.add_child(ob)
 	var foes := _left(Campaign.foes_text(selected, i), 15, Color(1, 0.55, 0.5))
 	foes.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	foes.custom_minimum_size = Vector2(300, 40)
+	foes.custom_minimum_size = Vector2(CARD_W - 40, 40)
 	v.add_child(foes)
 	var spacer := Control.new()
 	spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	v.add_child(spacer)
-	var det := GameUI.NeonButton.new("DÉTAILS")
-	det.accent = GameData.CYAN
-	det.custom_minimum_size = Vector2(300, 44)
+	var btn_row := HBoxContainer.new()
+	btn_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	btn_row.add_theme_constant_override("separation", 6)
+	btn_row.mouse_filter = Control.MOUSE_FILTER_PASS
+	v.add_child(btn_row)
+	var det := PlateButton.new("DÉTAILS", 4)
+	det.font_size = 14
+	det.custom_minimum_size = Vector2(170, 44)
 	det.pressed.connect(_open_details.bind(i))
-	v.add_child(det)
-	var go := GameUI.NeonButton.new("JOUER" if unlocked else "VERROUILLÉE")
+	btn_row.add_child(det)
+	var go := PlateButton.new("JOUER" if unlocked else "VERROUILLÉE", 3)
+	go.font_size = 14
 	go.enabled = unlocked
-	go.accent = fd["accent"]
-	go.custom_minimum_size = Vector2(300, 50)
+	go.custom_minimum_size = Vector2(170, 44)
 	go.pressed.connect(func() -> void:
 		GameSession.faction = selected
 		GameSession.mode = "campaign"
 		GameSession.mission = i
 		get_tree().change_scene_to_file("res://main.tscn"))
-	v.add_child(go)
+	btn_row.add_child(go)
 	return pc
 
 
-## Demande confirmation avant d'effacer la progression de la campagne de la faction choisie.
+## Fenêtre de confirmation avant d'effacer la progression de la campagne de la faction choisie.
 func _confirm_reset() -> void:
 	var fd: Dictionary = GameData.FACTIONS[selected]
 	var ov := ColorRect.new()
-	ov.color = Color(0.03, 0.015, 0.06, 0.94)
+	ov.color = Color(0.0, 0.0, 0.0, 0.72)
 	ov.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	ov.mouse_filter = Control.MOUSE_FILTER_STOP
 	_overlay.add_child(ov)
 	var cc := CenterContainer.new()
 	cc.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	cc.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	ov.add_child(cc)
+	var pc := PanelContainer.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.06, 0.03, 0.1, 0.98)
+	sb.set_border_width_all(2)
+	sb.border_color = GameData.AMBER
+	sb.set_corner_radius_all(10)
+	sb.set_content_margin_all(34)
+	sb.shadow_color = Color(0, 0, 0, 0.6)
+	sb.shadow_size = 24
+	pc.add_theme_stylebox_override("panel", sb)
+	cc.add_child(pc)
 	var vb := VBoxContainer.new()
-	vb.add_theme_constant_override("separation", 22)
-	cc.add_child(vb)
-	vb.add_child(_label("RÉINITIALISER LA CAMPAGNE ?", 40, GameData.AMBER, true))
+	vb.add_theme_constant_override("separation", 20)
+	pc.add_child(vb)
+	vb.add_child(_label("RÉINITIALISER LA CAMPAGNE ?", 32, GameData.AMBER, true))
 	var txt := _left("La progression de la campagne %s sera effacée : les missions terminées seront de nouveau verrouillées" % fd["name"]
 			+ " (sauf la première). Cette action est définitive.", 17, Color(1, 1, 1, 0.85))
 	txt.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	txt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	txt.custom_minimum_size = Vector2(760, 0)
+	txt.custom_minimum_size = Vector2(620, 0)
 	vb.add_child(txt)
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 24)
 	vb.add_child(hb)
-	var no := GameUI.NeonButton.new("ANNULER")
-	no.custom_minimum_size = Vector2(240, 56)
+	var no := PlateButton.new("ANNULER", 4)
+	no.custom_minimum_size = Vector2(260, 66)
 	no.pressed.connect(func() -> void: ov.queue_free())
 	hb.add_child(no)
-	var yes := GameUI.NeonButton.new("RÉINITIALISER")
-	yes.accent = GameData.RED
-	yes.custom_minimum_size = Vector2(240, 56)
+	var yes := PlateButton.new("RÉINITIALISER", 2)
+	yes.custom_minimum_size = Vector2(260, 66)
 	yes.pressed.connect(func() -> void:
 		Campaign.reset(selected)
 		_open_campaign())
@@ -450,9 +467,8 @@ func _open_details(i: int) -> void:
 			l.custom_minimum_size = Vector2(520, 0)
 			box.add_child(l)
 		grid.add_child(box)
-	var back := GameUI.NeonButton.new("RETOUR")
-	back.accent = GameData.RED
-	back.custom_minimum_size = Vector2(250, 56)
+	var back := PlateButton.new("RETOUR", 1)
+	back.custom_minimum_size = Vector2(260, 66)
 	back.pressed.connect(func() -> void: ov.queue_free())
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -498,6 +514,8 @@ class PlateButton extends Control:
 
 	var text := ""
 	var tex_id := 1
+	var enabled := true
+	var font_size := 17
 	var hover_t := 0.0
 	var press_t := 0.0
 	var _hover := false
@@ -512,14 +530,15 @@ class PlateButton extends Control:
 		mouse_exited.connect(func() -> void: _hover = false)
 
 	func _process(delta: float) -> void:
-		hover_t = move_toward(hover_t, 1.0 if _hover else 0.0, delta * 8.0)
+		hover_t = move_toward(hover_t, 1.0 if (_hover and enabled) else 0.0, delta * 8.0)
 		press_t = move_toward(press_t, 0.0, delta * 5.0)
 		queue_redraw()
 
 	func _gui_input(event: InputEvent) -> void:
 		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			press_t = 1.0
-			pressed.emit()
+			if enabled:
+				press_t = 1.0
+				pressed.emit()
 			accept_event()
 
 	func _draw() -> void:
@@ -528,9 +547,11 @@ class PlateButton extends Control:
 		var r := Rect2(Vector2(-grow, -grow * 0.3), Vector2(size.x + grow * 2.0, size.y + grow * 0.6))
 		if tex != null:
 			var k := 1.0 + 0.28 * hover_t - 0.25 * press_t
+			if not enabled:
+				k = 0.38
 			draw_texture_rect(tex, r, false, Color(k, k, k, 1.0))
-		var fs := 17
-		var col := Color(1.0, 0.97, 0.9).lerp(Color.WHITE, hover_t)
+		var fs := font_size
+		var col := Color(1.0, 0.97, 0.9).lerp(Color.WHITE, hover_t) if enabled else Color(0.7, 0.66, 0.62)
 		UiStyle.text(self, Vector2(0, size.y * 0.56 + fs * 0.36), text, fs, col, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
 
 
