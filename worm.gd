@@ -31,10 +31,22 @@ var _victims: Array = []
 var _bit := false
 var _trail: CPUParticles2D
 var _seed := randf() * 100.0
+# Points de vie : chaque ver est un individu qui garde ses blessures d'une apparition à l'autre
+var hp := 8000.0
+var max_hp := 8000.0
+var idx := 0          # numéro de l'individu dans game.worm_roster
+var tint := 0.0       # teinte propre à l'individu (plus clair / plus sombre)
+var alive := true
+var dying := false
+var _hp_show := 0.0   # affichage de la jauge après un coup
 
 
-func setup(p_game, start: Vector2, p_target) -> void:
+func setup(p_game, start: Vector2, p_target, p_idx := 0, p_hp := 8000.0, p_max := 8000.0, p_tint := 0.0) -> void:
 	game = p_game
+	idx = p_idx
+	hp = p_hp
+	max_hp = p_max
+	tint = p_tint
 	position = start
 	target = p_target
 	z_index = 5
@@ -51,6 +63,11 @@ func _set_phase(p: String) -> void:
 func _process(delta: float) -> void:
 	_t += delta
 	_pt += delta
+	_hp_show = maxf(0.0, _hp_show - delta)
+	# Abattu : il renonce à toute nouvelle attaque et replonge
+	if dying and (phase == "approach" or phase == "erupt" or (phase == "lunge" and not _bit)):
+		_trail.emitting = false
+		_set_phase("retract")
 	match phase:
 		"approach":
 			_approach(delta)
@@ -63,6 +80,35 @@ func _process(delta: float) -> void:
 		"retract":
 			_retract(delta)
 	queue_redraw()
+
+
+# --- Cible (les unités peuvent tirer sur le ver, même enfoui) -------------------------------------
+
+func world_center() -> Vector2:
+	return position + Vector2(0, -emerge * 70.0)
+
+
+func radius_px() -> float:
+	return 44.0 + emerge * 22.0
+
+
+func take_damage(raw: float, wpn: String, attacker = null) -> void:
+	if not alive:
+		return
+	var dm: float = raw * GameData.mult(wpn, "heavy")
+	hp -= dm
+	_hp_show = 3.0
+	if is_instance_valid(attacker) and attacker is Unit and attacker.team == 0:
+		game.stats.dmg_dealt += minf(dm, hp + dm)
+	if hp <= 0.0:
+		hp = 0.0
+		alive = false
+		dying = true
+		if is_instance_valid(attacker) and attacker is Unit and attacker.alive:
+			attacker.add_kill()
+		game.ui.toast("Un ver géant a été abattu !", GameData.GREEN)
+		game.shake(8.0, 0.8)
+		Fx.burst(game, position, Color(0.85, 0.6, 0.45), 48, 1.8)
 
 
 func _valid(u) -> bool:
@@ -156,7 +202,7 @@ func _retract(delta: float) -> void:
 	emerge = move_toward(emerge, 0.0, delta * 0.9)
 	if emerge <= 0.0:
 		var next = null
-		if bites < MAX_BITES:
+		if bites < MAX_BITES and not dying:
 			next = game.nearest_sand_unit(position, 320.0)
 		if next != null and bites > 0:
 			target = next
@@ -186,6 +232,7 @@ func _bez(a: Vector2, c: Vector2, b: Vector2, u: float) -> Vector2:
 func _draw() -> void:
 	if phase == "approach":
 		_draw_bulge()
+		_draw_hp(Vector2(0, -44))
 		return
 	if emerge <= 0.001:
 		return
@@ -193,6 +240,21 @@ func _draw() -> void:
 	_draw_crater(e)
 	_draw_body(e)
 	_draw_head(e)
+	_draw_hp(head_offset() + Vector2(0, -HEAD_R * 0.9 - 22.0))
+
+
+## Jauge de vie au-dessus du ver : visible dès qu'il est blessé ou juste après un coup.
+func _draw_hp(at: Vector2) -> void:
+	if not alive or (hp >= max_hp - 0.5 and _hp_show <= 0.0):
+		return
+	var f := clampf(hp / max_hp, 0.0, 1.0)
+	var w := 120.0
+	var r := Rect2(at + Vector2(-w * 0.5, 0), Vector2(w, 9))
+	var col := Color("5dff9a").lerp(Color("ffb340"), clampf((1.0 - f) * 2.0, 0.0, 1.0)).lerp(Color("ff4a3a"), clampf((0.5 - f) * 2.0, 0.0, 1.0))
+	draw_rect(r.grow(2.0), Color(0, 0, 0, 0.7))
+	draw_rect(Rect2(r.position, Vector2(w * f, r.size.y)), col)
+	draw_rect(Rect2(r.position, Vector2(w * f, 2.5)), Color(1, 1, 1, 0.3))
+	draw_rect(r.grow(2.0), Color("e2b24a"), false, 1.5)
 
 
 ## Renflement du sable qui avance, avec ondes et petites crêtes.
@@ -237,6 +299,7 @@ func _ring(p: Vector2, r: float, u: float, k: int) -> void:
 	var band := 0.5 + 0.5 * sin(float(k) * 2.2)
 	var base := Color("5b3a2e").lerp(Color("7a523f"), band * 0.6)
 	base = base.lerp(Color("9b6f55"), u * 0.25)
+	base = base.lightened(tint) if tint >= 0.0 else base.darkened(-tint)
 	draw_circle(Vector2.ZERO, r, Color("2a150f"))                       # contour sombre
 	draw_circle(Vector2.ZERO, r * 0.94, base)
 	draw_circle(Vector2(r * 0.22, -r * 0.1), r * 0.6, base.lightened(0.14))  # lumière du couchant (à droite)
@@ -252,8 +315,10 @@ func _draw_head(e: float) -> void:
 	draw_set_transform(c, 0.0, Vector2(1.0, squash))
 	# bourrelet extérieur
 	draw_circle(Vector2.ZERO, r * 1.06, Color("2a150f"))
-	draw_circle(Vector2.ZERO, r, Color("7a523f"))
-	draw_circle(Vector2(r * 0.12, -r * 0.08), r * 0.78, Color("8f6249"))
+	var hc := Color("7a523f")
+	hc = hc.lightened(tint) if tint >= 0.0 else hc.darkened(-tint)
+	draw_circle(Vector2.ZERO, r, hc)
+	draw_circle(Vector2(r * 0.12, -r * 0.08), r * 0.78, hc.lightened(0.1))
 	# gueule : gorge sombre qui rougeoie
 	var m := r * (0.55 + 0.30 * open)
 	draw_circle(Vector2.ZERO, m, Color("1a0509"))

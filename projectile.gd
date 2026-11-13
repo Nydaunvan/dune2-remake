@@ -93,6 +93,11 @@ func _splash(radius: float) -> void:
 		var d: float = b.world_center().distance_to(position) - b.radius_px()
 		if d < radius:
 			b.take_damage(damage * (1.0 - 0.5 * clampf(d / radius, 0.0, 1.0)), weapon, shooter)
+	var w = game.worm
+	if w != null and is_instance_valid(w) and w.alive:
+		var dw: float = w.world_center().distance_to(position) - w.radius_px()
+		if dw < radius:
+			w.take_damage(damage * (1.0 - 0.5 * clampf(dw / radius, 0.0, 1.0)), weapon, shooter)
 
 
 func _draw() -> void:

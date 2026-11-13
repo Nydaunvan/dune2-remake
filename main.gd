@@ -23,6 +23,8 @@ const ORE_PER_CELL := 500.0
 const WORM_GRACE := 150.0    # aucune apparition avant (secondes)
 const WORM_RATE := 0.0012    # probabilité par seconde et par récolteur en activité sur le sable
 const WORM_COOLDOWN := 240.0 # pause après chaque apparition
+const WORM_HP := 8000.0      # points de vie d'un ver (énormes : il faut beaucoup de feu pour en venir à bout)
+const WORM_COUNT := 3        # nombre d'individus : chacun garde sa vie d'une apparition à l'autre
 
 # Couleurs de la mini-carte
 const MM_SAND := Color("d89580")
@@ -122,6 +124,7 @@ var _overlay_prev := false
 var command_mode := ""
 
 var worm: Worm
+var worm_roster: Array = [] # individus : {"hp": float, "tint": float}
 var worm_cooldown := 0.0
 var _field_timer := 0.0
 var _shake_t := 0.0
@@ -898,7 +901,22 @@ func _harvesters_on_sand() -> Array:
 	return out
 
 
+func _worm_pick() -> int:
+	if worm_roster.is_empty():
+		for i in WORM_COUNT:
+			worm_roster.append({"hp": WORM_HP, "tint": (float(i) - 1.0) * 0.07})
+	var alive_idx: Array = []
+	for i in worm_roster.size():
+		if float(worm_roster[i]["hp"]) > 0.0:
+			alive_idx.append(i)
+	return -1 if alive_idx.is_empty() else int(alive_idx.pick_random())
+
+
 func _spawn_worm(target) -> void:
+	var wi := _worm_pick()
+	if wi < 0:
+		worm_cooldown = 60.0 # tous les vers ont été abattus
+		return
 	# Le ver apparaît loin sur le sable (accessible par le sable uniquement) : plusieurs secondes de préavis
 	var start := worm_spawn_point(target.position, 20, 36)
 	if start.x < 0.0:
@@ -909,7 +927,7 @@ func _spawn_worm(target) -> void:
 	sfx.play_ui("worm", -2.0)
 	stats.worm_apparitions += 1
 	worm = Worm.new()
-	worm.setup(self, start, target)
+	worm.setup(self, start, target, wi, float(worm_roster[wi]["hp"]), WORM_HP, float(worm_roster[wi]["tint"]))
 	add_child(worm)
 	_worm_zone = WormZone.new()
 	_worm_zone.game = self
@@ -1042,6 +1060,8 @@ class WormZone extends Node2D:
 
 
 func _on_worm_finished() -> void:
+	if worm != null and worm.idx < worm_roster.size():
+		worm_roster[worm.idx]["hp"] = maxf(worm.hp, 0.0) # il garde ses blessures pour sa prochaine apparition
 	if _worm_zone != null:
 		_worm_zone.queue_free()
 		_worm_zone = null
@@ -1287,6 +1307,12 @@ func find_enemy(team: int, pos: Vector2, max_d: float, units_only := false, shoo
 		if s < best_s:
 			best_s = s
 			best = u
+	if worm != null and is_instance_valid(worm) and worm.alive and (team != 0 or ais.has(0) or worm.visible):
+		# le ver peut être visé, même enfoui, mais jamais avant une unité ou un bâtiment ennemi
+		var wd := worm.world_center().distance_to(pos) - worm.radius_px()
+		if wd <= max_d and wd + 60.0 < best_s:
+			best_s = wd + 60.0
+			best = worm
 	if not units_only:
 		for b in buildings:
 			if not hostile(b.team, team) or not b.alive or (team == 0 and not ais.has(0) and not b.seen):
@@ -1310,6 +1336,14 @@ func enemy_at(world_pos: Vector2):
 	for b in buildings:
 		if hostile(b.team, 0) and b.alive and b.visible and Rect2(b.position, Vector2(b.cell_size * TILE)).has_point(world_pos):
 			return b
+	return null
+
+
+## Ver sous le curseur (visible) : cible d'un clic droit.
+func worm_at(world_pos: Vector2):
+	if worm != null and is_instance_valid(worm) and worm.alive and worm.visible \
+			and worm.world_center().distance_to(world_pos) < worm.radius_px() + 12.0:
+		return worm
 	return null
 
 
@@ -1649,6 +1683,8 @@ func order_context(world_pos: Vector2) -> void:
 	if not selected.is_empty():
 		sfx.play_ui("ack", -8.0)
 	var e = enemy_at(world_pos)
+	if e == null:
+		e = worm_at(world_pos)
 	if e == null:
 		var friend = _friendly_ground_at(world_pos)
 		if friend != null:
@@ -3469,7 +3505,7 @@ func _collect_state() -> Dictionary:
 		"credits": credits, "ore": ore, "earned": earned, "ore_earned": ore_earned, "kills": kills, "destroyed": destroyed, "stats": stats.to_dict(),
 		"production": production.duplicate(true),
 		"units": us, "buildings": bs, "resource": res, "ais": ai_state,
-		"fog_seen": fog_seen, "worm_cooldown": worm_cooldown,
+		"fog_seen": fog_seen, "worm_cooldown": worm_cooldown, "worm_roster": worm_roster.duplicate(true),
 		"inc_acc": _inc_acc.duplicate(), "obj_state": obj_state.duplicate(true),
 		"arrived": arrived, "convoy_total": convoy_total, "hold_t": hold_t, "hold_ok": hold_ok,
 		"zone_done": zone_done, "escort_done": escort_done, "convoy_started": convoy_started,
@@ -3545,6 +3581,7 @@ func _apply_state() -> void:
 		it["id"] = GameData.migrate_id(String(it["id"]))
 	game_time = float(d["game_time"])
 	worm_cooldown = float(d["worm_cooldown"])
+	worm_roster = d.get("worm_roster", []).duplicate(true)
 	for k in d["inc_acc"]:
 		_inc_acc[int(k)] = float(d["inc_acc"][k])
 	# Mission
