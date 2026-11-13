@@ -1582,7 +1582,7 @@ func _left_pressed() -> void:
 			production["building"].pop_front()
 			placing_id = ""
 		else:
-			ui.toast("Emplacement invalide : roche libre, dans la zone de %s (une seconde base demande un engin de chantier)" % GameData.dname("chantier"), GameData.RED)
+			ui.toast("Emplacement invalide : roche libre sans unité, dans la zone de %s (une seconde base demande un engin de chantier)" % GameData.dname("chantier"), GameData.RED)
 	elif command_mode == "move":
 		order_move(get_global_mouse_position())
 		command_mode = ""
@@ -2899,10 +2899,22 @@ func _can_place(id: String, cell: Vector2i, team := 0) -> bool:
 				return false
 			if terrain[c.x][c.y] != T.ROCK or occupied.has(c):
 				return false
+	if _unit_in_rect(Rect2(Vector2(cell) * TILE, Vector2(size) * TILE)):
+		return false # impossible de construire sur une unité
 	# Zone de construction : autour d'un Chantier. Une seconde base exige un nouvel engin de chantier.
 	var center := Vector2(cell) + Vector2(size) / 2.0
 	for b in buildings:
 		if b.team == team and b.alive and b.id == "chantier" and center.distance_to(b.center_cell()) <= BUILD_RADIUS:
+			return true
+	return false
+
+
+## Une unité au sol (quel que soit son camp) occupe-t-elle ce rectangle (en pixels) ?
+func _unit_in_rect(r: Rect2) -> bool:
+	for u in units:
+		if not u.alive or u.air or u.eaten or u.carried:
+			continue
+		if r.grow(u.radius * 0.5).has_point(u.position):
 			return true
 	return false
 
