@@ -109,25 +109,26 @@ func _build_topbar() -> void:
 	topbar = HudBar.new()
 	topbar.game = game
 	topbar.position = Vector2(6, 6)
-	topbar.size = Vector2(1480, 84)
+	topbar.size = Vector2(1480, 80)
 	root.add_child(topbar)
-	var menu_btn := NeonButton.new("MENU")
-	menu_btn.position = Vector2(1284, 22)
-	menu_btn.size = Vector2(120, 42)
-	menu_btn.pressed.connect(game.open_pause_menu)
-	topbar.add_child(menu_btn)
-	var guide_btn := NeonButton.new("GUIDE")
-	guide_btn.accent = GameData.GREEN
-	guide_btn.position = Vector2(1060, 22)
-	guide_btn.size = Vector2(90, 42)
+	var guide_btn := PlateButton.new("GUIDE", 3)
+	guide_btn.font_size = 16
+	guide_btn.position = Vector2(1076, 12)
+	guide_btn.size = Vector2(122, 56)
 	guide_btn.pressed.connect(func() -> void: Guide.open(game, game.faction_id))
 	topbar.add_child(guide_btn)
-	var obj_btn := NeonButton.new("OBJECTIFS")
-	obj_btn.accent = GameData.AMBER
-	obj_btn.position = Vector2(1160, 22)
-	obj_btn.size = Vector2(114, 42)
+	var obj_btn := PlateButton.new("OBJECTIFS", 4)
+	obj_btn.font_size = 16
+	obj_btn.position = Vector2(1204, 12)
+	obj_btn.size = Vector2(142, 56)
 	obj_btn.pressed.connect(toggle_objectives)
 	topbar.add_child(obj_btn)
+	var menu_btn := PlateButton.new("MENU", 1)
+	menu_btn.font_size = 16
+	menu_btn.position = Vector2(1352, 12)
+	menu_btn.size = Vector2(112, 56)
+	menu_btn.pressed.connect(game.open_pause_menu)
+	topbar.add_child(menu_btn)
 
 
 func _build_sidebar() -> void:
@@ -509,11 +510,18 @@ class ObjectivePanel extends GlassPanel:
 
 # --- Barre de ressources ------------------------------------------------------
 
-class HudBar extends GlassPanel:
+class HudBar extends Control:
 	var game
 	var shown_credits := 0.0
 	var shown_ore := 0.0
+	var shown_load := 0.0
 	var _init_done := false
+	var _t := 0.0
+	const GOLD_LINE := Color("e2b24a")
+
+	func _init() -> void:
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 	## Dégradé bleu (marge) → ambre → rouge (seuil critique) selon la charge 0..1.
 	func _power_color(f: float) -> Color:
@@ -526,90 +534,184 @@ class HudBar extends GlassPanel:
 			return blue.lerp(amber, 0.5 + (f - 0.6) / 0.25 * 0.5)
 		return amber.lerp(red, clampf((f - 0.85) / 0.15, 0.0, 1.0))
 
-	func _init() -> void:
-		super(8.0, 4.0, Color(0.75, 0.55, 0.15), Color(1.0, 0.85, 0.4), 18.0)
-
 	func _process(delta: float) -> void:
 		if game == null:
 			return
+		_t += delta
+		var prod: int = game.power_produced()
+		var used: int = game.power_used()
+		var lf := clampf(float(used) / float(prod), 0.0, 1.0) if prod > 0 else (1.0 if used > 0 else 0.0)
 		if not _init_done:
 			shown_credits = float(game.credits)
 			shown_ore = float(game.ore)
+			shown_load = lf
 			_init_done = true
 		shown_credits = lerpf(shown_credits, float(game.credits), clampf(delta * 7.0, 0.0, 1.0))
 		shown_ore = lerpf(shown_ore, float(game.ore), clampf(delta * 7.0, 0.0, 1.0))
+		shown_load = lerpf(shown_load, lf, clampf(delta * 6.0, 0.0, 1.0))
 		queue_redraw()
 
-	func _chip(x: float, label: String, value: String, vcol: Color, glyph: String, gcol: Color, vsize := 30,
-			cap := 0, amount := 0) -> void:
-		UiStyle.glyph(self, glyph, Vector2(x + 10, 54), 14.0, gcol)
-		UiStyle.text(self, Vector2(x + 28, 36), label, 11, UiStyle.TEXT_DIM, true)
-		UiStyle.text(self, Vector2(x + 28, 64), value, vsize, vcol)
-		if cap > 0:
-			# Capacité de stockage : « / max » à droite du compteur, et une jauge de remplissage
-			var full := amount >= cap
-			var w := UiStyle.text_width(value, vsize)
-			UiStyle.text(self, Vector2(x + 28 + w + 6, 64), "/ %d" % cap, 15, GameData.RED if full else UiStyle.TEXT_DIM)
-			var fill := clampf(float(amount) / float(cap), 0.0, 1.0)
-			draw_rect(Rect2(x + 28, 70, 150, 3), Color(1, 1, 1, 0.12))
-			draw_rect(Rect2(x + 28, 70, 150.0 * fill, 3), GameData.RED if fill > 0.95 else (GameData.AMBER if fill > 0.8 else gcol))
+	# --- Primitives lissées -----------------------------------------------------------------
+
+	## Texte net : ombre portée douce plutôt qu'un contour épais.
+	func _tx(pos: Vector2, s: String, size: int, col: Color, title := false) -> void:
+		var f := UiStyle.title_font() if title else UiStyle.body_font()
+		draw_string(f, pos + Vector2(0, 1.6), s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, Color(0, 0, 0, 0.55))
+		draw_string(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, col)
+
+	## Gélule (barre arrondie) de largeur w.
+	func _cap(r: Rect2, w: float) -> PackedVector2Array:
+		var rad := r.size.y * 0.5
+		w = maxf(w, r.size.y)
+		var cy := r.position.y + rad
+		var pts := PackedVector2Array()
+		for i in 11:
+			var a := PI * 0.5 + PI * float(i) / 10.0
+			pts.append(Vector2(r.position.x + rad + cos(a) * rad, cy + sin(a) * rad))
+		for i in 11:
+			var a := -PI * 0.5 + PI * float(i) / 10.0
+			pts.append(Vector2(r.position.x + w - rad + cos(a) * rad, cy + sin(a) * rad))
+		return pts
+
+	## Jauge lisse : rail sombre, remplissage en dégradé avec reflet, graduations discrètes.
+	func _gauge(r: Rect2, frac: float, c_left: Color, c_right: Color, ticks := true) -> void:
+		draw_colored_polygon(_cap(r, r.size.x), Color(0.0, 0.0, 0.0, 0.5))
+		if frac > 0.003:
+			var pts := _cap(r, r.size.x * clampf(frac, 0.0, 1.0))
+			var cols := PackedColorArray()
+			for p in pts:
+				var k := clampf((p.x - r.position.x) / r.size.x, 0.0, 1.0)
+				var v := clampf((p.y - r.position.y) / r.size.y, 0.0, 1.0)
+				var c := c_left.lerp(c_right, k / maxf(frac, 0.05))
+				c = c.lerp(Color.WHITE, (1.0 - v) * 0.28).lerp(Color.BLACK, v * 0.22)
+				c.a = 1.0
+				cols.append(c)
+			draw_polygon(pts, cols)
+			var hw := r.size.x * clampf(frac, 0.0, 1.0)
+			draw_line(r.position + Vector2(r.size.y * 0.5, 1.4), r.position + Vector2(maxf(hw - r.size.y * 0.5, r.size.y * 0.5), 1.4),
+					Color(1, 1, 1, 0.45), 1.0, true)
+		if ticks:
+			for q: float in [0.25, 0.5, 0.75]:
+				var x := r.position.x + r.size.x * q
+				draw_line(Vector2(x, r.position.y + 1.0), Vector2(x, r.end.y - 1.0), Color(0, 0, 0, 0.35), 1.0, true)
+		draw_polyline(UiStyle.closed(_cap(r, r.size.x)), Color(1, 1, 1, 0.2), 1.0, true)
+
+	## Cartouche d'une valeur : fond enfoncé, fin liseré teinté.
+	func _slot(r: Rect2, col: Color) -> void:
+		var pts := UiStyle.chamfer(r, 9.0, true)
+		draw_colored_polygon(pts, Color(0.0, 0.0, 0.0, 0.28))
+		draw_polyline(UiStyle.closed(pts), Color(col.r, col.g, col.b, 0.28), 1.2, true)
+		draw_line(r.position + Vector2(12, 1.2), Vector2(r.end.x - 12, r.position.y + 1.2), Color(1, 1, 1, 0.07), 1.0, true)
+
+	## Médaillon rond portant un symbole.
+	func _medal(c: Vector2, col: Color, glyph: String) -> void:
+		draw_circle(c, 20.0, Color(col.r, col.g, col.b, 0.1))
+		draw_circle(c, 17.0, Color(0.03, 0.02, 0.07, 0.95))
+		draw_arc(c, 17.0, 0.0, TAU, 48, Color(col.r, col.g, col.b, 0.95), 2.0, true)
+		draw_arc(c, 13.0, 0.0, TAU, 40, Color(col.r, col.g, col.b, 0.25), 1.0, true)
+		if glyph == "clock":
+			draw_arc(c, 8.0, 0.0, TAU, 28, col, 1.6, true)
+			draw_line(c, c + Vector2(0, -6.0), col, 1.8, true)
+			draw_line(c, c + Vector2(4.5, 2.0), col, 1.8, true)
+		else:
+			UiStyle.glyph(self, glyph, c, 15.0, col)
 
 	func _sep(x: float) -> void:
-		draw_line(Vector2(x, 28), Vector2(x, 66), Color(UiStyle.GOLD.r, UiStyle.GOLD.g, UiStyle.GOLD.b, 0.35), 1.2)
-		draw_colored_polygon(PackedVector2Array([Vector2(x, 24), Vector2(x + 3, 28), Vector2(x, 32), Vector2(x - 3, 28)]), UiStyle.GOLD)
+		draw_line(Vector2(x, 18), Vector2(x, size.y - 18), Color(GOLD_LINE.r, GOLD_LINE.g, GOLD_LINE.b, 0.22), 1.0, true)
+
+	# --- Dessin -----------------------------------------------------------------------------------
+
+	func _draw_frame() -> void:
+		var r := Rect2(Vector2.ZERO, size)
+		var out := UiStyle.chamfer(r.grow(-3.0), 16.0, true)
+		# ombre portée
+		for k in 4:
+			draw_polyline(UiStyle.closed(UiStyle.chamfer(r.grow(-3.0 + k * 0.9), 16.0 + k, true)), Color(0, 0, 0, 0.1), 2.0, true)
+		# fond : dégradé vertical indigo, quasi opaque (aucun bruit ni trame)
+		var cols := PackedColorArray()
+		for p in out:
+			var v := clampf(p.y / size.y, 0.0, 1.0)
+			cols.append(Color(0.13, 0.085, 0.2, 0.96).lerp(Color(0.045, 0.028, 0.085, 0.97), pow(v, 0.8)))
+		draw_polygon(out, cols)
+		# reflet de verre sur la moitié haute
+		var gl := PackedVector2Array([Vector2(22, 5.0), Vector2(size.x - 22, 5.0), Vector2(size.x - 22, size.y * 0.42), Vector2(22, size.y * 0.42)])
+		draw_polygon(gl, PackedColorArray([Color(1, 1, 1, 0.07), Color(1, 1, 1, 0.07), Color(1, 1, 1, 0.0), Color(1, 1, 1, 0.0)]))
+		# double liseré doré
+		draw_polyline(UiStyle.closed(out), Color(GOLD_LINE.r, GOLD_LINE.g, GOLD_LINE.b, 0.95), 1.8, true)
+		draw_polyline(UiStyle.closed(UiStyle.chamfer(r.grow(-8.0), 12.0, true)), Color(GOLD_LINE.r, GOLD_LINE.g, GOLD_LINE.b, 0.2), 1.0, true)
+		# équerres brillantes aux angles taillés
+		for sx: float in [0.0, 1.0]:
+			var x := 3.0 + (size.x - 6.0) * sx
+			var d: float = 1.0 - 2.0 * sx
+			draw_line(Vector2(x + d * 16.0, 3.0), Vector2(x + d * 44.0, 3.0), Color(1.0, 0.9, 0.55, 1.0), 2.6, true)
+			draw_line(Vector2(x + d * 16.0, size.y - 3.0), Vector2(x + d * 44.0, size.y - 3.0), Color(1.0, 0.9, 0.55, 0.0 + 0.7), 2.0, true)
+		# losanges d'extrémité
+		for x: float in [14.0, size.x - 14.0]:
+			draw_colored_polygon(PackedVector2Array([Vector2(x, size.y * 0.5 - 6), Vector2(x + 4, size.y * 0.5), Vector2(x, size.y * 0.5 + 6), Vector2(x - 4, size.y * 0.5)]), GOLD_LINE)
+
+	func _resource(x: float, w: float, label: String, value: String, vcol: Color, glyph: String, gcol: Color,
+			cap: int, amount: int) -> void:
+		_slot(Rect2(x, 11, w, size.y - 22), gcol)
+		_medal(Vector2(x + 31, size.y * 0.5), gcol, glyph)
+		_tx(Vector2(x + 58, 28), label, 11, UiStyle.TEXT_DIM, true)
+		_tx(Vector2(x + 58, 56), value, 28, vcol)
+		var vw := UiStyle.text_width(value, 28)
+		var full := amount >= cap
+		_tx(Vector2(x + 58 + vw + 7, 56), "/ %d" % cap, 14, GameData.RED if full else UiStyle.TEXT_DIM)
+		var fill := clampf(float(amount) / float(cap), 0.0, 1.0)
+		var lo := gcol.darkened(0.35)
+		var hi := gcol.lightened(0.2)
+		if fill > 0.95:
+			lo = GameData.RED.darkened(0.2)
+			hi = GameData.RED
+		elif fill > 0.8:
+			hi = GameData.AMBER
+		_gauge(Rect2(x + 58, 62, w - 74, 7), fill, lo, hi)
 
 	func _draw() -> void:
 		if game == null:
 			return
+		_draw_frame()
 		# Solaris : le compteur glisse vers la valeur réelle et clignote vert/rouge
 		var diff: float = float(game.credits) - shown_credits
 		var col := GameData.GOLD
 		if absf(diff) > 1.0:
 			var k := clampf(absf(diff) / 200.0, 0.0, 1.0)
 			col = GameData.GOLD.lerp(Color("5dff9a") if diff > 0.0 else Color("ff5a4a"), k)
-		_chip(30, "SOLARIS", str(int(round(shown_credits))), col, "credit", GameData.AMBER_HDR, 30,
+		_resource(26, 238, "SOLARIS", str(int(round(shown_credits))), col, "credit", GameData.AMBER_HDR,
 				game.storage_cap("spice"), game.credits)
-		_sep(228)
-		_chip(246, "MINERAI", str(int(round(shown_ore))), GameData.ORE_BLUE, "ore", GameData.CYAN, 30,
+		_resource(274, 238, "MINERAI", str(int(round(shown_ore))), GameData.ORE_BLUE, "ore", GameData.CYAN,
 				game.storage_cap("ore"), game.ore)
-		_sep(444)
 
-		# Énergie : jauge segmentée
+		# Énergie : jauge lisse (consommation / production), bleu = large marge, rouge = seuil critique
 		var prod: int = game.power_produced()
 		var used: int = game.power_used()
-		# Jauge de charge : consommation / production. Bleu = large marge, rouge = seuil critique.
-		var load_f := 0.0
-		if prod > 0:
-			load_f = clampf(float(used) / float(prod), 0.0, 1.0)
-		elif used > 0:
-			load_f = 1.0
 		var ok := prod >= used
-		var load_col := _power_color(load_f)
-		UiStyle.glyph(self, "power", Vector2(472, 54), 14.0, load_col)
-		UiStyle.text(self, Vector2(490, 36), "ÉNERGIE", 11, UiStyle.TEXT_DIM, true)
-		UiStyle.text(self, Vector2(490, 64), "%d / %d" % [used, prod], 22, Color.WHITE if ok else GameData.RED)
-		var bar := Rect2(590, 50, 196, 12)
-		var cell := 8.0
-		var gap := 3.0
-		var n := int(floor((bar.size.x + gap) / (cell + gap)))
-		var lit := int(round(load_f * n))
-		for i in n:
-			var x := bar.position.x + i * (cell + gap)
-			if i < lit:
-				var c := _power_color(float(i + 1) / n)
-				draw_rect(Rect2(x, bar.position.y, cell, bar.size.y), c)
-				draw_rect(Rect2(x, bar.position.y, cell, 2.0), Color(1, 1, 1, 0.35))
-			else:
-				draw_rect(Rect2(x, bar.position.y, cell, bar.size.y), Color(1, 1, 1, 0.08))
-		_sep(812)
+		var load_col := _power_color(shown_load)
+		var ex := 522.0
+		_slot(Rect2(ex, 11, 272, size.y - 22), load_col)
+		_medal(Vector2(ex + 31, size.y * 0.5), load_col, "power")
+		_tx(Vector2(ex + 58, 28), "ÉNERGIE", 11, UiStyle.TEXT_DIM, true)
+		_tx(Vector2(ex + 58, 56), "%d" % used, 24, Color.WHITE if ok else GameData.RED)
+		var uw := UiStyle.text_width("%d" % used, 24)
+		_tx(Vector2(ex + 58 + uw + 6, 56), "/ %d" % prod, 15, UiStyle.TEXT_DIM)
+		_gauge(Rect2(ex + 58, 62, 198, 7), shown_load, _power_color(0.0), load_col)
 
+		# Temps
 		var t: float = game.game_time
-		UiStyle.text(self, Vector2(836, 36), "TEMPS", 11, UiStyle.TEXT_DIM, true)
-		UiStyle.text(self, Vector2(836, 64),
-				"%02d:%02d:%02d" % [int(t / 3600.0), int(t / 60.0) % 60, int(t) % 60], 24, Color.WHITE)
-		_sep(980)
-		UiStyle.text(self, Vector2(1000, 36), "FPS", 11, UiStyle.TEXT_DIM, true)
-		UiStyle.text(self, Vector2(1000, 64), "%d" % int(Engine.get_frames_per_second()), 22, GameData.GREEN)
+		var tx := 806.0
+		_slot(Rect2(tx, 11, 164, size.y - 22), UiStyle.GOLD)
+		_medal(Vector2(tx + 31, size.y * 0.5), UiStyle.GOLD, "clock")
+		_tx(Vector2(tx + 58, 28), "TEMPS", 11, UiStyle.TEXT_DIM, true)
+		_tx(Vector2(tx + 58, 57), "%02d:%02d:%02d" % [int(t / 3600.0), int(t / 60.0) % 60, int(t) % 60], 25, Color.WHITE)
+
+		# Images par seconde
+		var fx := 982.0
+		var fps := int(Engine.get_frames_per_second())
+		var fcol := GameData.GREEN if fps >= 45 else (GameData.AMBER if fps >= 25 else GameData.RED)
+		_slot(Rect2(fx, 11, 82, size.y - 22), fcol)
+		_tx(Vector2(fx + 16, 28), "FPS", 11, UiStyle.TEXT_DIM, true)
+		_tx(Vector2(fx + 16, 57), "%d" % fps, 25, fcol)
 
 
 class SideHeader extends Control:
