@@ -1057,7 +1057,7 @@ func nearest_sand_unit(pos: Vector2, max_d: float) -> Unit:
 	var best: Unit = null
 	var best_d := max_d
 	for u in units:
-		if u.alive and not u.eaten and worm_ok(u.position):
+		if u.alive and not u.eaten and not u.convoy and worm_ok(u.position):
 			var d := u.position.distance_to(pos)
 			if d < best_d:
 				best_d = d

@@ -66,7 +66,7 @@ func _process(delta: float) -> void:
 
 
 func _valid(u) -> bool:
-	return u != null and is_instance_valid(u) and u.alive and not u.eaten and game.worm_ok(u.position)
+	return u != null and is_instance_valid(u) and u.alive and not u.eaten and not u.convoy and game.worm_ok(u.position)
 
 
 # --- Phases -------------------------------------------------------------------
@@ -124,8 +124,8 @@ func _lunge(delta: float) -> void:
 		_victims.clear()
 		var mouth := position + head_offset()
 		for u in game.units.duplicate():
-			if not u.alive or u.eaten:
-				continue
+			if not u.alive or u.eaten or u.convoy:
+				continue # le convoi de mission est hors de portée des vers
 			var near_foot: bool = game.worm_ok(u.position) and u.position.distance_to(position) < BITE_RADIUS + 28.0
 			if near_foot or u.position.distance_to(mouth) < BITE_RADIUS * 0.7:
 				_victims.append(u)
