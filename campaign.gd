@@ -710,6 +710,26 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 		d["zone"]["units"] = int(round(float(d["zone"]["units"]) * (1.0 + 0.6 * g)))
 	if d.has("time_limit"):
 		d["time_limit"] = _round_to(float(d["time_limit"]) * (1.0 + 2.0 * g), 60)
+	# Plafonds réalistes, d'après les rythmes mesurés au banc d'essai (tools/bench.gd) : environ 450 Solaris
+	# et 220 minerai récoltés par minute, 1,5 unité ennemie produite par minute. `budget` = minutes qu'une
+	# mission peut consacrer à un objectif (12 au début, 30 à la fin ; 60 % du temps imparti s'il y en a un).
+	var budget := 12.0 + 18.0 * g
+	if d.has("time_limit"):
+		budget = minf(budget, float(d["time_limit"]) / 60.0 * 0.6)
+	for o in d["objectives"]:
+		match o["type"]:
+			"harvest":
+				o["amount"] = minf(float(o["amount"]), _round_to(450.0 * budget, 100))
+			"ore":
+				o["amount"] = minf(float(o["amount"]), _round_to(220.0 * budget, 100))
+			"power":
+				o["amount"] = minf(float(o["amount"]), 800.0)
+			"kills":
+				o["count"] = mini(int(o["count"]), int(1.5 * budget))
+			"train":
+				o["count"] = mini(int(o["count"]), int(1.0 * budget))
+			"survive":
+				o["time"] = minf(float(o["time"]), _round_to(60.0 * (10.0 + 15.0 * g), 30))
 	if d.has("convoy"):
 		d["convoy"]["ambushes"] = int(d["convoy"]["ambushes"]) + int(g * 3.0)
 		d["convoy"]["ambush_size"] = int(d["convoy"]["ambush_size"]) + int(g * 3.0)
