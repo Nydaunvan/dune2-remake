@@ -3519,7 +3519,7 @@ func _apply_state() -> void:
 	# Unités
 	var made: Array = []
 	for ud in d["units"]:
-		var u := _spawn_unit(String(ud["id"]), Vector2i.ZERO, int(ud["team"]))
+		var u := _spawn_unit(GameData.migrate_id(String(ud["id"])), Vector2i.ZERO, int(ud["team"]))
 		u.restore_state(ud)
 		made.append(u)
 	for i in made.size():
@@ -3541,6 +3541,8 @@ func _apply_state() -> void:
 	stats.from_dict(d.get("stats", {}))
 	destroyed = d.get("destroyed", {})
 	production = d["production"]
+	for it in production["unit"]:
+		it["id"] = GameData.migrate_id(String(it["id"]))
 	game_time = float(d["game_time"])
 	worm_cooldown = float(d["worm_cooldown"])
 	for k in d["inc_acc"]:

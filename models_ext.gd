@@ -33,9 +33,7 @@ const STYLES := {
 	"diapason": {"k": "tank", "l": 34, "sp": 9, "hl": 32, "hh": 7, "hw": 16, "tsx": 14, "tsy": 4, "tsz": 13, "bn": 0,
 			"x": ["mortar", "skirts", "dish"], "gc": "blue"},
 	# Unités aériennes
-	"eclair": {"k": "jet", "l": 34, "span": 26, "ww": 8, "eng": 2, "tail": "twin", "gc": "blue", "bn": 2},
 	"foudre": {"k": "copter", "bl": 28, "bw": 12, "rr": 22, "rn": 4, "pods": 2, "gc": "red", "gun": true},
-	"orage": {"k": "bomber", "l": 36, "span": 56, "ww": 15, "eng": 4, "gc": "blue", "bn": 1},
 	"vigie": {"k": "drone", "s": 1.0, "gc": "blue"},
 	# Bâtiments Solis
 	"atelier_solis": {"k": "hall", "sz": Vector2(96, 64), "h": 18, "gc": "blue", "chim": true},
@@ -48,6 +46,26 @@ const STYLES := {
 	"hangar_solis": {"k": "hangar", "sz": Vector2(96, 64), "h": 18, "gc": "blue"},
 	"observatoire": {"k": "dome", "sz": Vector2(64, 64), "gc": "white"},
 	"canon_solaire": {"k": "tower", "base": "super", "sz": Vector2(96, 96), "hy": 28, "hx": 30, "hh": 12, "bn": 1, "bl": 34, "br": 4.0, "gc": "gold", "x": ["coil"]},
+	# Mechas (marcheurs) : Solis
+	"phalange": {"k": "mech", "leg": "biped", "kn": -1.0, "lt": 3.8, "lh": 16, "lz": 6, "tl": 11, "th": 11, "tw": 15, "hx": 9, "wp": "laser", "bl": 14,
+			"hd": "dome", "x": ["antenna"], "gc": "blue"},
+	"archonte": {"k": "mech", "leg": "biped", "kn": -1.0, "lt": 4.0, "lh": 21, "lz": 7, "tl": 12, "th": 12, "tw": 16, "hx": 8, "wp": "plasma", "bl": 24,
+			"hd": "dome", "fl": 14, "x": ["pack", "antenna"], "gc": "blue", "s": 1.08},
+	# Mechas Kharn
+	"cogneur": {"k": "mech", "leg": "biped", "kn": 1.0, "lt": 6.5, "lh": 13, "lz": 8, "tl": 16, "th": 14, "tw": 22, "hx": 9, "wp": "fists", "fl": 14,
+			"x": ["plates", "stacks"], "gc": "orange", "s": 1.0},
+	"gladiateur": {"k": "mech", "leg": "biped", "kn": 1.0, "lt": 5.0, "lh": 15, "lz": 7, "tl": 13, "th": 12, "tw": 18, "hx": 9, "wp": "mg", "bl": 12,
+			"x": ["plates", "antenna"], "gc": "red"},
+	"mastodonte": {"k": "mech", "leg": "biped", "kn": 1.0, "lt": 7.5, "lh": 17, "lz": 9, "tl": 18, "th": 16, "tw": 24, "hx": 9, "wp": "rockets", "fl": 16,
+			"x": ["plates", "stacks"], "gc": "orange", "s": 1.12},
+	# Mechas Conclave
+	"geode": {"k": "mech", "leg": "crystal", "mk": "geode", "gc": "violet"},
+	"stele": {"k": "mech", "leg": "crystal", "mk": "stele", "gc": "violet", "s": 0.82},
+	"cariatide": {"k": "mech", "leg": "biped", "obs": true, "kn": 1.0, "lt": 7.5, "lh": 17, "lz": 9, "tl": 17, "th": 16, "tw": 24, "hx": 9, "wp": "fists",
+			"x": ["crystals", "crown", "cracks", "plates"], "gc": "violet", "s": 1.12},
+	# Mechas Vael
+	"tarentule": {"k": "mech", "leg": "spider", "h": 12, "bw": 9, "bl": 8, "ab": 6.5, "lt": 2.0, "gc": "green", "s": 0.95},
+	"mygale": {"k": "mech", "leg": "spider", "h": 15, "bw": 12, "bl": 14, "ab": 8.5, "lt": 3.0, "fangs": true, "gc": "green", "s": 1.08},
 	# Unités et bâtiments du Conclave
 	"tesson": {"k": "tank", "w": true, "l": 24, "sp": 8, "hl": 24, "hh": 4, "hw": 10, "tsx": 7, "tsy": 4, "tsz": 7, "bn": 1, "bl": 9, "br": 0.9, "x": ["crystals"], "gc": "violet"},
 	"fracasseur": {"k": "tank", "l": 32, "sp": 9, "hl": 30, "hh": 7, "hw": 16, "tsx": 8, "tsy": 5, "tsz": 12, "bn": 0, "x": ["ram", "crystals"], "gc": "violet"},
@@ -55,9 +73,7 @@ const STYLES := {
 	"veilleur": {"k": "tank", "w": true, "l": 28, "sp": 9, "hl": 28, "hh": 6, "hw": 13, "tsx": 10, "tsy": 8, "tsz": 11, "bn": 0, "x": ["cross", "crystals"], "gc": "green"},
 	"aiguille": {"k": "tank", "l": 32, "sp": 9, "hl": 30, "hh": 6, "hw": 15, "tsx": 12, "tsy": 5, "tsz": 13, "bn": 3, "bl": 14, "br": 1.0, "bz": 4, "x": ["crystals", "dish"], "gc": "violet"},
 	"quartz": {"k": "tank", "l": 34, "sp": 9.5, "hl": 32, "hh": 7, "hw": 16, "tsx": 14, "tsy": 4, "tsz": 13, "bn": 0, "x": ["mortar", "crystals"], "gc": "violet"},
-	"ephemere": {"k": "drone", "s": 0.9, "gc": "violet"},
 	"scintille": {"k": "jet", "l": 32, "span": 28, "ww": 8, "eng": 1, "tail": "twin", "gc": "violet", "bn": 2},
-	"stalactite": {"k": "bomber", "l": 38, "span": 58, "ww": 15, "eng": 3, "gc": "violet"},
 	"aurore": {"k": "copter", "bl": 26, "bw": 12, "rr": 23, "rn": 3, "pods": 2, "gc": "violet", "gun": true},
 	"sanctuaire": {"k": "hall", "sz": Vector2(96, 64), "h": 18, "gc": "violet"},
 	"source_vive": {"k": "dome", "sz": Vector2(64, 64), "gc": "violet"},
@@ -77,7 +93,6 @@ const STYLES := {
 	"cracheur": {"k": "tank", "l": 34, "sp": 9.5, "hl": 32, "hh": 7, "hw": 16, "tsx": 14, "tsy": 4, "tsz": 13, "bn": 0, "x": ["mortar", "tank"], "gc": "green"},
 	"cigale": {"k": "drone", "s": 0.9, "gc": "green"},
 	"milan": {"k": "jet", "l": 30, "span": 36, "ww": 8, "eng": 1, "tail": "twin", "gc": "green", "bn": 2},
-	"mante": {"k": "bomber", "l": 34, "span": 56, "ww": 12, "eng": 2, "gc": "green"},
 	"cobra": {"k": "copter", "bl": 26, "bw": 11, "rr": 24, "rn": 3, "pods": 2, "gc": "green", "gun": true},
 	"bureau_vael": {"k": "hall", "sz": Vector2(96, 64), "h": 16, "gc": "gold"},
 	"apothicaire": {"k": "dome", "sz": Vector2(64, 64), "gc": "green"},
@@ -95,10 +110,8 @@ const STYLES := {
 	"brasier": {"k": "tank", "l": 32, "sp": 9, "hl": 30, "hh": 6, "hw": 15, "tsx": 12, "tsy": 6, "tsz": 12, "bn": 1, "bl": 12, "br": 2.2, "x": ["tank", "stacks"], "gc": "orange"},
 	"obusier": {"k": "tank", "l": 38, "sp": 11, "hl": 36, "hh": 8, "hw": 18, "tsx": 14, "tsy": 5, "tsz": 14, "bn": 0, "x": ["mortar", "skirts", "stacks"], "gc": "orange"},
 	"depanneuse": {"k": "tank", "l": 34, "sp": 10, "hl": 32, "hh": 7, "hw": 17, "tsx": 12, "tsy": 8, "tsz": 13, "bn": 0, "x": ["cross", "ram", "antenna"], "gc": "green"},
-	"vautour": {"k": "bomber", "l": 30, "span": 44, "ww": 12, "eng": 2, "gc": "red"},
 	"aigle": {"k": "jet", "l": 36, "span": 30, "ww": 10, "eng": 2, "tail": "single", "gc": "red", "bn": 2},
 	"forteresse_vol": {"k": "bomber", "l": 44, "span": 66, "ww": 18, "eng": 4, "gc": "red"},
-	"cyclone": {"k": "copter", "bl": 30, "bw": 14, "rr": 26, "rn": 4, "pods": 4, "gc": "orange", "gun": true},
 	"forge_kharn": {"k": "hall", "sz": Vector2(96, 64), "h": 20, "gc": "orange", "chim": true},
 	"atelier_kharn": {"k": "hall", "sz": Vector2(96, 64), "h": 14, "gc": "green"},
 	"canon_lourd": {"k": "tower", "base": "block", "hy": 22, "hx": 26, "hh": 10, "bn": 2, "bl": 22, "br": 2.6, "bz": 8, "gc": "orange"},
@@ -129,6 +142,8 @@ static func muzzles(id: String) -> Array:
 	var p: Dictionary = STYLES.get(id, {})
 	var out: Array = []
 	match String(p.get("k", "")):
+		"mech":
+			return ModelsMech.muzzles(p)
 		"tank":
 			var th := float(p.get("th", 7))
 			var hh := float(p.get("hh", 6))
@@ -180,6 +195,7 @@ static func build(r: Node3D, id: String, body: Color, hi: Color, acc: Color) -> 
 		"bomber": _bomber(r, body, hi, acc, p)
 		"copter": _copter(r, body, hi, acc, p)
 		"drone": _drone(r, body, hi, acc, p)
+		"mech": ModelsMech.build(r, body, hi, acc, p)
 		"tower":
 			if head:
 				_tower_head(r, acc, p)

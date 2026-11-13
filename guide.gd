@@ -219,10 +219,10 @@ func _p_buildings() -> String:
 
 func _p_units() -> String:
 	var s := _h("Unités de " + GameData.FACTIONS[faction]["name"])
-	s += "Les unités se produisent dans « %s » (terrestres) ou « %s » (volantes). Certaines exigent le bâtiment « %s » au niveau 2 ou 3. Une fois par type, la [b]modernisation[/b] (« %s » niveau 2) apporte des bonus permanents.\n" % [_name("usine"), _name("aerodrome"), _name("usine"), _name("usine")]
+	s += "Les unités se produisent dans « %s » (terrestres, mechas compris) ou « %s » (volantes). Certaines exigent le bâtiment « %s » au niveau 2 ou 3. Une fois par type, la [b]modernisation[/b] (« %s » niveau 2) apporte des bonus permanents.\n" % [_name("usine"), _name("aerodrome"), _name("usine"), _name("usine")]
 	for id in GameData.units_for(faction):
 		var d: Dictionary = GameData.UNITS[id]
-		var line := "\n[b]%s[/b]%s — %d Solaris" % [GameData.name_of(id, faction), " (volant)" if d.get("air", false) else "", int(d["cost"])]
+		var line := "\n[b]%s[/b]%s — %d Solaris" % [GameData.name_of(id, faction), " (volant)" if d.get("air", false) else (" (mécha)" if ModelsExt.STYLES.get(id, {}).get("k", "") == "mech" else ""), int(d["cost"])]
 		line += " + %d minerai" % GameData.unit_ore(id)
 		line += "\n    PV %d, vitesse %d" % [int(d["hp"]), int(d["speed"])]
 		if d.has("dps"):
@@ -245,6 +245,7 @@ func _p_units() -> String:
 		if GameData.UNIT_TECH.has(id):
 			line += "\n    Modernisation : " + GameData.tech_text(id)
 		s += line + "\n"
+	s += _h("Mechas") + "Chaque maison aligne ses propres [b]mechas[/b], des machines marcheuses produites à l'usine comme les autres unités terrestres : bipèdes blindés (Solis, Kharn), marcheurs de cristal ou géants d'obsidienne (Conclave), arachnides (Vael). Ils franchissent le terrain comme les autres unités terrestres, se balancent en marchant et laissent des empreintes dans le sable.\n"
 	s += _h("Unités volantes") + "Elles survolent la roche et le sable, plus haut que les unités terrestres. [b]Seules certaines unités et défenses peuvent les toucher[/b] (indiquées « touche les unités volantes ») ; les autres tirent sans effet sur elles. Un transport volant embarque des unités terrestres et les dépose n'importe où (touche U)."
 	return s
 
@@ -261,7 +262,7 @@ func _p_factions() -> String:
 		var an: PackedStringArray = []
 		for id in d["air"]:
 			an.append(_name(id))
-		s += "Unités : %s. Volantes : %s.\n" % [", ".join(names), ", ".join(an)]
+		s += "Unités terrestres et mechas : %s. Volantes : %s.\n" % [", ".join(names), ", ".join(an)]
 		for id in GameData.BUILDINGS:
 			if GameData.BUILDINGS[id].get("faction", "") == f:
 				s += "Bâtiment propre : %s — %s\n" % [_name(id), GameData.BUILDINGS[id].get("desc", "")]

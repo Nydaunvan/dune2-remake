@@ -1261,6 +1261,8 @@ func restore_state(s: Dictionary) -> void:
 	unit_q = s["unit_q"]
 	if unit_q.is_empty() and not s.get("air_q", {}).is_empty():
 		unit_q = s["air_q"] # anciennes sauvegardes : une seule file d'unités
+	if unit_q.has("id"):
+		unit_q["id"] = GameData.migrate_id(String(unit_q["id"]))
 	skill = float(s.get("skill", skill))
 	wave_size = int(s["wave_size"])
 	assaulting = false

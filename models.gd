@@ -63,7 +63,6 @@ static func build(id: String, accent: Color, faction := "") -> Node3D:
 		"ombre": _ombre(r, body, hi, accent)
 		"prisme": _prisme(r, body, hi, accent)
 		"obelisque": _obelisque(r, body, hi, accent)
-		"vesper": _vesper(r, body, hi, accent)
 		"eclipse": _eclipse(r, body, hi, accent)
 		"passeur": _carrier(r, body, hi, accent, 1.1)
 		"tour_prisme": _tour_base(r, accent, id)
@@ -79,9 +78,7 @@ static func build(id: String, accent: Color, faction := "") -> Node3D:
 		"tourelle_tete": _tourelle_tete(r, accent)
 		"libellule": _fighter(r, body, hi, accent, 0)
 		"aigrette": _fighter(r, body, hi, accent, 1)
-		"guepe": _fighter(r, body, hi, accent, 2)
 		"faucheur": _copter(r, body, hi, accent)
-		"marteau": _bomber(r, body, hi, accent, false)
 		"frelon": _bomber(r, body, hi, accent, true)
 		"nacelle": _carrier(r, body, hi, accent, 1.0)
 		"pelican": _carrier(r, body, hi, accent, 0.9)
@@ -120,9 +117,7 @@ const MUZZLES := {
 	"mirage": [Vector3(9, 14, 0)],
 	"libellule": [Vector3(22, 10, 5), Vector3(22, 10, -5)],
 	"aigrette": [Vector3(22, 10, 5), Vector3(22, 10, -5)],
-	"guepe": [Vector3(24, 10, 5), Vector3(24, 10, -5)],
 	"faucheur": [Vector3(13, 9, 9), Vector3(13, 9, -9)],
-	"marteau": [Vector3(3, 7, 0)],
 	"frelon": [Vector3(3, 7, 0)],
 	"tourelle_tete": [Vector3(31, 22, 4), Vector3(31, 22, -4)],
 	"batterie_tete": [Vector3(37, 22, -7), Vector3(37, 22, 0), Vector3(37, 22, 7)],
@@ -132,7 +127,6 @@ const MUZZLES := {
 	"ombre": [Vector3(17, 14, 0)],
 	"prisme": [Vector3(24, 17, 0)],
 	"obelisque": [Vector3(34, 22, 0)],
-	"vesper": [Vector3(24, 10, 5), Vector3(24, 10, -5)],
 	"eclipse": [Vector3(3, 7, 0)],
 	"tour_prisme_tete": [Vector3(32, 24, 0)],
 }
@@ -666,18 +660,6 @@ static func _obelisque(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_crystal(r, 22, 4.5, Vector3(10, 29, 0), GLOW_VIOLET, PI / 2.0 + 0.0, 0.0, 1.4)   # obélisque couché sur le canon
 	_crystal(r, 12, 3.0, Vector3(-12, 26, 6), hi, 0.2, 0.0, 0.9)
 	_crystal(r, 12, 3.0, Vector3(-12, 26, -6), hi, -0.2, 0.0, 0.9)
-
-
-static func _vesper(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
-	_box(r, Vector3(32, 4, 6), Vector3(0, 12, 0), OBSIDIAN)
-	_box(r, Vector3(12, 3.5, 5), Vector3(14, 11.5, 0), hi, Vector3(0, 0, -0.35))
-	_box(r, Vector3(8, 3, 5), Vector3(0, 14.5, 0), METAL)
-	_ball(r, 2.4, Vector3(4, 15.5, 0), GLOW_VIOLET, 1.8)
-	for s in [-1.0, 1.0]:
-		_box(r, Vector3(14, 1.0, 18), Vector3(-6, 12, 10 * s), body, Vector3(0, 0.45 * s, 0))        # ailes en flèche
-		_crystal(r, 7, 2.0, Vector3(-12, 13, 18 * s), GLOW_VIOLET, PI / 2.0, 0.0, 1.4)
-	_barrel(r, 14, 10, 5, 8, 0.9)
-	_barrel(r, 14, 10, -5, 8, 0.9)
 
 
 static func _eclipse(r: Node3D, body: Color, hi: Color, acc: Color) -> void:

@@ -25,8 +25,8 @@ const FACTIONS := {
 		"desc": "Constructions 20 % plus rapides.\nUnités précises et mobiles, mais peu blindées.",
 		"color": Color("4aa8ff"), "accent": Color("bfe3ff"),
 		"build_time_mult": 0.8, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.0,
-		"units": ["sentinelle", "egide", "resonateur", "pisteur", "brise_mur", "citadelle", "technicien", "cirrus", "diapason"],
-		"air": ["libellule", "aigrette", "nacelle", "eclair", "foudre", "orage", "vigie"],
+		"units": ["sentinelle", "egide", "resonateur", "pisteur", "brise_mur", "citadelle", "technicien", "cirrus", "diapason", "phalange", "archonte"],
+		"air": ["vigie", "libellule", "nacelle", "aigrette", "foudre"],
 	},
 	"kharn": {
 		"name": "Légion Kharn",
@@ -34,8 +34,8 @@ const FACTIONS := {
 		"desc": "Unités 5 % moins chères, minerai +10 %.\nBlindés lourds et lents, constructions standard.",
 		"color": Color("e8433a"), "accent": Color("ffb199"),
 		"build_time_mult": 1.0, "unit_cost_mult": 0.95, "spice_mult": 1.0, "ore_mult": 1.1,
-		"units": ["belier", "brute", "salve", "rodeur", "demolisseur", "titan", "brasier", "obusier", "depanneuse"],
-		"air": ["faucheur", "marteau", "mule", "vautour", "aigle", "forteresse_vol", "cyclone"],
+		"units": ["belier", "brute", "salve", "rodeur", "demolisseur", "titan", "brasier", "obusier", "depanneuse", "cogneur", "gladiateur", "mastodonte"],
+		"air": ["aigle", "faucheur", "mule", "forteresse_vol"],
 	},
 	"vael": {
 		"name": "Cartel Vael",
@@ -43,8 +43,8 @@ const FACTIONS := {
 		"desc": "Épice +20 % de Solaris par récolte.\nUnités rapides et fragiles, harcèlement.",
 		"color": Color("3ddc97"), "accent": Color("ffe08a"),
 		"build_time_mult": 1.0, "unit_cost_mult": 1.0, "spice_mult": 1.2, "ore_mult": 1.0,
-		"units": ["faucon", "vipere", "mirage", "rat_sable", "saboteur", "scorpion", "guerisseur", "harpon", "cracheur"],
-		"air": ["guepe", "frelon", "pelican", "cigale", "milan", "mante", "cobra"],
+		"units": ["faucon", "vipere", "mirage", "rat_sable", "saboteur", "scorpion", "guerisseur", "harpon", "cracheur", "tarentule", "mygale"],
+		"air": ["cigale", "milan", "pelican", "frelon", "cobra"],
 	},
 	"conclave": {
 		"name": "Conclave Obsidien",
@@ -52,8 +52,8 @@ const FACTIONS := {
 		"desc": "Minerai +20 %, unités qui se régénèrent hors combat.\nÉclats cristallins en zone, construction plus lente.",
 		"color": Color("b277ff"), "accent": Color("ead6ff"),
 		"build_time_mult": 1.1, "unit_cost_mult": 1.0, "spice_mult": 1.0, "ore_mult": 1.2, "regen": 1.2,
-		"units": ["ombre", "prisme", "obelisque", "tesson", "fracasseur", "monolithe", "veilleur", "aiguille", "quartz"],
-		"air": ["vesper", "eclipse", "passeur", "ephemere", "scintille", "stalactite", "aurore"],
+		"units": ["ombre", "prisme", "obelisque", "tesson", "fracasseur", "monolithe", "veilleur", "aiguille", "quartz", "geode", "stele", "cariatide"],
+		"air": ["scintille", "passeur", "eclipse", "aurore"],
 	},
 }
 
@@ -222,12 +222,12 @@ const UNIT_TECH := {
 	"mirage": {"range": 2, "hp": 1.25, "dps": 1.2},
 	"libellule": {"speed": 1.2, "dps": 1.25}, "aigrette": {"range": 2, "dps": 1.2},
 	"nacelle": {"hp": 1.3, "speed": 1.15}, "faucheur": {"hp": 1.2, "dps": 1.2},
-	"marteau": {"hp": 1.25, "dps": 1.15}, "mule": {"hp": 1.3, "speed": 1.2},
-	"guepe": {"speed": 1.15, "dps": 1.25}, "frelon": {"dps": 1.3, "hp": 1.15},
+	"mule": {"hp": 1.3, "speed": 1.2},
+	"frelon": {"dps": 1.3, "hp": 1.15},
 	"pelican": {"hp": 1.3, "speed": 1.15},
 	"ombre": {"speed": 1.2, "vision": 3, "hp": 1.2}, "prisme": {"hp": 1.25, "dps": 1.2},
 	"obelisque": {"range": 2, "dps": 1.2, "hp": 1.15},
-	"vesper": {"speed": 1.15, "dps": 1.25}, "eclipse": {"dps": 1.25, "hp": 1.2},
+	"eclipse": {"dps": 1.25, "hp": 1.2},
 	"passeur": {"hp": 1.3, "speed": 1.15},
 	"pisteur": {"speed": 1.2, "vision": 3},
 	"brise_mur": {"hp": 1.2, "dps": 1.25},
@@ -235,9 +235,7 @@ const UNIT_TECH := {
 	"technicien": {"hp": 1.3, "speed": 1.2},
 	"cirrus": {"range": 2, "dps": 1.2},
 	"diapason": {"range": 2, "dps": 1.2},
-	"eclair": {"speed": 1.15, "dps": 1.25},
 	"foudre": {"hp": 1.2, "dps": 1.2},
-	"orage": {"dps": 1.25, "hp": 1.2},
 	"vigie": {"speed": 1.2, "vision": 3},
 	"rodeur": {"speed": 1.2, "dps": 1.25},
 	"demolisseur": {"hp": 1.25, "dps": 1.2},
@@ -245,10 +243,8 @@ const UNIT_TECH := {
 	"brasier": {"dps": 1.3, "hp": 1.15},
 	"obusier": {"range": 2, "dps": 1.2},
 	"depanneuse": {"hp": 1.3, "speed": 1.2},
-	"vautour": {"dps": 1.25, "hp": 1.2},
 	"aigle": {"speed": 1.15, "dps": 1.25},
 	"forteresse_vol": {"hp": 1.25, "dps": 1.15},
-	"cyclone": {"hp": 1.2, "dps": 1.2},
 	"rat_sable": {"speed": 1.2, "dps": 1.25},
 	"saboteur": {"hp": 1.2, "dps": 1.25},
 	"scorpion": {"hp": 1.2, "dps": 1.25},
@@ -257,7 +253,6 @@ const UNIT_TECH := {
 	"cracheur": {"range": 2, "dps": 1.2},
 	"cigale": {"speed": 1.2, "vision": 3},
 	"milan": {"speed": 1.15, "dps": 1.25},
-	"mante": {"dps": 1.25, "hp": 1.2},
 	"cobra": {"hp": 1.25, "dps": 1.2},
 	"tesson": {"speed": 1.2, "dps": 1.25},
 	"fracasseur": {"hp": 1.25, "dps": 1.2},
@@ -265,11 +260,31 @@ const UNIT_TECH := {
 	"veilleur": {"hp": 1.3, "speed": 1.2},
 	"aiguille": {"range": 2, "dps": 1.2},
 	"quartz": {"range": 2, "dps": 1.2},
-	"ephemere": {"speed": 1.2, "vision": 3},
 	"scintille": {"speed": 1.15, "dps": 1.25},
-	"stalactite": {"hp": 1.25, "dps": 1.2},
 	"aurore": {"hp": 1.2, "dps": 1.2},
+	"phalange": {"hp": 1.3, "dps": 1.15},
+	"archonte": {"range": 2, "dps": 1.2},
+	"cogneur": {"hp": 1.25, "dps": 1.2},
+	"gladiateur": {"dps": 1.25, "hp": 1.15},
+	"mastodonte": {"hp": 1.25, "range": 1, "dps": 1.15},
+	"geode": {"dps": 1.25, "hp": 1.2},
+	"stele": {"hp": 1.3, "range": 2},
+	"cariatide": {"hp": 1.3, "dps": 1.15},
+	"tarentule": {"speed": 1.2, "dps": 1.25},
+	"mygale": {"range": 2, "dps": 1.2},
 }
+## Anciens appareils retirés (parties sauvegardées avant l'arrivée des mechas) : remplaçant le plus proche.
+const LEGACY_UNITS := {
+	"eclair": "libellule", "orage": "aigrette", "marteau": "forteresse_vol", "vautour": "faucheur",
+	"cyclone": "faucheur", "guepe": "milan", "mante": "frelon", "vesper": "scintille",
+	"stalactite": "eclipse", "ephemere": "scintille",
+}
+
+
+static func migrate_id(id: String) -> String:
+	return LEGACY_UNITS.get(id, id)
+
+
 ## Stockage : capacité de base, puis bonus par bâtiment [Solaris, minerai].
 const STORAGE_BASE := 3000
 const STORAGE := {"raffinerie": [1500, 0], "fonderie": [0, 1500], "silo": [2000, 0], "silo_minerai": [0, 2000]}
@@ -699,6 +714,65 @@ const UNITS := {
 		"cost": 350, "time": 8.0, "requires": ["fonderie"], "from": "fonderie",
 		"hp": 260, "speed": 80.0, "capacity": 160.0, "rate": 6.0,
 	},
+	# --- Mechas : marcheurs bipèdes ou arachnides, un par rôle et par faction (Usine) ---
+	"phalange": {
+		"name": "Phalange", "role": "combat", "desc": "Mécha à bouclier d'énergie : encaisse et tire au laser (sol)",
+		"armor": "medium", "weapon": "laser", "cost": 450, "time": 8.0, "level": 2,
+		"requires": ["usine"], "from": "usine", "hp": 520, "dps": 24, "speed": 80.0, "range": 6,
+		"vision": 8,
+	},
+	"archonte": {
+		"name": "Archonte", "role": "combat", "desc": "Mécha lourd à canon plasma longue portée (sol)",
+		"armor": "heavy", "weapon": "plasma", "cost": 800, "time": 12.0, "level": 3,
+		"requires": ["usine", "atelier_solis"], "from": "usine", "hp": 800, "dps": 46, "speed": 62.0,
+		"range": 8, "vision": 11,
+	},
+	"cogneur": {
+		"name": "Cogneur", "role": "combat", "desc": "Mécha de mêlée aux poings blindés : ravage bâtiments et infanterie",
+		"armor": "heavy", "weapon": "cannon", "cost": 520, "time": 9.0, "level": 2,
+		"requires": ["usine"], "from": "usine", "hp": 720, "dps": 40, "speed": 72.0, "range": 2,
+		"vision": 7, "vs_building": 1.8,
+	},
+	"gladiateur": {
+		"name": "Gladiateur", "role": "combat", "desc": "Mécha d'assaut moyen : mitrailleuse lourde et bouclier",
+		"armor": "medium", "weapon": "autocannon", "cost": 600, "time": 10.0, "level": 2,
+		"requires": ["usine"], "from": "usine", "hp": 560, "dps": 30, "speed": 85.0, "range": 5,
+		"vision": 8,
+	},
+	"mastodonte": {
+		"name": "Mastodonte", "role": "combat", "desc": "Mécha lourd à double lance-roquettes (sol et air)",
+		"aa": true, "armor": "heavy", "weapon": "rocket", "cost": 1000, "time": 14.0, "level": 3,
+		"requires": ["usine", "forge_kharn"], "from": "usine", "hp": 1100, "dps": 44, "speed": 58.0,
+		"range": 8, "vision": 9, "vs_air": 0.8,
+	},
+	"geode": {
+		"name": "Géode", "role": "combat", "desc": "Marcheur de cristal : éclats en zone (sol)",
+		"armor": "medium", "weapon": "shard", "cost": 500, "time": 9.0, "level": 2,
+		"requires": ["usine"], "from": "usine", "hp": 440, "dps": 30, "speed": 85.0, "range": 5,
+		"vision": 8,
+	},
+	"stele": {
+		"name": "Stèle", "role": "combat", "desc": "Marcheur gardien : éclats vers l'air et le sol", "aa": true,
+		"armor": "medium", "weapon": "shard", "cost": 480, "time": 8.0, "level": 2,
+		"requires": ["usine", "radar"], "from": "usine", "hp": 520, "dps": 30, "speed": 80.0, "range": 8,
+		"vision": 9, "vs_air": 1.1, "vs_ground": 0.7,
+	},
+	"cariatide": {
+		"name": "Cariatide", "role": "combat", "desc": "Géant d'obsidienne : très solide, se régénère vite", "armor": "heavy",
+		"weapon": "shard", "cost": 950, "time": 14.0, "level": 3, "requires": ["usine", "sanctuaire"],
+		"from": "usine", "hp": 1400, "dps": 40, "speed": 52.0, "range": 6, "vision": 8, "regen": 3.0,
+	},
+	"tarentule": {
+		"name": "Tarentule", "role": "combat", "desc": "Mécha-arachnide rapide : harcèle à l'acide",
+		"armor": "light", "weapon": "acid", "cost": 430, "time": 7.0, "level": 2, "requires": ["usine"],
+		"from": "usine", "hp": 320, "dps": 28, "speed": 130.0, "range": 5, "vision": 9,
+	},
+	"mygale": {
+		"name": "Mygale", "role": "combat", "desc": "Mécha-arachnide d'embuscade : acide à longue portée",
+		"armor": "medium", "weapon": "acid", "cost": 800, "time": 12.0, "level": 3,
+		"requires": ["usine", "bureau_vael"], "from": "usine", "hp": 620, "dps": 42, "speed": 95.0,
+		"range": 7, "vision": 9,
+	},
 	# --- Unités volantes (Aérodrome) ---
 	"libellule": {
 		"aa": true, "name": "Libellule", "role": "combat", "desc": "Chasseur de supériorité aérienne (faible contre le sol)", "air": true,
@@ -726,25 +800,11 @@ const UNITS := {
 		"cost": 620, "time": 9.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
 		"hp": 330, "speed": 150.0, "vision": 10, "dps": 36, "range": 7,
 	},
-	"marteau": {
-		"name": "Marteau", "role": "combat", "desc": "Bombardier lourd (sol)", "air": true,
-		"armor": "heavy", "weapon": "cannon",
-		"cost": 900, "time": 12.0, "level": 3, "requires": ["usine", "aerodrome"], "from": "aerodrome",
-		"hp": 500, "speed": 110.0, "vision": 9, "dps": 42, "range": 5,
-	},
 	"mule": {
 		"name": "Mule", "role": "transport", "desc": "Transport de 6 unités", "air": true,
 		"armor": "heavy",
 		"cost": 650, "time": 10.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
 		"hp": 600, "speed": 100.0, "vision": 9, "slots": 6,
-	},
-	"guepe": {
-		"aa": true, "name": "Guêpe", "role": "combat", "desc": "Chasseur ultra-rapide (faible contre le sol)", "air": true,
-		"armor": "light", "weapon": "autocannon",
-		"cost": 340, "time": 6.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
-		"hp": 150, "speed": 240.0, "vision": 13, "dps": 22, "range": 4,
-		"vs_air": 1.3,
-		"vs_ground": 0.5,
 	},
 	"frelon": {
 		"name": "Frelon", "role": "combat", "desc": "Bombardier acide (sol)", "air": true,
@@ -837,14 +897,6 @@ const UNITS := {
 		"cost": 650, "time": 10.0, "level": 3, "requires": ["usine", "radar"], "from": "usine",
 		"hp": 420, "dps": 46, "speed": 60.0, "range": 10, "vision": 9,
 	},
-	"vesper": {
-		"aa": true, "name": "Vesper", "role": "combat", "desc": "Chasseur furtif (faible contre le sol)", "air": true,
-		"armor": "light", "weapon": "autocannon",
-		"cost": 350, "time": 6.0, "level": 2, "requires": ["usine", "aerodrome"], "from": "aerodrome",
-		"hp": 160, "speed": 230.0, "vision": 13, "dps": 21, "range": 4,
-		"vs_air": 1.3,
-		"vs_ground": 0.5,
-	},
 	"eclipse": {
 		"name": "Éclipse", "role": "combat", "desc": "Bombardier à éclats (sol, zone)", "air": true,
 		"armor": "light", "weapon": "shard",
@@ -894,23 +946,11 @@ const UNITS := {
 		"requires": ["usine", "radar", "atelier_solis"], "from": "usine", "hp": 230, "dps": 30,
 		"speed": 60.0, "range": 13, "vision": 9,
 	},
-	"eclair": {
-		"name": "Éclair", "role": "combat", "desc": "Intercepteur supersonique", "air": true, "aa": true,
-		"armor": "light", "weapon": "autocannon", "cost": 330, "time": 6.0, "level": 2,
-		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 150, "dps": 22, "speed": 260.0,
-		"range": 5, "vision": 13, "vs_air": 1.4, "vs_ground": 0.4,
-	},
 	"foudre": {
 		"name": "Foudre", "role": "combat", "desc": "Canonnière laser, vise l'air et le sol",
 		"air": true, "aa": true, "armor": "medium", "weapon": "laser", "cost": 600, "time": 9.0,
 		"level": 3, "requires": ["usine", "aerodrome", "hangar_solis"], "from": "aerodrome", "hp": 380,
 		"dps": 38, "speed": 190.0, "range": 6, "vision": 10, "vs_air": 0.9,
-	},
-	"orage": {
-		"name": "Orage", "role": "combat", "desc": "Bombardier plasma lourd (sol)", "air": true,
-		"armor": "medium", "weapon": "plasma", "cost": 700, "time": 12.0, "level": 3,
-		"requires": ["usine", "aerodrome", "hangar_solis"], "from": "aerodrome", "hp": 330, "dps": 44,
-		"speed": 150.0, "range": 3, "vision": 9, "vs_building": 1.3,
 	},
 	"vigie": {
 		"name": "Vigie", "role": "combat", "desc": "Drone de reconnaissance rapide", "air": true,
@@ -955,12 +995,6 @@ const UNITS := {
 		"from": "usine", "hp": 380, "dps": 0, "speed": 85.0, "range": 0, "vision": 8, "heal": 18.0,
 		"heal_range": 4,
 	},
-	"vautour": {
-		"name": "Vautour", "role": "combat", "desc": "Bombardier léger (sol)", "air": true,
-		"armor": "light", "weapon": "mortar", "cost": 560, "time": 9.0, "level": 2,
-		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 280, "dps": 38, "speed": 130.0,
-		"range": 4, "vision": 9,
-	},
 	"aigle": {
 		"name": "Aigle", "role": "combat", "desc": "Chasseur lourd de supériorité aérienne", "air": true,
 		"aa": true, "armor": "medium", "weapon": "autocannon", "cost": 480, "time": 8.0, "level": 2,
@@ -972,12 +1006,6 @@ const UNITS := {
 		"armor": "heavy", "weapon": "cannon", "cost": 1100, "time": 14.0, "level": 3,
 		"requires": ["usine", "aerodrome", "hangar_kharn"], "from": "aerodrome", "hp": 800, "dps": 60,
 		"speed": 90.0, "range": 5, "vision": 9, "vs_building": 1.2,
-	},
-	"cyclone": {
-		"name": "Cyclone", "role": "combat", "desc": "Hélicoptère de combat à roquettes", "air": true,
-		"aa": true, "armor": "heavy", "weapon": "rocket", "cost": 700, "time": 11.0, "level": 3,
-		"requires": ["usine", "aerodrome", "hangar_kharn"], "from": "aerodrome", "hp": 520, "dps": 44,
-		"speed": 130.0, "range": 7, "vision": 10, "vs_air": 1.0,
 	},
 	# --- vael : extension (v2-vael) ---
 	"rat_sable": {
@@ -1027,12 +1055,6 @@ const UNITS := {
 		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 140, "dps": 22, "speed": 250.0,
 		"range": 5, "vision": 13, "vs_air": 1.3, "vs_ground": 0.5,
 	},
-	"mante": {
-		"name": "Mante", "role": "combat", "desc": "Bombardier acide lourd (sol)", "air": true,
-		"armor": "medium", "weapon": "acid", "cost": 680, "time": 11.0, "level": 3,
-		"requires": ["usine", "aerodrome", "hangar_vael"], "from": "aerodrome", "hp": 300, "dps": 46,
-		"speed": 140.0, "range": 4, "vision": 9, "vs_building": 1.2,
-	},
 	"cobra": {
 		"name": "Cobra", "role": "combat", "desc": "Hélicoptère acide, vise l'air et le sol",
 		"air": true, "aa": true, "armor": "medium", "weapon": "acid", "cost": 620, "time": 10.0,
@@ -1074,23 +1096,11 @@ const UNITS := {
 		"requires": ["usine", "radar", "sanctuaire"], "from": "usine", "hp": 230, "dps": 30,
 		"speed": 60.0, "range": 13, "vision": 9,
 	},
-	"ephemere": {
-		"name": "Éphémère", "role": "combat", "desc": "Drone d'observation", "air": true,
-		"armor": "light", "weapon": "shard", "cost": 130, "time": 3.0, "level": 1,
-		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 90, "dps": 6, "speed": 275.0,
-		"range": 4, "vision": 18,
-	},
 	"scintille": {
 		"name": "Scintille", "role": "combat", "desc": "Intercepteur de cristal", "air": true,
 		"aa": true, "armor": "light", "weapon": "shard", "cost": 350, "time": 6.0, "level": 2,
 		"requires": ["usine", "aerodrome"], "from": "aerodrome", "hp": 150, "dps": 22, "speed": 255.0,
 		"range": 5, "vision": 13, "vs_air": 1.4, "vs_ground": 0.4,
-	},
-	"stalactite": {
-		"name": "Stalactite", "role": "combat", "desc": "Bombardier lourd d'obsidienne (sol)",
-		"air": true, "armor": "heavy", "weapon": "shard", "cost": 860, "time": 13.0, "level": 3,
-		"requires": ["usine", "aerodrome", "hangar_conclave"], "from": "aerodrome", "hp": 560, "dps": 52,
-		"speed": 100.0, "range": 4, "vision": 9, "vs_building": 1.2,
 	},
 	"aurore": {
 		"name": "Aurore", "role": "combat", "desc": "Canonnière plasma, vise l'air et le sol",

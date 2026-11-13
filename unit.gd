@@ -91,6 +91,8 @@ var _heal_acc := 0.0
 var _hurt_t := 0.0 # >0 : vient d'être attaqué, reste à l'abri près de la base
 var _dust: CPUParticles2D
 var _track_last := Vector2.INF # dernière position où une trace a été laissée
+var mech := false             # marcheur (mecha) : balancement et empreintes
+var _walk := 0.0              # phase de marche (radians), avance avec la distance parcourue
 var _track_kind := ""        # chenilles | roues | coussin d'air (déduit du modèle 3D)
 var _work_fx: CPUParticles2D
 var _work_fx2: CPUParticles2D # éclats d'épice / de minerai au-dessus du nuage
@@ -108,6 +110,7 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	var d := GameData.def(id)
 	role = d.get("role", "combat")
 	air = d.get("air", false)
+	mech = ModelsExt.STYLES.get(id, {}).get("k", "") == "mech"
 	# Toujours dessiné au-dessus des bâtiments (jamais caché derrière), air au-dessus du sol
 	z_index = 8 if air else 3
 	slots = int(d.get("slots", 0))
@@ -657,7 +660,7 @@ func _physics_process(delta: float) -> void:
 		return
 	if carried:
 		return
-	var rg: float = float(game.fdata_of(team).get("regen", 0.0))
+	var rg: float = float(game.fdata_of(team).get("regen", 0.0)) + float(GameData.def(id).get("regen", 0.0))
 	_calm_t += delta
 	if rg > 0.0 and hp < max_hp and _calm_t >= GameData.REGEN_CALM:
 		hp = minf(max_hp, hp + rg * delta) # cristal vivant : se régénère hors combat
@@ -671,13 +674,17 @@ func _physics_process(delta: float) -> void:
 	_combat(delta)
 	_transport(delta)
 	_repair(delta)
+	var _p0 := position
 	_move(delta)
+	if mech and not path.is_empty():
+		_walk += position.distance_to(_p0) * 0.32
+		queue_redraw() # balancement de marche
 	_dust.emitting = not air and not path.is_empty() and game.is_sand_at(position)
 	if not air and game.tracks != null:
 		if not path.is_empty() and game.is_sand_at(position):
 			if _track_last == Vector2.INF:
 				_track_last = position
-			elif position.distance_to(_track_last) >= 7.0:
+			elif position.distance_to(_track_last) >= (7.0 if not _legged() else 15.0):
 				if _track_kind == "":
 					_track_kind = Models.move_kind(id, game.faction_id_of(team))
 				game.tracks.add(_track_last, position, radius * 0.42, "wheels" if _track_kind == "none" else _track_kind)
@@ -687,6 +694,11 @@ func _physics_process(delta: float) -> void:
 	for c in cargo_units:
 		if is_instance_valid(c):
 			c.position = position
+
+
+## Mecha (marcheur) : se balance en marchant et laisse des empreintes plutôt que des sillons.
+func _legged() -> bool:
+	return mech
 
 
 func _combat(delta: float) -> void:
@@ -1048,7 +1060,13 @@ func _draw_sprite() -> bool:
 		return true
 	draw_set_transform(Vector2(-5, 6).rotated(unrot), unrot, Vector2(1.0, 0.55))
 	draw_circle(Vector2.ZERO, radius * 1.25, Color(0.1, 0.03, 0.12, 0.28))
-	draw_set_transform(Vector2.ZERO, model_rot, Vector2.ONE)
+	if mech and not path.is_empty():
+		# Marche : le corps monte et descend à chaque pas et penche d'un côté puis de l'autre
+		var bob := absf(sin(_walk)) * 2.6
+		var sway := sin(_walk) * 0.045
+		draw_set_transform(Vector2(0, -bob).rotated(unrot), model_rot + sway, Vector2.ONE)
+	else:
+		draw_set_transform(Vector2.ZERO, model_rot, Vector2.ONE)
 	draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
 	return true
 

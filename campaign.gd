@@ -1074,7 +1074,7 @@ static func details(faction: String, m: int) -> Array:
 	var un: PackedStringArray = []
 	for id in fd["units"]:
 		un.append("%s (%s niv. %d)" % [GameData.name_of(id, faction), GameData.name_of("usine", faction), int(GameData.UNITS[id].get("level", 1))])
-	tech.append("Unités : " + ", ".join(un))
+	tech.append("Unités terrestres et mechas : " + ", ".join(un))
 	var ua: PackedStringArray = []
 	for id in fd["air"]:
 		ua.append("%s (%s niv. %d)" % [GameData.name_of(id, faction), GameData.name_of("usine", faction), int(GameData.UNITS[id].get("level", 1))])
