@@ -181,14 +181,12 @@ func _open_skirmish() -> void:
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 24)
 	vb.add_child(hb)
-	var back := GameUI.NeonButton.new("RETOUR")
-	back.accent = GameData.RED
-	back.custom_minimum_size = Vector2(250, 56)
+	var back := PlateButton.new("RETOUR", 1)
+	back.custom_minimum_size = Vector2(250, 62)
 	back.pressed.connect(func() -> void: _overlay.queue_free(); _overlay = null)
 	hb.add_child(back)
-	var go := GameUI.NeonButton.new("LANCER")
-	go.accent = fd["accent"]
-	go.custom_minimum_size = Vector2(250, 56)
+	var go := PlateButton.new("LANCER", 3)
+	go.custom_minimum_size = Vector2(250, 62)
 	go.pressed.connect(_start)
 	hb.add_child(go)
 
@@ -202,8 +200,9 @@ func _option_row(title: String, opts: Array) -> Control:
 	hb.add_theme_constant_override("separation", 12)
 	box.add_child(hb)
 	for o in opts:
-		var b := GameUI.NeonButton.new(o[0])
-		b.custom_minimum_size = Vector2(250, 48)
+		var b := PlateButton.new(o[0], 4)
+		b.custom_minimum_size = Vector2(250, 64)
+		b.font_size = 15
 		b.active = o[1]
 		var act: Callable = o[2]
 		b.pressed.connect(func() -> void:
@@ -246,9 +245,8 @@ func _open_load() -> void:
 		GameSession.load_slot = slot
 		get_tree().change_scene_to_file("res://main.tscn"))
 	vb.add_child(slots)
-	var back := GameUI.NeonButton.new("RETOUR")
-	back.accent = GameData.RED
-	back.custom_minimum_size = Vector2(250, 56)
+	var back := PlateButton.new("RETOUR", 1)
+	back.custom_minimum_size = Vector2(250, 62)
 	back.pressed.connect(func() -> void: _overlay.queue_free(); _overlay = null)
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -506,53 +504,6 @@ class TitleBanner extends Control:
 		var t := Time.get_ticks_msec() / 1000.0
 		var lum := 1.0 + 0.04 * sin(t * 1.6) # très léger scintillement
 		draw_texture_rect(logo, Rect2((size.x - w) * 0.5, (size.y - h) * 0.5, w, h), false, Color(lum, lum, lum, 1.0))
-
-
-class PlateButton extends Control:
-	## Bouton du menu : plaque illustrée (assets/ui/btnN.png) avec le texte par-dessus.
-	signal pressed
-
-	var text := ""
-	var tex_id := 1
-	var enabled := true
-	var font_size := 17
-	var hover_t := 0.0
-	var press_t := 0.0
-	var _hover := false
-
-	func _init(p_text: String, p_tex: int) -> void:
-		text = p_text
-		tex_id = p_tex
-		mouse_filter = Control.MOUSE_FILTER_STOP
-		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
-		mouse_entered.connect(func() -> void: _hover = true)
-		mouse_exited.connect(func() -> void: _hover = false)
-
-	func _process(delta: float) -> void:
-		hover_t = move_toward(hover_t, 1.0 if (_hover and enabled) else 0.0, delta * 8.0)
-		press_t = move_toward(press_t, 0.0, delta * 5.0)
-		queue_redraw()
-
-	func _gui_input(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
-			if enabled:
-				press_t = 1.0
-				pressed.emit()
-			accept_event()
-
-	func _draw() -> void:
-		var tex := UiStyle.btn_tex(tex_id)
-		var grow := 3.0 * hover_t - 2.0 * press_t
-		var r := Rect2(Vector2(-grow, -grow * 0.3), Vector2(size.x + grow * 2.0, size.y + grow * 0.6))
-		if tex != null:
-			var k := 1.0 + 0.28 * hover_t - 0.25 * press_t
-			if not enabled:
-				k = 0.38
-			draw_texture_rect(tex, r, false, Color(k, k, k, 1.0))
-		var fs := font_size
-		var col := Color(1.0, 0.97, 0.9).lerp(Color.WHITE, hover_t) if enabled else Color(0.7, 0.66, 0.62)
-		UiStyle.text(self, Vector2(0, size.y * 0.56 + fs * 0.36), text, fs, col, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
 
 
 class FactionCard extends Control:

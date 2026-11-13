@@ -73,8 +73,9 @@ func setup() -> void:
 	tabs.custom_minimum_size = Vector2(210, 0)
 	body.add_child(tabs)
 	for t in TABS:
-		var b := GameUI.NeonButton.new(t[1])
-		b.custom_minimum_size = Vector2(210, 44)
+		var b := PlateButton.new(t[1], 4)
+		b.font_size = 15
+		b.custom_minimum_size = Vector2(210, 54)
 		b.pressed.connect(_show.bind(t[0]))
 		tabs.add_child(b)
 		_tab_btns[t[0]] = b
@@ -98,9 +99,9 @@ func setup() -> void:
 	_page.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
 	scroll.add_child(_page)
 
-	var close := GameUI.NeonButton.new("FERMER  (F1 / Échap)")
-	close.accent = GameData.RED
-	close.custom_minimum_size = Vector2(260, 46)
+	var close := PlateButton.new("FERMER  (F1 / Échap)", 1)
+	close.font_size = 15
+	close.custom_minimum_size = Vector2(290, 60)
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	close.pressed.connect(close_guide)
 	vb.add_child(close)

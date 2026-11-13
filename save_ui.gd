@@ -51,13 +51,14 @@ func _build() -> void:
 		l.add_theme_color_override("font_color", Color(1, 1, 1, 0.8 if info != "" else 0.4))
 		vb.add_child(l)
 		if can_save:
-			var sb := GameUI.NeonButton.new("SAUVEGARDER")
-			sb.accent = GameData.GREEN
-			sb.custom_minimum_size = Vector2(170, 46)
+			var sb := PlateButton.new("SAUVEGARDER", 5)
+			sb.font_size = 14
+			sb.custom_minimum_size = Vector2(200, 52)
 			sb.pressed.connect(func() -> void: save_requested.emit(slot))
 			row.add_child(sb)
-		var lb := GameUI.NeonButton.new("CHARGER")
-		lb.custom_minimum_size = Vector2(150, 46)
+		var lb := PlateButton.new("CHARGER", 3)
+		lb.font_size = 14
+		lb.custom_minimum_size = Vector2(200, 52)
 		lb.enabled = info != ""
 		lb.pressed.connect(func() -> void: load_requested.emit(slot))
 		row.add_child(lb)

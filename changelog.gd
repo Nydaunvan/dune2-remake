@@ -65,8 +65,9 @@ func setup() -> void:
 	list.add_theme_constant_override("separation", 4)
 	sc.add_child(list)
 	for e in ChangelogData.VERSIONS:
-		var b := GameUI.NeonButton.new("v%s  %s" % [e[0], e[2]])
-		b.custom_minimum_size = Vector2(310, 38)
+		var b := PlateButton.new("v%s  %s" % [e[0], e[2]], 4)
+		b.font_size = 15
+		b.custom_minimum_size = Vector2(320, 62)
 		b.pressed.connect(_show.bind(e[0]))
 		list.add_child(b)
 		_buttons[e[0]] = b
@@ -87,9 +88,9 @@ func setup() -> void:
 	_detail.add_theme_color_override("default_color", Color(0.9, 0.9, 0.95))
 	panel.add_child(_detail)
 
-	var close := GameUI.NeonButton.new("FERMER  (F2 / Échap)")
-	close.accent = GameData.RED
-	close.custom_minimum_size = Vector2(260, 46)
+	var close := PlateButton.new("FERMER  (F2 / Échap)", 1)
+	close.font_size = 15
+	close.custom_minimum_size = Vector2(290, 60)
 	close.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	close.pressed.connect(close_changelog)
 	vb.add_child(close)
