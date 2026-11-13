@@ -117,6 +117,7 @@ var production := {"building": [], "unit": []} # files d'attente (le premier él
 ## Rayon (en cases) de la zone de construction autour d'un Chantier.
 const BUILD_RADIUS := 15.0
 var placing_id := ""
+var _overlay_prev := false
 var command_mode := ""
 
 var worm: Worm
@@ -1448,8 +1449,10 @@ func _process(delta: float) -> void:
 	for u in selected:
 		if u.role == "mcv":
 			mcv_sel = true
-	if dragging or placing_id != "" or mcv_sel:
-		queue_redraw()
+	var overlay := dragging or placing_id != "" or mcv_sel
+	if overlay or _overlay_prev:
+		queue_redraw() # un dernier rendu à la fin : le cercle de zone et le fantôme doivent disparaître
+	_overlay_prev = overlay
 	Input.set_default_cursor_shape(
 			Input.CURSOR_CROSS if (placing_id != "" or command_mode != "") else Input.CURSOR_ARROW)
 
