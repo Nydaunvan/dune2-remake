@@ -440,12 +440,18 @@ void fragment() {
 			+ flare_star(p + vec2(t * 0.0006, 0.0) + 0.4, 17.0, t, 5.0) * 0.8;
 	col += stars * fade;
 
-	// Étoile filante (toutes les ~9 s)
-	float ph = fract(t / 9.0);
-	if (ph < 0.09) {
-		float k = ph / 0.09;
-		vec2 a = vec2(0.95 * ar, 0.05);
-		vec2 b = vec2(0.45 * ar, 0.33);
+	// Étoile filante : rare (un cycle de ~26 s, deux fois sur trois), trajet et sens tirés au hasard à chaque passage
+	float cyc = t / 26.0 + 0.55;
+	float ph = fract(cyc);
+	float cid = floor(cyc);
+	if (ph < 0.085 && hash(vec2(cid, 7.1)) < 0.65) {
+		float k = ph / 0.085;
+		float sgn = hash(vec2(cid, 1.7)) < 0.5 ? 1.0 : -1.0;
+		float x0 = mix(0.2, 0.8, hash(vec2(cid, 3.3))) * ar;
+		float y0 = mix(0.04, 0.14, hash(vec2(cid, 5.9)));
+		float len = mix(0.3, 0.55, hash(vec2(cid, 9.2))) * ar;
+		vec2 a = vec2(x0, y0);
+		vec2 b = a + vec2(sgn * len, mix(0.14, 0.28, hash(vec2(cid, 2.4))));
 		vec2 head = mix(a, b, k);
 		vec2 dir = normalize(b - a);
 		vec2 rel = p - head;
