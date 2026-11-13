@@ -60,10 +60,10 @@ func setup(p_game) -> void:
 		UiStyle.fix_gamma(true)
 		upd.call(v))
 	gb.add_child(gs)
-	var gr := GameUI.NeonButton.new("1,00")
+	var gr := GameUI.NeonButton.new("0,50")
 	gr.accent = GameData.GREEN
 	gr.custom_minimum_size = Vector2(80, 36)
-	gr.pressed.connect(func() -> void: gs.value = 1.0)
+	gr.pressed.connect(func() -> void: gs.value = 0.5)
 	gb.add_child(gr)
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
