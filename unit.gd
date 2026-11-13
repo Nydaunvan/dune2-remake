@@ -90,6 +90,7 @@ var heal_range := 0.0
 var _heal_acc := 0.0
 var _hurt_t := 0.0 # >0 : vient d'être attaqué, reste à l'abri près de la base
 var _dust: CPUParticles2D
+var _track_last := Vector2.INF # dernière position où une trace a été laissée
 var _work_fx: CPUParticles2D
 var _work_fx2: CPUParticles2D # éclats d'épice / de minerai au-dessus du nuage
 
@@ -125,7 +126,7 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	heal_rate = float(d.get("heal", 0.0))
 	heal_range = float(d.get("heal_range", 4)) * 32.0
 	_scan_t = randf() * 0.4 # évite que toutes les unités scrutent à la même image
-	_dust = Fx.make_dust(Color(0.85, 0.65, 0.5), 10, 0.9, 0.35)
+	_dust = Fx.make_dust(Color(0.85, 0.65, 0.5), 7, 0.8, 0.28) # poussière très légère
 	add_child(_dust)
 	if is_worker():
 		var c := Color(0.95, 0.5, 0.15) if cargo_kind == "spice" else Color(0.6, 0.75, 1.0)
@@ -671,6 +672,15 @@ func _physics_process(delta: float) -> void:
 	_repair(delta)
 	_move(delta)
 	_dust.emitting = not air and not path.is_empty() and game.is_sand_at(position)
+	if not air and game.tracks != null:
+		if not path.is_empty() and game.is_sand_at(position):
+			if _track_last == Vector2.INF:
+				_track_last = position
+			elif position.distance_to(_track_last) >= 7.0:
+				game.tracks.add(_track_last, position, radius * 0.42)
+				_track_last = position
+		else:
+			_track_last = Vector2.INF
 	for c in cargo_units:
 		if is_instance_valid(c):
 			c.position = position

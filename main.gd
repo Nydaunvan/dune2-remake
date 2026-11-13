@@ -117,6 +117,7 @@ var production := {"building": [], "unit": []} # files d'attente (le premier él
 ## Rayon (en cases) de la zone de construction autour d'un Chantier.
 const BUILD_RADIUS := 15.0
 var placing_id := ""
+var tracks: TrackLayer # traces des véhicules dans le sable
 var _overlay_prev := false
 var command_mode := ""
 
@@ -676,6 +677,8 @@ func _build_terrain() -> void:
 	rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	rect.z_index = -10
 	add_child(rect)
+	tracks = TrackLayer.new()
+	add_child(tracks)
 
 
 func _build_minimap() -> void:
