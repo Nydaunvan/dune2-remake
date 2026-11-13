@@ -567,84 +567,181 @@ class FactionCard extends Control:
 		for i in segs:
 			draw_arc(c, rad, a0 + i * step, a0 + (i + 1) * step - gap, 8, col, w, true)
 
+	func _poly(pts: Array, col: Color) -> void:
+		draw_colored_polygon(PackedVector2Array(pts), col)
+
+	func _sh(col: Color, k: float, a := 1.0) -> Color:
+		return Color(minf(col.r * k, 1.0), minf(col.g * k, 1.0), minf(col.b * k, 1.0), a)
+
 	func _draw_emblem(c: Vector2, col: Color, t: float, lit: float) -> void:
 		var boost := 1.0 + lit * 0.6
 		# halo respirant
-		for k in 5:
-			draw_circle(c, 86.0 - k * 9.0 + sin(t * 1.6) * 3.0, Color(col.r, col.g, col.b, (0.025 + 0.02 * lit) * (k + 1)))
-		draw_circle(c, 64.0, Color(col.r * 0.12, col.g * 0.12, col.b * 0.12, 0.95))
-		draw_arc(c, 64.0, 0.0, TAU, 72, Color(col.r, col.g, col.b, 0.9), 2.5, true)
+		for k in 6:
+			draw_circle(c, 98.0 - k * 9.0 + sin(t * 1.6) * 3.0, Color(col.r, col.g, col.b, (0.02 + 0.018 * lit) * (k + 1)))
+		_draw_flanks(c, col, t, boost)
+		# médaillon : fond en dégradé radial
+		for k in 8:
+			draw_circle(c, 66.0 - k * 7.5, _sh(col, 0.06 + 0.3 * float(k) / 7.0))
+		# anneaux biseautés
+		draw_arc(c, 68.0, 0.0, TAU, 80, _sh(col, 0.4), 7.0, true)
+		draw_arc(c, 70.5, 0.0, TAU, 80, col, 2.5, true)
+		draw_arc(c, 63.0, 0.0, TAU, 80, _sh(col, 1.0, 0.4), 1.2, true)
+		# graduations qui tournent lentement
+		for i in 48:
+			var ga := TAU * i / 48.0 + t * 0.06 * boost
+			var big := i % 4 == 0
+			var r1 := 74.0 + (7.0 if big else 3.5)
+			draw_line(c + Vector2.from_angle(ga) * 74.0, c + Vector2.from_angle(ga) * r1, _sh(col, 1.0, 0.85 if big else 0.4), 2.0 if big else 1.0, true)
+		# losanges cardinaux
+		for i in 4:
+			var oa := i * PI / 2.0
+			var op := c + Vector2.from_angle(oa) * 87.0
+			var pulse := 1.0 + 0.2 * sin(t * 3.0 + i)
+			var d := 5.0 * pulse
+			_poly([op + Vector2(0, -d), op + Vector2(d, 0), op + Vector2(0, d), op + Vector2(-d, 0)], Color(1, 0.96, 0.85, 0.9))
 		match id:
-			"solis": # soleil : rayons rotatifs, anneau contre-rotatif, satellites
-				_ring(c, 74.0, Color(col.r, col.g, col.b, 0.55), -t * 0.5 * boost, 24, 0.12, 2.0)
-				var pulse := 1.0 + 0.12 * sin(t * 2.4)
-				draw_circle(c, 17.0 * pulse, col)
-				draw_circle(c, 11.0 * pulse, Color(1, 1, 1, 0.55))
-				for i in 16:
-					var a := TAU * i / 16.0 + t * 0.35 * boost
-					var long := i % 2 == 0
-					var r0 := 26.0
-					var r1 := (50.0 if long else 40.0) + (4.0 * sin(t * 3.0 + i) if long else 0.0)
-					draw_line(c + Vector2.from_angle(a) * r0, c + Vector2.from_angle(a) * r1, col, 4.0 if long else 2.5, true)
-				for j in 3:
-					var oa := t * (0.9 + 0.25 * j) + j * 2.09
-					draw_circle(c + Vector2.from_angle(oa) * 74.0, 3.5, Color(1, 0.95, 0.8))
-			"kharn": # écu, chevrons parcourus par une onde, anneau hexagonal
-				var hexa := -t * 0.25 * boost
-				var hp := PackedVector2Array()
-				for i in 7:
-					hp.append(c + Vector2.from_angle(hexa + TAU * i / 6.0) * 76.0)
-				draw_polyline(hp, Color(col.r, col.g, col.b, 0.6), 2.0, true)
-				var bob := sin(t * 1.8) * 2.0
-				var cc := c + Vector2(0, bob)
-				var shield := PackedVector2Array([cc + Vector2(-32, -36), cc + Vector2(32, -36), cc + Vector2(32, 8),
-						cc + Vector2(0, 44), cc + Vector2(-32, 8)])
-				draw_colored_polygon(shield, Color(col.r * 0.45, col.g * 0.45, col.b * 0.45))
-				draw_polyline(PackedVector2Array(Array(shield) + [shield[0]]), col, 3.0, true)
-				for i in 3:
-					var wv := clampf(0.35 + 0.65 * sin(t * 3.2 * boost - i * 0.9) , 0.15, 1.0)
-					var yy := -16.0 + i * 16.0
-					draw_polyline(PackedVector2Array([cc + Vector2(-22, yy), cc + Vector2(0, yy + 22), cc + Vector2(22, yy)]),
-							Color(col.r, col.g, col.b, wv), 5.0, true)
-			"conclave": # cristal : prisme facetté qui respire, éclats en orbite, anneau pentagonal
-				var pent := PackedVector2Array()
-				for i in 6:
-					pent.append(c + Vector2.from_angle(t * 0.3 * boost + TAU * i / 5.0) * 76.0)
-				draw_polyline(pent, Color(col.r, col.g, col.b, 0.55), 2.0, true)
-				var br := 1.0 + 0.07 * sin(t * 2.2)
-				var tip := c + Vector2(0, -44.0 * br)
-				var bot := c + Vector2(0, 44.0 * br)
-				var lft := c + Vector2(-26.0, -6.0)
-				var rgt := c + Vector2(26.0, -6.0)
-				var mid := c + Vector2(0, 8.0)
-				draw_colored_polygon(PackedVector2Array([tip, lft, mid]), Color(col.r * 0.7, col.g * 0.7, col.b * 0.9, 0.95))
-				draw_colored_polygon(PackedVector2Array([tip, mid, rgt]), Color(col.r * 1.0, col.g * 0.9, col.b, 0.95))
-				draw_colored_polygon(PackedVector2Array([lft, bot, mid]), Color(col.r * 0.35, col.g * 0.3, col.b * 0.55, 0.95))
-				draw_colored_polygon(PackedVector2Array([mid, bot, rgt]), Color(col.r * 0.55, col.g * 0.45, col.b * 0.8, 0.95))
-				draw_polyline(PackedVector2Array([tip, lft, bot, rgt, tip]), col, 3.0, true)
-				var gl := 0.5 + 0.5 * sin(t * 3.0)
-				draw_line(tip, mid, Color(1, 0.95, 1, 0.35 + 0.4 * gl), 2.0, true)
-				for j in 4:
-					var oa := t * (0.8 + 0.2 * j) + j * 1.57
-					var op := c + Vector2.from_angle(oa) * Vector2(70.0, 52.0)
-					draw_colored_polygon(PackedVector2Array([op + Vector2(0, -6), op + Vector2(4, 0), op + Vector2(0, 6), op + Vector2(-4, 0)]), Color(0.95, 0.85, 1.0))
-			_: # œil : pupille qui suit la souris, clignement, balayage radar
-				_ring(c, 74.0, Color(col.r, col.g, col.b, 0.5), t * 0.6 * boost, 3, 1.1, 2.0)
-				for k in 3:
-					var ph := fposmod(t * 0.5 + k / 3.0, 1.0)
-					draw_arc(c, 30.0 + ph * 40.0, 0.0, TAU, 48, Color(col.r, col.g, col.b, (1.0 - ph) * 0.45), 2.0, true)
-				var bph := fposmod(t, 4.2)
-				var blink := 1.0 if bph < 3.9 else clampf(absf(bph - 4.05) / 0.15, 0.08, 1.0)
-				var ey := 27.0 * blink
-				var eye := PackedVector2Array([c + Vector2(-46, 0), c + Vector2(0, -ey), c + Vector2(46, 0), c + Vector2(0, ey)])
-				draw_colored_polygon(eye, Color(col.r * 0.45, col.g * 0.45, col.b * 0.45))
-				draw_polyline(PackedVector2Array(Array(eye) + [eye[0]]), col, 3.0, true)
-				var look := (get_local_mouse_position() - c)
-				look = look.limit_length(60.0) / 60.0 * 8.0
-				if blink > 0.5:
-					draw_circle(c + look, 12.0, col)
-					draw_circle(c + look, 5.0, Color.BLACK)
-					draw_circle(c + look + Vector2(-3, -3), 2.0, Color(1, 1, 1, 0.8))
+			"solis":
+				_sym_solis(c, col, t, boost)
+			"kharn":
+				_sym_kharn(c, col, t, boost)
+			"conclave":
+				_sym_conclave(c, col, t, boost)
+			_:
+				_sym_vael(c, col, t, boost)
+		# reflet de verre sur le médaillon
+		draw_arc(c, 57.0, PI * 1.1, PI * 1.55, 20, Color(1, 1, 1, 0.28), 3.0, true)
+		draw_arc(c, 57.0, PI * 1.62, PI * 1.7, 6, Color(1, 1, 1, 0.2), 3.0, true)
+
+	## Ornements de part et d'autre du médaillon, propres à chaque faction.
+	func _draw_flanks(c: Vector2, col: Color, t: float, boost: float) -> void:
+		for sd: float in [-1.0, 1.0]:
+			match id:
+				"solis": # faisceaux lumineux effilés
+					for i in range(-2, 3):
+						var ang := i * 0.2
+						var ln := 150.0 - absf(i) * 16.0 + 6.0 * sin(t * 2.0 + i * 1.3 + sd)
+						var dir := Vector2(sd * cos(ang), sin(ang))
+						var perp := Vector2(-dir.y, dir.x)
+						_poly([c + dir * 90.0 + perp * 3.5, c + dir * ln, c + dir * 90.0 - perp * 3.5], Color(col.r, col.g, col.b, 0.62 - absf(i) * 0.12))
+				"kharn": # ailes de lames effilées
+					for i in 4:
+						var wave := 0.55 + 0.45 * sin(t * 2.6 * boost - i * 0.8)
+						var y0 := -26.0 + i * 17.0
+						var tip := c + Vector2(sd * (156.0 - i * 16.0), -48.0 + i * 28.0)
+						_poly([c + Vector2(sd * 86.0, y0 - 7.0), tip, c + Vector2(sd * 86.0, y0 + 7.0)], _sh(col, 0.45 + 0.35 * wave))
+						draw_line(c + Vector2(sd * 86.0, y0 - 7.0), tip, col, 1.6, true)
+				"conclave": # éclats cristallins en grappe
+					for i in 3:
+						var h := (50.0 - i * 15.0) * (1.0 + 0.06 * sin(t * 2.0 + i + sd))
+						var bx := c.x + sd * (96.0 + i * 20.0)
+						var by := c.y + 34.0 - i * 6.0
+						var w := 11.0 - i * 2.0
+						_poly([Vector2(bx, by - h), Vector2(bx - w, by - h * 0.35), Vector2(bx, by)], _sh(col, 0.75, 0.95))
+						_poly([Vector2(bx, by - h), Vector2(bx, by), Vector2(bx + w, by - h * 0.35)], _sh(col, 0.4, 0.95))
+						draw_polyline(PackedVector2Array([Vector2(bx, by - h), Vector2(bx - w, by - h * 0.35), Vector2(bx, by), Vector2(bx + w, by - h * 0.35), Vector2(bx, by - h)]), col, 1.6, true)
+				_: # ailerons courbes qui pulsent vers l'extérieur
+					for k in 3:
+						var rr := 30.0 + k * 15.0
+						var a0 := -1.0 if sd > 0.0 else PI - 1.0
+						var ph := 0.4 + 0.6 * maxf(0.0, sin(t * 2.4 * boost - k * 0.9))
+						draw_arc(c + Vector2(sd * 58.0, 0), rr, a0, a0 + 2.0, 24, Color(col.r, col.g, col.b, 0.3 + 0.6 * ph), 4.0 - k * 0.8, true)
+
+	func _sym_solis(c: Vector2, col: Color, t: float, boost: float) -> void:
+		_ring(c, 59.0, Color(col.r, col.g, col.b, 0.5), -t * 0.5 * boost, 24, 0.12, 1.6)
+		for layer in 2:
+			for i in 12:
+				var a := TAU * i / 12.0 + t * (0.3 if layer == 0 else -0.22) * boost + layer * 0.13
+				var r1 := (52.0 if layer == 0 else 40.0) + 3.0 * sin(t * 3.0 + i * 1.7)
+				var w := 0.12 if layer == 0 else 0.17
+				_poly([c + Vector2.from_angle(a - w) * 22.0, c + Vector2.from_angle(a) * r1, c + Vector2.from_angle(a + w) * 22.0],
+						Color(col.r, col.g, col.b, 0.95 if layer == 0 else 0.55))
+		var pulse := 1.0 + 0.1 * sin(t * 2.4)
+		draw_circle(c, 23.0 * pulse, _sh(col, 0.7))
+		draw_circle(c, 19.0 * pulse, col)
+		draw_circle(c, 13.0 * pulse, Color(1, 0.95, 0.75, 0.9))
+		draw_circle(c, 7.0 * pulse, Color(1, 1, 1, 0.95))
+		for j in 3:
+			var oa := t * (0.9 + 0.25 * j) + j * 2.09
+			var sp := c + Vector2.from_angle(oa) * 59.0
+			draw_circle(sp, 5.0, Color(col.r, col.g, col.b, 0.35))
+			draw_circle(sp, 3.2, Color(1, 0.95, 0.8))
+
+	func _sym_kharn(c: Vector2, col: Color, t: float, boost: float) -> void:
+		var cc := c + Vector2(0, sin(t * 1.8) * 1.5)
+		var o := PackedVector2Array([cc + Vector2(-32, -38), cc + Vector2(32, -38), cc + Vector2(32, 6), cc + Vector2(0, 46), cc + Vector2(-32, 6)])
+		_poly([o[0], cc + Vector2(0, -38), cc + Vector2(0, 46), o[4]], _sh(col, 0.58))
+		_poly([cc + Vector2(0, -38), o[1], o[2], cc + Vector2(0, 46)], _sh(col, 0.32))
+		draw_polyline(PackedVector2Array(Array(o) + [o[0]]), col, 3.2, true)
+		var inner := PackedVector2Array()
+		for p in o:
+			inner.append(cc + (p - cc) * 0.84)
+		draw_polyline(PackedVector2Array(Array(inner) + [inner[0]]), Color(1, 0.9, 0.85, 0.45), 1.2, true)
+		for i in 3:
+			var wv := clampf(0.35 + 0.65 * sin(t * 3.2 * boost - i * 0.9), 0.15, 1.0)
+			var yy := -20.0 + i * 15.0
+			draw_polyline(PackedVector2Array([cc + Vector2(-20, yy), cc + Vector2(0, yy + 20), cc + Vector2(20, yy)]), Color(1, 0.85, 0.8, wv), 5.0, true)
+		for rv in [Vector2(-25, -31), Vector2(25, -31), Vector2(-25, 2), Vector2(25, 2)]:
+			draw_circle(cc + rv, 2.2, Color(1, 0.9, 0.85, 0.9))
+
+	func _sym_conclave(c: Vector2, col: Color, t: float, boost: float) -> void:
+		var br := 1.0 + 0.05 * sin(t * 2.2)
+		var T := c + Vector2(0, -50.0 * br)
+		var B := c + Vector2(0, 50.0 * br)
+		var UL := c + Vector2(-27, -17)
+		var UR := c + Vector2(27, -17)
+		var LL := c + Vector2(-27, 11)
+		var LR := c + Vector2(27, 11)
+		var M := c + Vector2(0, -5)
+		var facets := [[T, UL, M], [T, M, UR], [UL, LL, M], [M, LR, UR], [LL, B, M], [M, B, LR]]
+		var base := [0.75, 1.0, 0.45, 0.62, 0.3, 0.5]
+		for i in 6:
+			var k: float = base[i] + 0.35 * maxf(0.0, sin(t * 2.6 - i * 0.9))
+			var f: Array = facets[i]
+			_poly(f, Color(minf(col.r * k, 1.0), minf(col.g * k * 0.9, 1.0), minf(col.b * k * 1.05, 1.0), 0.97))
+		draw_polyline(PackedVector2Array([T, UL, LL, B, LR, UR, T]), col, 3.0, true)
+		draw_line(T, M, Color(1, 0.95, 1, 0.5), 1.5, true)
+		draw_line(UL, M, Color(1, 0.95, 1, 0.3), 1.2, true)
+		draw_line(UR, M, Color(1, 0.95, 1, 0.3), 1.2, true)
+		for j in 4:
+			var oa := t * (0.8 + 0.2 * j) + j * 1.57
+			var op := c + Vector2.from_angle(oa) * Vector2(60.0, 46.0)
+			_poly([op + Vector2(0, -6), op + Vector2(4, 0), op + Vector2(0, 6), op + Vector2(-4, 0)], Color(0.95, 0.85, 1.0))
+
+	func _sym_vael(c: Vector2, col: Color, t: float, boost: float) -> void:
+		# balayage radar en éventail
+		var sw := t * 1.4 * boost
+		for j in 14:
+			var a0 := sw - j * 0.07
+			_poly([c, c + Vector2.from_angle(a0) * 60.0, c + Vector2.from_angle(a0 + 0.07) * 60.0], Color(col.r, col.g, col.b, 0.2 * (1.0 - j / 14.0)))
+		for k in 3:
+			var ph := fposmod(t * 0.5 + k / 3.0, 1.0)
+			draw_arc(c, 24.0 + ph * 36.0, 0.0, TAU, 48, Color(col.r, col.g, col.b, (1.0 - ph) * 0.4), 1.6, true)
+		var bph := fposmod(t, 4.2)
+		var blink := 1.0 if bph < 3.9 else clampf(absf(bph - 4.05) / 0.15, 0.08, 1.0)
+		var ey := 28.0 * blink
+		var top := PackedVector2Array()
+		var bot := PackedVector2Array()
+		for i in 17:
+			var u := -1.0 + i / 8.0
+			var yv := ey * (1.0 - u * u)
+			top.append(c + Vector2(u * 50.0, -yv))
+			bot.append(c + Vector2(u * 50.0, yv * 0.85))
+		var bot_r := Array(bot)
+		bot_r.reverse()
+		_poly(Array(top) + bot_r, _sh(col, 0.2))
+		var look := (get_local_mouse_position() - c)
+		look = look.limit_length(60.0) / 60.0 * 8.0
+		if blink > 0.5:
+			var ip := c + look
+			draw_circle(ip, 18.0, _sh(col, 0.55))
+			draw_circle(ip, 15.0, col)
+			for i in 14:
+				var ra := TAU * i / 14.0
+				draw_line(ip + Vector2.from_angle(ra) * 7.0, ip + Vector2.from_angle(ra) * 14.0, _sh(col, 0.6, 0.7), 1.2, true)
+			draw_circle(ip, 6.5 + 1.5 * sin(t * 2.0), Color.BLACK)
+			draw_circle(ip + Vector2(-4, -4), 2.4, Color(1, 1, 1, 0.9))
+		draw_polyline(top, col, 3.2, true)
+		draw_polyline(bot, col, 2.4, true)
 
 
 func _unhandled_key_input(event: InputEvent) -> void:
