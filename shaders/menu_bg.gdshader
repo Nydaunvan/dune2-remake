@@ -228,10 +228,15 @@ vec3 desert(vec2 uv, float ar, float t, vec3 ro, out float dist_out) {
 			break;
 		}
 		prev = dist;
-		dist += max(d * 0.5, 0.03 + 0.0025 * dist);
+		dist += max(d * 0.5, 0.03 + 0.012 * dist);
 		if (dist > 160.0) {
 			break;
 		}
+	}
+	// Rayon à court d'itérations au ras du sol (angle rasant) : c'est du sable lointain, pas du ciel.
+	// Sans cela, selon la précision du GPU, des rubans de brume apparaissent le long des crêtes.
+	if (!hit && dist <= 160.0) {
+		hit = true;
 	}
 	dist_out = -1.0;
 	if (!hit) {
