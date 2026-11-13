@@ -14,6 +14,31 @@ const GLOW_VIOLET := Color(0.72, 0.42, 1.0)
 const OBSIDIAN := Color(0.16, 0.12, 0.24)
 
 
+## Type de déplacement observé pendant la construction du modèle : "tracks", "wheels" ou "hover" (voir move_kind).
+static var _seen := {}
+static var _kinds := {}
+
+
+## Chenilles, roues ou coussins de sustentation : le modèle 3D lui-même l'indique (cache par unité et faction).
+static func move_kind(id: String, faction := "") -> String:
+	var key := id + "|" + faction
+	if not _kinds.has(key):
+		_seen = {}
+		var m := build(id, Color(0.6, 0.6, 0.6), faction)
+		m.free()
+		var k := "tracks"
+		if _seen.has("hover"):
+			k = "hover"
+		elif _seen.has("wheels") and not _seen.has("tracks"):
+			k = "wheels"
+		elif not _seen.is_empty() and not _seen.has("tracks"):
+			k = String(_seen.keys()[0])
+		elif _seen.is_empty():
+			k = "none"
+		_kinds[key] = k
+	return _kinds[key]
+
+
 static func build(id: String, accent: Color, faction := "") -> Node3D:
 	var r := Node3D.new()
 	# Bâtiments et engins communs : chaque faction a sa propre silhouette (Solis garde le modèle de base)
@@ -253,6 +278,7 @@ static func _ball(parent: Node3D, r: float, pos: Vector3, col: Color, emit := 0.
 
 ## Chenilles : deux blocs + galets aux extrémités.
 static func _tracks(parent: Node3D, length: float, spread: float, width: float, h: float) -> void:
+	_seen["tracks"] = true
 	for s in [-1.0, 1.0]:
 		_box(parent, Vector3(length, h, width), Vector3(0, h / 2.0, spread * s), DARK)
 		for e in [-1.0, 1.0]:
@@ -261,6 +287,7 @@ static func _tracks(parent: Node3D, length: float, spread: float, width: float, 
 
 
 static func _wheels(parent: Node3D, xs: Array, spread: float, r: float, width: float) -> void:
+	_seen["wheels"] = true
 	for x in xs:
 		for s in [-1.0, 1.0]:
 			_cyl(parent, r, r, width, Vector3(float(x), r, spread * s), DARK, 8, Vector3(PI / 2.0, 0, 0))

@@ -91,6 +91,7 @@ var _heal_acc := 0.0
 var _hurt_t := 0.0 # >0 : vient d'être attaqué, reste à l'abri près de la base
 var _dust: CPUParticles2D
 var _track_last := Vector2.INF # dernière position où une trace a été laissée
+var _track_kind := ""        # chenilles | roues | coussin d'air (déduit du modèle 3D)
 var _work_fx: CPUParticles2D
 var _work_fx2: CPUParticles2D # éclats d'épice / de minerai au-dessus du nuage
 
@@ -677,7 +678,9 @@ func _physics_process(delta: float) -> void:
 			if _track_last == Vector2.INF:
 				_track_last = position
 			elif position.distance_to(_track_last) >= 7.0:
-				game.tracks.add(_track_last, position, radius * 0.42)
+				if _track_kind == "":
+					_track_kind = Models.move_kind(id, game.faction_id_of(team))
+				game.tracks.add(_track_last, position, radius * 0.42, "wheels" if _track_kind == "none" else _track_kind)
 				_track_last = position
 		else:
 			_track_last = Vector2.INF

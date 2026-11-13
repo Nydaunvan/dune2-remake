@@ -483,6 +483,7 @@ static func _aerodrome(r: Node3D, f: String, acc: Color) -> void:
 # --- Engins communs ---------------------------------------------------------------------
 
 static func _hover_pads(r: Node3D, xs: Array, z: float, col: Color, glow: Color) -> void:
+	Models._seen["hover"] = true
 	for x in xs:
 		for s in [-1.0, 1.0]:
 			Models._cyl(r, 5, 6, 2.5, Vector3(float(x), 1.5, z * s), col, 6)
