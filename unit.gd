@@ -56,6 +56,7 @@ var tech := 0        # modernisation faite (0/1)
 var _sep_t := 0.0
 var _calm_t := 99.0     # temps écoulé depuis le dernier coup reçu
 var _direct_t := 0.0
+var _hold_path_t := 0.0
 var _slot_used := false
 var tech_left := 0.0 # modernisation en cours : secondes restantes
 var tech_total := 0.0
@@ -718,6 +719,11 @@ func _attack(delta: float) -> void:
 			if amove_goal.x >= 0:
 				_go_amove()
 			return
+		# on vient de choisir une autre place de tir : on y va sans recalculer la route en chemin
+		if _hold_path_t > 0.0:
+			_hold_path_t -= delta
+			if not path.is_empty():
+				return
 		_repath -= delta
 		_direct_t -= delta
 		if _repath <= 0.0 or path.is_empty():
@@ -811,6 +817,27 @@ func _blocked_t_detour(blocker: Unit) -> void:
 	_detours += 1
 	_detour_clock = 8.0
 	if _detours >= 3:
+		# Tout près du but et bloqué par des véhicules à l'arrêt : la place est prise, on s'installe ici
+		# (sinon l'unité tournait indéfiniment autour de sa case sans jamais « arriver »)
+		if (state == "move" or state == "amove") and blocker.path.is_empty() \
+				and position.distance_to(goal) < 2.6 * float(game.TILE):
+			path = PackedVector2Array()
+			_blocked_t = 0.0
+			_detours = 0
+			_arrived()
+			return
+		# En attaque, coincé derrière ses camarades hors de portée : on prend une autre place de tir libre
+		if state == "attack" and _valid(target):
+			var fp: PackedVector2Array = game.path_to_free_fire_cell(self, target)
+			if fp.size() > 0:
+				follow(fp)
+				_hold_path_t = 10.0
+				_repath = 4.0
+				_direct_t = 0.0
+				_slot_used = false
+				_detours = 0
+				_blocked_t = 0.0
+				return
 		# on se gêne mutuellement depuis un moment : courte pause aléatoire, l'autre passera
 		_pause_t = randf_range(0.5, 1.2)
 		_detours = 0

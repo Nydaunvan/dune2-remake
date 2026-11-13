@@ -34,6 +34,9 @@ func _arrived(u) -> bool:
 	return u.path.is_empty() and u.state == "idle"
 func _process(_d: float) -> bool:
 	frame += 1
+	if frame > 4000 or (frame > 30 and phase == 0):
+		print("GROUPE ÉCHEC : test interrompu (phase %d)" % phase)
+		return true
 	if frame == 5:
 		for a in main.ais.values():
 			a.active = false
@@ -48,7 +51,9 @@ func _process(_d: float) -> bool:
 		for i in n:
 			var u = main._spawn_unit(ids[i % ids.size()], main._find_free_cell(c + Vector2i(i % 4, i / 4)), 0)
 			group.append(u)
-		main.selected = group.duplicate()
+		main.selected.clear()
+		for u in group:
+			main.selected.append(u)
 		# cible : près de la base adverse (trajet long, à travers le relief)
 		var gc: Vector2i = main._find_free_cell(Vector2i(main.enemy_cell) + Vector2i(0, -8))
 		goal = main._cell_to_world(gc)
@@ -57,7 +62,7 @@ func _process(_d: float) -> bool:
 			ideal += p[i - 1].distance_to(p[i])
 		main.order_move(goal)
 		t0 = main.game_time
-		Engine.time_scale = 4.0
+		Engine.time_scale = 6.0
 		phase = 1
 		return false
 	if phase == 1 and frame % 6 == 0:
@@ -68,7 +73,13 @@ func _process(_d: float) -> bool:
 				arr += 1
 		if arr > 0 and first_arr < 0.0:
 			first_arr = t
-		if arr == group.size() or t > 240.0:
+		if OS.has_environment("DBG") and frame % 120 == 0:
+			var st := {}
+			for u in group:
+				var k: String = u.state + ("+" if not u.path.is_empty() else "")
+				st[k] = int(st.get(k, 0)) + 1
+			print("t=%.0f arr=%d %s" % [t, arr, str(st)])
+		if arr == group.size() or t > 150.0:
 			var slowest := 999.0
 			for u in group:
 				slowest = minf(slowest, u.speed)
@@ -96,12 +107,18 @@ func _process(_d: float) -> bool:
 	if phase == 2 and frame % 6 == 0:
 		var t: float = main.game_time - t0
 		var firing := 0
+		group = group.filter(func(u) -> bool: return is_instance_valid(u) and u.alive and not u.eaten)  # un ver peut passer par là
 		for u in group:
 			if u.alive and u.position.distance_to(foe.world_center()) <= u.w_range + foe.radius_px() + 4.0 and u.path.is_empty():
 				firing += 1
-		if firing == group.size() or t > 120.0:
+		if firing == group.size() or t > 60.0:
+			for u in group:
+				if not (u.alive and u.position.distance_to(foe.world_center()) <= u.w_range + foe.radius_px() + 4.0 and u.path.is_empty()):
+					print("  pas en position : %s état=%s chemin=%d distance=%.0f portée=%.0f rayon cible=%.0f" % [u.id, u.state, u.path.size(), u.position.distance_to(foe.world_center()), u.w_range, foe.radius_px()])
 			report["attack"] = "en position de tir %d/%d après %.0f s, chevauchements %d" % [firing, group.size(), t, _overlaps()]
 			print("GROUPE déplacement : ", report["move"])
 			print("GROUPE attaque     : ", report["attack"])
+			var ok: bool = report["move"].begins_with("arrivés %d/%d" % [group.size(), group.size()]) and report["attack"].begins_with("en position de tir %d/%d" % [group.size(), group.size()]) and _overlaps() == 0
+			print("GROUPE OK" if ok else "GROUPE ÉCHEC")
 			return true
 	return false

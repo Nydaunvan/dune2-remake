@@ -1747,6 +1747,93 @@ func _nearest_walkable(c: Vector2i) -> Vector2i:
 	return c
 
 
+## Marque comme obstacles les cases bouchées par des véhicules À L'ARRÊT autour de `u` (le temps d'un
+## calcul de chemin). Renvoie les cases marquées, à rendre avec _unmark_cells.
+func _mark_stationary(u: Unit, keep: Array = []) -> Array[Vector2i]:
+	var from := _world_to_cell(u.position)
+	var marked: Array[Vector2i] = []
+	for v in units:
+		if v == u or not v.alive or v.air or v.carried or not v.path.is_empty():
+			continue
+		if v.position.distance_to(u.position) > 16.0 * TILE:
+			continue
+		# un véhicule arrêté à cheval sur plusieurs cases les bouche toutes
+		var vc := _world_to_cell(v.position)
+		for ox in range(-1, 2):
+			for oy in range(-1, 2):
+				var c := vc + Vector2i(ox, oy)
+				if c == from or c in keep or not grid.is_in_boundsv(c) or grid.is_point_solid(c):
+					continue
+				if _cell_to_world(c).distance_to(v.position) < u.radius + v.radius + 3.0:
+					grid.set_point_solid(c, true)
+					marked.append(c)
+	return marked
+
+
+func _unmark_cells(marked: Array[Vector2i]) -> void:
+	for c in marked:
+		grid.set_point_solid(c, false)
+
+
+## Chemin qui contourne les véhicules à l'arrêt (le chemin normal passe à travers eux).
+func path_avoiding_units(u: Unit, to: Vector2i) -> PackedVector2Array:
+	var marked := _mark_stationary(u, [to])
+	var p := grid.get_point_path(_world_to_cell(u.position), to)
+	_unmark_cells(marked)
+	return p
+
+
+## Tireur coincé derrière ses camarades : case de tir libre la plus proche de LUI (à portée de la cible,
+## non occupée par un véhicule à l'arrêt) et réellement atteignable en contournant la ligne de tir.
+## Chemin vide si aucune.
+func path_to_free_fire_cell(u: Unit, target) -> PackedVector2Array:
+	var tp: Vector2 = target.world_center()
+	var trad := float(target.radius_px())
+	var from := _world_to_cell(u.position)
+	var reach := int(ceil((u.w_range + trad) / TILE)) + 2
+	var tc := _world_to_cell(tp)
+	var cands: Array = []
+	for dx in range(-reach, reach + 1):
+		for dy in range(-reach, reach + 1):
+			var q := tc + Vector2i(dx, dy)
+			if not _is_walkable(q):
+				continue
+			var w := _cell_to_world(q)
+			if w.distance_to(tp) - trad > u.w_range - 6.0 or _spot_taken(w, [u], 26.0):
+				continue
+			cands.append([w.distance_to(u.position), q])
+	cands.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var marked := _mark_stationary(u)
+	var out := PackedVector2Array()
+	for k in mini(cands.size(), 60):
+		var q: Vector2i = cands[k][1]
+		if grid.is_point_solid(q):
+			continue
+		var p := grid.get_point_path(from, q)
+		if p.size() > 1:
+			p.remove_at(0)  # inutile de repasser par le centre de sa propre case (souvent vers le gêneur)
+		if p.size() > 0 and _route_clear(u, p):
+			out = p
+			break
+	_unmark_cells(marked)
+	return out
+
+
+## Le trajet (depuis la position réelle du véhicule) passe-t-il assez loin de tous les véhicules à l'arrêt ?
+func _route_clear(u: Unit, p: PackedVector2Array) -> bool:
+	var a := u.position
+	for i in p.size():
+		var b := p[i]
+		if a.distance_to(b) > 0.5:
+			for v in units:
+				if v == u or not v.alive or v.air or v.carried or not v.path.is_empty():
+					continue
+				if _seg_dist(v.position, a, b) < (u.radius + v.radius) * 0.95:
+					return false
+		a = b
+	return true
+
+
 ## Route d'attaque d'un groupe : chaque tireur vise son propre point sur un arc autour de la cible,
 ## à bonne distance de tir, au lieu de s'entasser tous au même endroit.
 func path_to_attack(u: Unit, target) -> PackedVector2Array:
