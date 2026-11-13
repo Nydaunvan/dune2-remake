@@ -901,10 +901,15 @@ func _harvesters_on_sand() -> Array:
 	return out
 
 
+## Points de vie d'un ver : une mission dont l'objectif est d'en abattre peut les rendre moins coriaces.
+func _worm_max() -> float:
+	return float(mission.get("worm_hp", WORM_HP))
+
+
 func _worm_pick() -> int:
 	if worm_roster.is_empty():
 		for i in WORM_COUNT:
-			worm_roster.append({"hp": WORM_HP, "tint": (float(i) - 1.0) * 0.07})
+			worm_roster.append({"hp": _worm_max(), "tint": (float(i) - 1.0) * 0.07})
 	var alive_idx: Array = []
 	for i in worm_roster.size():
 		if float(worm_roster[i]["hp"]) > 0.0:
@@ -927,7 +932,7 @@ func _spawn_worm(target) -> void:
 	sfx.play_ui("worm", -2.0)
 	stats.worm_apparitions += 1
 	worm = Worm.new()
-	worm.setup(self, start, target, wi, float(worm_roster[wi]["hp"]), WORM_HP, float(worm_roster[wi]["tint"]))
+	worm.setup(self, start, target, wi, float(worm_roster[wi]["hp"]), _worm_max(), float(worm_roster[wi]["tint"]))
 	add_child(worm)
 	_worm_zone = WormZone.new()
 	_worm_zone.game = self
@@ -3233,6 +3238,14 @@ func objective_info(i: int) -> Dictionary:
 			var n: int = o["count"]
 			var c := _count_combat()
 			return {"text": "Armée de %d unités : %d" % [n, mini(c, n)], "frac": clampf(float(c) / n, 0.0, 1.0)}
+		"waves":
+			var n: int = o["count"]
+			var w := mini(stats.waves_repelled, n)
+			return {"text": "Assauts repoussés : %d/%d" % [w, n], "frac": float(w) / n}
+		"worms":
+			var n: int = o["count"]
+			var w := mini(stats.worm_kills, n)
+			return {"text": "Vers géants abattus : %d/%d" % [w, n], "frac": float(w) / n}
 		"survive":
 			var t: float = o["time"]
 			var left := maxf(t - game_time, 0.0)

@@ -781,6 +781,7 @@ func _think_army() -> void:
 	if army.is_empty():
 		if assaulting:
 			wave_ended = game.game_time
+			_count_repelled()
 		mode = "muster"
 		squad.clear()
 		assaulting = false
@@ -1076,7 +1077,15 @@ func _retreat(now: float) -> void:
 		_end_wave(now)
 
 
+## Un assaut qui s'achève sans que l'ennemi ait pris le dessus compte comme « repoussé » pour le joueur.
+func _count_repelled() -> void:
+	if team != 0 and game.hostile(team, 0):
+		game.stats.waves_repelled += 1
+
+
 func _end_wave(now: float) -> void:
+	if mode == "stage" or mode == "attack" or mode == "retreat":
+		_count_repelled()
 	mode = "muster"
 	squad.clear()
 	target_b = null

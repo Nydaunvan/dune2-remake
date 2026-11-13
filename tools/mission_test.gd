@@ -36,6 +36,10 @@ func _process(_d: float) -> bool:
 						main._spawn_unit("egide" if i % 2 == 0 else "sentinelle", main._find_free_cell(Vector2i(main.start_cell) + Vector2i(0, 5)), 0)
 				"survive":
 					main.game_time = o["time"] + 1.0
+				"waves":
+					main.stats.waves_repelled = int(o["count"])
+				"worms":
+					main.stats.worm_kills = int(o["count"])
 				"outposts":
 					for b in main.buildings.duplicate():
 						if b.outpost >= 0:

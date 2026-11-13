@@ -106,6 +106,8 @@ func take_damage(raw: float, wpn: String, attacker = null) -> void:
 		dying = true
 		if is_instance_valid(attacker) and attacker is Unit and attacker.alive:
 			attacker.add_kill()
+			if attacker.team == 0:
+				game.stats.worm_kills += 1
 		game.ui.toast("Un ver géant a été abattu !", GameData.GREEN)
 		game.shake(8.0, 0.8)
 		Fx.burst(game, position, Color(0.85, 0.6, 0.45), 48, 1.8)

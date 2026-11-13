@@ -6,7 +6,7 @@ const SAVE_PATH := "user://campaign.cfg"
 
 ## (l'élimination d'une faction n'est jamais requise sauf si destroy_all figure dans les objectifs)
 ## Types d'objectifs : build, harvest, train, survive, destroy_all, outposts,
-## escort.
+## escort, waves (assauts ennemis repoussés), worms (vers géants abattus).
 const BASE := {"centrale": 1, "raffinerie": 1, "fonderie": 1, "usine": 1}
 
 ## Une campagne différente par faction : 15 à 18 missions chacune, avec son propre adversaire,
@@ -39,10 +39,10 @@ const CAMPAIGNS := {
 		{
 			"id": "ligne", "title": "Tenir la ligne", "enemy": "kharn", "rival": true, "size": 96, "credits": 2000, "ore": 2200,
 			"start_units": ["@0", "@1"], "ally_units": 2,
-			"objectives": [{"type": "survive", "time": 600.0}, {"type": "kills", "count": 10}],
+			"objectives": [{"type": "waves", "count": 3}, {"type": "kills", "count": 10}],
 			"ai": {"slowdown": 1.5, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Survivez 10 minutes et abattez 10 unités ennemies",
-			"brief": "{ENEMY} va déferler en force et {RIVAL} guette le moment où nous faiblirons. Aucune de ces deux maisons n'est notre amie : fortifiez-vous, tenez la durée exigée et faites payer chaque assaut.",
+			"obj": "Repoussez 3 assauts et abattez 10 unités ennemies",
+			"brief": "{ENEMY} va déferler en force et {RIVAL} guette le moment où nous faiblirons. Aucune de ces deux maisons n'est notre amie : fortifiez-vous, repoussez leurs assauts et faites payer chaque vague.",
 		},
 		{
 			"id": "aurore", "title": "Défense de l'aube", "enemy": "kharn", "size": 96, "credits": 2200, "ore": 2400,
@@ -81,18 +81,18 @@ const CAMPAIGNS := {
 		},
 		{
 			"id": "foreuses", "title": "Les foreuses", "enemy": "conclave", "size": 96, "credits": 2200, "ore": 2400,
-			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 3.0, "worm_grace": 90.0,
-			"objectives": [{"type": "ore", "amount": 3000}, {"type": "harvest", "amount": 3000}, {"type": "survive", "time": 420.0}],
-			"obj": "Récoltez 3000 minerai et 3000 Solaris en tenant 7 minutes",
-			"brief": "Les ingénieurs veulent de nouvelles foreuses : il faut du minerai et de l'épice en quantité, et des vers qui rôdent. Protégez vos engins de récolte pendant que {ENEMY} teste vos lignes.",
+			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 3.0, "worm_hp": 4000.0, "worm_grace": 90.0,
+			"objectives": [{"type": "ore", "amount": 3000}, {"type": "harvest", "amount": 3000}, {"type": "worms", "count": 1}],
+			"obj": "Récoltez 3000 minerai et 3000 Solaris, et abattez un ver géant",
+			"brief": "Les ingénieurs veulent de nouvelles foreuses : il faut du minerai et de l'épice en quantité, et des vers qui rôdent. Protégez vos engins de récolte, abattez l'un de ces vers géants et surveillez {ENEMY}, qui teste vos lignes.",
 		},
 		{
 			"id": "tempete", "title": "Tempête d'épice", "enemy": "kharn", "size": 96, "credits": 2000, "ore": 2200,
-			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 5.0, "worm_grace": 60.0,
-			"objectives": [{"type": "harvest", "amount": 4000}, {"type": "survive", "time": 480.0}, {"type": "train", "count": 6}],
+			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 5.0, "worm_hp": 4000.0, "worm_grace": 60.0,
+			"objectives": [{"type": "harvest", "amount": 4000}, {"type": "worms", "count": 1}, {"type": "train", "count": 6}],
 			"ai": {"slowdown": 1.5, "grace": 240.0, "pause": 60.0, "max_army": 12, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Récoltez 4000 Solaris et tenez 8 minutes malgré les vers",
-			"brief": "Une tempête d'épice a réveillé les vers de sable : ils rôdent partout. Récoltez malgré eux, faites fuir vos récolteurs au bon moment et gardez une escorte. {ENEMY} profite du chaos pour tâter nos défenses.",
+			"obj": "Récoltez 4000 Solaris, abattez un ver géant et formez 6 unités",
+			"brief": "Une tempête d'épice a réveillé les vers de sable : ils rôdent partout. Récoltez malgré eux, faites fuir vos récolteurs au bon moment, gardez une escorte et abattez l'un de ces monstres quand il se dresse. {ENEMY} profite du chaos pour tâter nos défenses.",
 		},
 		{
 			"id": "frappe", "title": "Frappe chirurgicale", "enemy": "vael", "enemy_base": true, "size": 96, "credits": 2500, "ore": 2500,
@@ -129,10 +129,10 @@ const CAMPAIGNS := {
 		{
 			"id": "aiguille", "title": "L'Aiguille", "enemy": "kharn", "start_base": true, "size": 112, "credits": 3000, "ore": 3000,
 			"start_units": ["@0", "@0", "@1"],
-			"objectives": [{"type": "survive", "time": 780.0}, {"type": "kills", "count": 25},
+			"objectives": [{"type": "waves", "count": 4}, {"type": "kills", "count": 25},
 					{"type": "build", "label": "le front", "ids": {"tourelle": 4}}, {"type": "upgrade", "id": "tourelle", "level": 2}],
 			"ai": {"slowdown": 1.1, "grace": 200.0, "pause": 45.0, "max_army": 24, "wave": 7, "credits": 3000, "ore": 3200},
-			"obj": "Tenez 13 minutes, détruisez 25 unités, alignez 4 tourelles dont une améliorée",
+			"obj": "Repoussez 4 assauts, détruisez 25 unités, alignez 4 tourelles dont une améliorée",
 			"brief": "Dernier rempart : la base de l'Aiguille est déjà bâtie, mais {ENEMY} y envoie tout ce qu'elle possède. Fortifiez, améliorez vos tourelles et brisez ses assauts un par un jusqu'à la relève.",
 		},
 	],
@@ -156,9 +156,9 @@ const CAMPAIGNS := {
 		{
 			"id": "garnison", "title": "La garnison", "enemy": "solis", "size": 96, "credits": 1800, "ore": 2000,
 			"start_units": ["@0", "@1"],
-			"objectives": [{"type": "survive", "time": 420.0}, {"type": "kills", "count": 10}],
-			"obj": "Tenez 7 minutes et abattez 10 unités ennemies",
-			"brief": "Notre garnison avancée est isolée. {ENEMY} la sait faible et lance des raids. Tenez vos murs, laissez-les se briser sur vos blindés puis passez à la contre-attaque.",
+			"objectives": [{"type": "waves", "count": 2}, {"type": "kills", "count": 10}],
+			"obj": "Repoussez 2 assauts et abattez 10 unités ennemies",
+			"brief": "Notre garnison avancée est isolée. {ENEMY} la sait faible et lance des raids. Repoussez leurs assauts, laissez-les se briser sur vos blindés, puis passez à la contre-attaque.",
 		},
 		{
 			"id": "percee", "title": "La percée", "rival": true, "enemy": "solis", "size": 96, "credits": 2000, "ore": 2200,
@@ -197,10 +197,10 @@ const CAMPAIGNS := {
 		},
 		{
 			"id": "rouge", "title": "Tempête rouge", "enemy": "vael", "size": 96, "credits": 2500, "ore": 2500,
-			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 4.0, "worm_grace": 60.0,
-			"objectives": [{"type": "harvest", "amount": 4000}, {"type": "kills", "count": 15}, {"type": "survive", "time": 480.0}],
-			"obj": "Récoltez 4000 Solaris, abattez 15 unités et tenez 8 minutes",
-			"brief": "Une tempête rouge soulève les vers. {ENEMY} compte en profiter pour nous harceler. La Légion ne recule pas : escortez vos récolteurs, abattez les harceleurs et tenez la position.",
+			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 4.0, "worm_hp": 4000.0, "worm_grace": 60.0,
+			"objectives": [{"type": "harvest", "amount": 4000}, {"type": "kills", "count": 15}, {"type": "worms", "count": 1}],
+			"obj": "Récoltez 4000 Solaris, abattez 15 unités et un ver géant",
+			"brief": "Une tempête rouge soulève les vers. {ENEMY} compte en profiter pour nous harceler. La Légion ne recule pas : escortez vos récolteurs, abattez les harceleurs et terrassez l'un de ces vers.",
 		},
 		{
 			"id": "blitz", "title": "Blitzkrieg", "enemy": "solis", "start_base": true, "enemy_base": true, "size": 80, "credits": 3000, "ore": 3000,
@@ -222,9 +222,9 @@ const CAMPAIGNS := {
 		{
 			"id": "tranchees", "title": "Guerre de tranchées", "enemy": "solis", "size": 96, "credits": 3000, "ore": 3000,
 			"start_units": ["@0", "@0", "@1"],
-			"objectives": [{"type": "build", "label": "les défenses", "ids": {"tourelle": 4, "bunker": 2}}, {"type": "survive", "time": 480.0}, {"type": "kills", "count": 20}],
-			"obj": "Bâtissez 4 tourelles et 2 bunkers, tenez 8 minutes et abattez 20 unités",
-			"brief": "Rien ne passe : enterrez vos défenses et laissez {ENEMY} s'épuiser sur la ligne. Quand elle faiblira, c'est la Légion qui frappera.",
+			"objectives": [{"type": "build", "label": "les défenses", "ids": {"tourelle": 4, "bunker": 2}}, {"type": "waves", "count": 3}, {"type": "kills", "count": 20}],
+			"obj": "Bâtissez 4 tourelles et 2 bunkers, repoussez 3 assauts et abattez 20 unités",
+			"brief": "Rien ne passe : enterrez vos défenses et repoussez les assauts de {ENEMY} : elle s'épuisera sur la ligne. Quand elle faiblira, c'est la Légion qui frappera.",
 		},
 		{
 			"id": "pluie", "title": "Pluie d'acier", "enemy": "conclave", "enemy_base": true, "size": 112, "credits": 3500, "ore": 3500,
@@ -296,10 +296,10 @@ const CAMPAIGNS := {
 		{
 			"id": "double", "title": "Double jeu", "enemy": "kharn", "rival": true, "size": 96, "credits": 2000, "ore": 2200,
 			"start_units": ["@0", "@1"], "ally_units": 2,
-			"objectives": [{"type": "survive", "time": 420.0}, {"type": "kills", "count": 12}],
+			"objectives": [{"type": "waves", "count": 2}, {"type": "kills", "count": 12}],
 			"ai": {"slowdown": 1.4, "grace": 240.0, "pause": 50.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Survivez 7 minutes et abattez 12 unités ennemies",
-			"brief": "{ENEMY} et {RIVAL} se disputent le même territoire et chacun veut notre peau. Le temps convenu : assez pour toucher la prime, pas assez pour leur laisser le désert. Frappez le camp qui s'expose.",
+			"obj": "Repoussez 2 assauts et abattez 12 unités ennemies",
+			"brief": "{ENEMY} et {RIVAL} se disputent le même territoire et chacun veut notre peau. Repoussez leurs assauts sans leur laisser le désert, puis frappez le camp qui s'expose.",
 		},
 		{
 			"id": "pillage", "title": "Pillage aérien", "enemy": "kharn", "size": 112, "credits": 2500, "ore": 2500,
@@ -361,10 +361,10 @@ const CAMPAIGNS := {
 		},
 		{
 			"id": "epice_noire", "title": "L'épice noire", "enemy": "conclave", "size": 96, "credits": 2500, "ore": 2500,
-			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 3.0, "worm_grace": 60.0,
-			"objectives": [{"type": "harvest", "amount": 6000}, {"type": "survive", "time": 540.0}],
-			"obj": "Récoltez 6000 Solaris et tenez 9 minutes",
-			"brief": "Une veine d'épice noire a été repérée au cœur des dunes, mais les vers la gardent. {ENEMY} la veut aussi : récoltez vite, fuyez à temps et ne laissez rien aux Obsidiens.",
+			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 3.0, "worm_hp": 4000.0, "worm_grace": 60.0,
+			"objectives": [{"type": "harvest", "amount": 6000}, {"type": "worms", "count": 2}],
+			"obj": "Récoltez 6000 Solaris et abattez 2 vers géants",
+			"brief": "Une veine d'épice noire a été repérée au cœur des dunes, mais les vers la gardent. {ENEMY} la veut aussi : récoltez vite, fuyez à temps, terrassez deux de ces gardiens et ne laissez rien aux Obsidiens.",
 		},
 		{
 			"id": "fragile", "title": "Route assiégée", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
@@ -385,12 +385,12 @@ const CAMPAIGNS := {
 		{
 			"id": "troisgrands", "title": "Guerre des trois", "enemy": "kharn", "rival": true, "size": 112, "credits": 3000, "ore": 3000,
 			"ally_units": 3, "start_units": ["@0", "@0", "@1", "@2"],
-			"objectives": [{"type": "destroy_type", "id": "chantier", "count": 2}, {"type": "survive", "time": 600.0},
+			"objectives": [{"type": "destroy_type", "id": "chantier", "count": 2}, {"type": "waves", "count": 4},
 					{"type": "harvest", "amount": 3500}, {"type": "kills", "count": 20}],
 			"ai": {"slowdown": 1.6, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"third_ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1700, "ore": 1900},
-			"obj": "Détruisez les deux chantiers ennemis, tenez 10 minutes, récoltez 3500 Solaris et abattez 20 unités",
-			"brief": "{ENEMY} et {RIVAL} se détestent : laissez-les s'user. Tenez la durée convenue, remplissez les caisses et frappez l'instant venu : il faut décapiter les deux camps en détruisant leurs chantiers.",
+			"obj": "Détruisez les deux chantiers ennemis, repoussez 4 assauts, récoltez 3500 Solaris et abattez 20 unités",
+			"brief": "{ENEMY} et {RIVAL} se détestent : laissez-les s'user. Repoussez leurs assauts, remplissez les caisses et frappez l'instant venu : il faut décapiter les deux camps en détruisant leurs chantiers.",
 		},
 		{
 			"id": "razzia", "title": "La grande razzia", "enemy": "kharn", "rival": true, "size": 112, "credits": 3500, "ore": 3500,
@@ -439,10 +439,10 @@ const CAMPAIGNS := {
 		{
 			"id": "eclats", "title": "Éclats croisés", "enemy": "kharn", "rival": true, "size": 96, "credits": 2000, "ore": 2200,
 			"start_units": ["@0", "@1"], "ally_units": 2,
-			"objectives": [{"type": "survive", "time": 420.0}, {"type": "kills", "count": 12}],
+			"objectives": [{"type": "waves", "count": 2}, {"type": "kills", "count": 12}],
 			"ai": {"slowdown": 1.4, "grace": 240.0, "pause": 50.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
-			"obj": "Survivez 7 minutes et abattez 12 unités ennemies",
-			"brief": "{ENEMY} et {RIVAL} se disputent la même vallée et chacun veut briser notre cristal. Tenez le temps convenu, laissez-les s'user et frappez le camp qui s'expose.",
+			"obj": "Repoussez 2 assauts et abattez 12 unités ennemies",
+			"brief": "{ENEMY} et {RIVAL} se disputent la même vallée et chacun veut briser notre cristal. Repoussez leurs assauts, laissez-les s'user et frappez le camp qui s'expose.",
 		},
 		{
 			"id": "sanctuaire", "title": "Le sanctuaire", "enemy": "vael", "size": 96, "credits": 2200, "ore": 2400,
@@ -479,10 +479,10 @@ const CAMPAIGNS := {
 		},
 		{
 			"id": "geysers", "title": "Les geysers", "enemy": "vael", "size": 96, "credits": 2200, "ore": 2400,
-			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 3.0, "worm_grace": 60.0,
-			"objectives": [{"type": "harvest", "amount": 4000}, {"type": "survive", "time": 420.0}],
-			"obj": "Récoltez 4000 Solaris et tenez 7 minutes malgré les vers",
-			"brief": "Des geysers d'épice ont percé près du campement, et les vers affluent. Récoltez entre deux éruptions et gardez une escorte régénérante pour vos engins.",
+			"start_units": ["recolteur", "recolteur", "@0", "@1"], "worm_rate": 3.0, "worm_hp": 4000.0, "worm_grace": 60.0,
+			"objectives": [{"type": "harvest", "amount": 4000}, {"type": "worms", "count": 1}],
+			"obj": "Récoltez 4000 Solaris et abattez un ver géant",
+			"brief": "Des geysers d'épice ont percé près du campement, et les vers affluent. Récoltez entre deux éruptions et gardez une escorte régénérante pour vos engins et abattez l'un de ces vers.",
 		},
 		{
 			"id": "serres", "title": "Les serres", "enemy": "kharn", "size": 96, "credits": 2000, "ore": 2200,
@@ -511,8 +511,8 @@ const CAMPAIGNS := {
 		{
 			"id": "monolithes", "title": "La ligne des monolithes", "enemy": "kharn", "size": 112, "credits": 3000, "ore": 3000,
 			"start_units": ["@0", "@0", "@1"],
-			"objectives": [{"type": "build", "label": "la ligne", "ids": {"tourelle": 4, "tour_geode": 2}}, {"type": "survive", "time": 540.0}, {"type": "kills", "count": 20}],
-			"obj": "Bâtissez 4 tourelles et 2 tours géodes, tenez 9 minutes et abattez 20 unités",
+			"objectives": [{"type": "build", "label": "la ligne", "ids": {"tourelle": 4, "tour_geode": 2}}, {"type": "waves", "count": 3}, {"type": "kills", "count": 20}],
+			"obj": "Bâtissez 4 tourelles et 2 tours géodes, repoussez 3 assauts et abattez 20 unités",
 			"brief": "Les monolithes forment une ligne que rien ne doit franchir. Doublez-la de tourelles et de tours géodes : {ENEMY} y viendra mourir, et le Conclave regénérera pendant ce temps.",
 		},
 		{
@@ -534,18 +534,18 @@ const CAMPAIGNS := {
 		{
 			"id": "triade", "title": "La triade", "enemy": "vael", "rival": true, "size": 112, "credits": 3000, "ore": 3000,
 			"ally_units": 3, "start_units": ["@0", "@0", "@1", "@2"],
-			"objectives": [{"type": "destroy_type", "id": "chantier", "count": 2}, {"type": "survive", "time": 600.0},
+			"objectives": [{"type": "destroy_type", "id": "chantier", "count": 2}, {"type": "waves", "count": 4},
 					{"type": "harvest", "amount": 3500}, {"type": "kills", "count": 20}],
 			"ai": {"slowdown": 1.6, "grace": 300.0, "pause": 60.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"third_ai": {"slowdown": 1.7, "grace": 360.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1700, "ore": 1900},
-			"obj": "Détruisez les deux chantiers ennemis, tenez 10 minutes, récoltez 3500 Solaris et abattez 20 unités",
-			"brief": "{ENEMY} et {RIVAL} se haïssent : laissez-les se déchirer. Tenez la durée convenue, bâtissez vos réserves puis décapitez les deux camps en brisant leurs chantiers.",
+			"obj": "Détruisez les deux chantiers ennemis, repoussez 4 assauts, récoltez 3500 Solaris et abattez 20 unités",
+			"brief": "{ENEMY} et {RIVAL} se haïssent : laissez-les se déchirer. Repoussez leurs assauts, bâtissez vos réserves puis décapitez les deux camps en brisant leurs chantiers.",
 		},
 		{
 			"id": "dernier_cristal", "title": "Le dernier cristal", "enemy": "kharn", "rival": true, "size": 112, "credits": 3500, "ore": 3500,
 			"start_units": ["@0", "@0", "@1", "@1"], "ally_units": 2,
-			"objectives": [{"type": "survive", "time": 600.0}, {"type": "kills", "count": 35}, {"type": "ore", "amount": 5000}],
-			"obj": "Tenez 10 minutes, abattez 35 unités et récoltez 5000 minerai",
+			"objectives": [{"type": "waves", "count": 4}, {"type": "kills", "count": 35}, {"type": "ore", "amount": 5000}],
+			"obj": "Repoussez 4 assauts, abattez 35 unités et récoltez 5000 minerai",
 			"brief": "Le dernier cristal de la plaine attire toutes les convoitises. {ENEMY} et {RIVAL} s'y entretuent : tenez-vous au centre, régénérez et récoltez avant de leur porter le coup de grâce.",
 		},
 		{
@@ -703,7 +703,7 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 				o["amount"] = _round_to(float(o["amount"]) * (1.0 + 1.5 * g), 100)
 			"survive":
 				o["time"] = _round_to(float(o["time"]) * (1.0 + 1.8 * g), 30)
-			"train", "air", "kills":
+			"train", "air", "kills", "waves":
 				o["count"] = maxi(int(round(float(o["count"]) * (1.0 + 1.2 * g))), int(o["count"]))
 	if d.has("zone"):
 		d["zone"]["time"] = _round_to(float(d["zone"]["time"]) * (1.0 + 1.0 * g), 15)
@@ -730,6 +730,10 @@ static func _scale(faction: String, i: int, d: Dictionary) -> Dictionary:
 				o["count"] = mini(int(o["count"]), int(1.0 * budget))
 			"survive":
 				o["time"] = minf(float(o["time"]), _round_to(60.0 * (10.0 + 15.0 * g), 30))
+			"waves":
+				o["count"] = mini(int(o["count"]), maxi(2, int((10.0 + 15.0 * g) / 3.0)))
+			"worms":
+				o["count"] = mini(int(o["count"]), 3) # il n'existe que trois vers
 	if d.has("convoy"):
 		d["convoy"]["ambushes"] = int(d["convoy"]["ambushes"]) + int(g * 3.0)
 		d["convoy"]["ambush_size"] = int(d["convoy"]["ambush_size"]) + int(g * 3.0)
@@ -750,6 +754,8 @@ static func _obj_short(d: Dictionary, faction: String) -> String:
 			"harvest": parts.append("récolter %d Solaris" % int(o["amount"]))
 			"train": parts.append("former %d unités" % int(o["count"]))
 			"survive": parts.append("tenir %s" % _mins(float(o["time"])))
+			"waves": parts.append("repousser %d assauts" % int(o["count"]))
+			"worms": parts.append("abattre " + _worms_txt(int(o["count"])))
 			"escort": parts.append("escorter le convoi")
 			"outposts": parts.append("raser les avant-postes")
 			"hold": parts.append("tenir la zone %s" % _mins(float(d["zone"]["time"])))
@@ -764,6 +770,10 @@ static func _obj_short(d: Dictionary, faction: String) -> String:
 	if d.has("time_limit"):
 		t += " — en %s" % _mins(float(d["time_limit"]))
 	return t.substr(0, 1).to_upper() + t.substr(1)
+
+
+static func _worms_txt(n: int) -> String:
+	return "un ver géant" if n <= 1 else "%d vers géants" % n
 
 
 static func _round_to(v: float, step: int) -> float:
@@ -983,6 +993,10 @@ static func objective_lines(faction: String, m: int, d: Dictionary) -> Array:
 				obj.append("Produire %d unités de combat" % int(o["count"]))
 			"survive":
 				obj.append("Survivre %s" % _mins(float(o["time"])))
+			"waves":
+				obj.append("Repousser %d assauts ennemis (un assaut est repoussé quand l'armée adverse lancée contre vous est détruite ou battue en retraite)" % int(o["count"]))
+			"worms":
+				obj.append("Abattre %s (ils ne se montrent que sur les champs de récolte et gardent leurs blessures d'une apparition à l'autre)" % _worms_txt(int(o["count"])))
 			"escort":
 				var cv: Dictionary = d["convoy"]
 				obj.append("Escorter le convoi (%d camions) jusqu'au point d'évacuation : %d doivent quitter la carte" % [int(cv["count"]), int(cv["need"])])
