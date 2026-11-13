@@ -877,7 +877,12 @@ func _work(delta: float) -> void:
 		"harvest":
 			_harvest(delta)
 		"return":
-			if path.is_empty() and cargo > 0.0:
+			if cargo > 0.0 and not emerging and _at_dock():
+				# Collé au dépôt : on décharge sans attendre la case exacte (occupée par un autre véhicule
+				# qui sort d'usine ou qui décharge lui aussi), sinon les deux se bloquent mutuellement.
+				path = PackedVector2Array()
+				_unload()
+			elif path.is_empty() and cargo > 0.0:
 				_retry -= delta
 				if _retry <= 0.0:
 					_start_return()
@@ -968,6 +973,15 @@ func _start_return() -> void:
 	if path.is_empty():
 		path = PackedVector2Array([position])
 	state = "return"
+
+
+## Le véhicule touche (ou presque) sa raffinerie / fonderie : il peut y décharger.
+func _at_dock() -> bool:
+	var dock = game.find_dock(cargo_kind, game.world_to_cell(position), team)
+	if dock == null:
+		return false
+	var r := Rect2(Vector2(dock.cell) * 32.0, Vector2(dock.cell_size) * 32.0).grow(radius + 10.0)
+	return r.has_point(position)
 
 
 func _unload() -> void:
