@@ -169,7 +169,7 @@ func _ready() -> void:
 	tier = Campaign.needed_tier(faction_id, GameSession.mission) if GameSession.mode == "campaign" else Campaign.tier_of(faction_id, Campaign.cleared(faction_id))
 	# Écran de chargement (la partie est en pause tant que tout n'est pas prêt)
 	if DisplayServer.get_name() != "headless":
-		loading = LoadingScreen.new(fdata["color"])
+		loading = LoadingScreen.new(fdata["color"], faction_id)
 		add_child(loading)
 		# Le chargement n'est limité que par le rendu : pas de synchro verticale pendant la cuisson des sprites
 		_vsync_before = DisplayServer.window_get_vsync_mode()
