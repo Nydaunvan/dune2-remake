@@ -52,34 +52,39 @@ func _ready() -> void:
 	btns.add_theme_constant_override("separation", 20)
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	vb.add_child(btns)
-	var campaign := GameUI.NeonButton.new("CAMPAGNE")
+	var campaign := PlateButton.new("CAMPAGNE", 3)
 	campaign.pressed.connect(_open_campaign)
-	var skirmish := GameUI.NeonButton.new("ESCARMOUCHE")
-	skirmish.accent = GameData.MAGENTA
+	var skirmish := PlateButton.new("ESCARMOUCHE", 2)
 	skirmish.pressed.connect(_open_skirmish)
-	var load_btn := GameUI.NeonButton.new("CHARGER")
-	load_btn.accent = GameData.GREEN
+	var load_btn := PlateButton.new("CHARGER", 5)
 	load_btn.pressed.connect(_open_load)
-	var guide_btn := GameUI.NeonButton.new("GUIDE")
-	guide_btn.accent = GameData.AMBER
+	var guide_btn := PlateButton.new("GUIDE", 4)
 	guide_btn.pressed.connect(func() -> void: Guide.open(self, selected))
-	var quit := GameUI.NeonButton.new("QUITTER")
-	quit.accent = GameData.RED
+	var quit := PlateButton.new("QUITTER", 1)
 	quit.pressed.connect(get_tree().quit)
 	for b in [campaign, skirmish, load_btn, guide_btn, quit]:
-		b.custom_minimum_size = Vector2(210, 58)
+		b.custom_minimum_size = Vector2(250, 64)
 		btns.add_child(b)
 
 	_hint = _label("Campagne : 15 à 18 missions par faction — Escarmouche : détruisez la ou les bases adverses", 15,
 			Color(1, 1, 1, 0.55), false)
 	vb.add_child(_hint)
 
-	# Numéro de version cliquable → journal des versions
-	var ver := GameUI.NeonButton.new("VERSION %s — NOUVEAUTÉS" % ChangelogData.current())
-	ver.accent = GameData.GOLD
-	ver.custom_minimum_size = Vector2(300, 38)
-	ver.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	ver.pressed.connect(func() -> void: Changelog.open(self))
+	# Numéro de version : simple texte cliquable → journal des versions
+	var ver := Label.new()
+	ver.text = "Version %s — Nouveautés" % ChangelogData.current()
+	ver.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ver.add_theme_font_size_override("font_size", 15)
+	ver.add_theme_color_override("font_color", Color(GameData.GOLD.r, GameData.GOLD.g, GameData.GOLD.b, 0.75))
+	ver.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.85))
+	ver.add_theme_constant_override("outline_size", 3)
+	ver.mouse_filter = Control.MOUSE_FILTER_STOP
+	ver.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+	ver.mouse_entered.connect(func() -> void: ver.add_theme_color_override("font_color", Color(1, 1, 1, 1)))
+	ver.mouse_exited.connect(func() -> void: ver.add_theme_color_override("font_color", Color(GameData.GOLD.r, GameData.GOLD.g, GameData.GOLD.b, 0.75)))
+	ver.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
+			Changelog.open(self))
 	vb.add_child(ver)
 
 
@@ -485,6 +490,48 @@ class TitleBanner extends Control:
 		var t := Time.get_ticks_msec() / 1000.0
 		var lum := 1.0 + 0.04 * sin(t * 1.6) # très léger scintillement
 		draw_texture_rect(logo, Rect2((size.x - w) * 0.5, (size.y - h) * 0.5, w, h), false, Color(lum, lum, lum, 1.0))
+
+
+class PlateButton extends Control:
+	## Bouton du menu : plaque illustrée (assets/ui/btnN.png) avec le texte par-dessus.
+	signal pressed
+
+	var text := ""
+	var tex_id := 1
+	var hover_t := 0.0
+	var press_t := 0.0
+	var _hover := false
+
+	func _init(p_text: String, p_tex: int) -> void:
+		text = p_text
+		tex_id = p_tex
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
+		mouse_entered.connect(func() -> void: _hover = true)
+		mouse_exited.connect(func() -> void: _hover = false)
+
+	func _process(delta: float) -> void:
+		hover_t = move_toward(hover_t, 1.0 if _hover else 0.0, delta * 8.0)
+		press_t = move_toward(press_t, 0.0, delta * 5.0)
+		queue_redraw()
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			press_t = 1.0
+			pressed.emit()
+			accept_event()
+
+	func _draw() -> void:
+		var tex := UiStyle.btn_tex(tex_id)
+		var grow := 3.0 * hover_t - 2.0 * press_t
+		var r := Rect2(Vector2(-grow, -grow * 0.3), Vector2(size.x + grow * 2.0, size.y + grow * 0.6))
+		if tex != null:
+			var k := 1.0 + 0.28 * hover_t - 0.25 * press_t
+			draw_texture_rect(tex, r, false, Color(k, k, k, 1.0))
+		var fs := 17
+		var col := Color(1.0, 0.97, 0.9).lerp(Color.WHITE, hover_t)
+		UiStyle.text(self, Vector2(0, size.y * 0.56 + fs * 0.36), text, fs, col, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
 
 
 class FactionCard extends Control:

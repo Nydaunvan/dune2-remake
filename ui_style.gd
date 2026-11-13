@@ -89,6 +89,21 @@ static func logo() -> Texture2D:
 	return _logo
 
 
+## Plaques des boutons du menu d'accueil (assets/ui/btn1..5.png, fond transparent).
+static var _btn_tex := {}
+static func btn_tex(i: int) -> Texture2D:
+	if not _btn_tex.has(i):
+		var path := "res://assets/ui/btn%d.png" % i
+		if ResourceLoader.exists(path):
+			_btn_tex[i] = load(path)
+		else:
+			var img := Image.load_from_file(ProjectSettings.globalize_path(path))
+			if img != null:
+				img.generate_mipmaps()
+				_btn_tex[i] = ImageTexture.create_from_image(img)
+	return _btn_tex.get(i)
+
+
 static func body_font() -> Font:
 	if _body == null:
 		_body = FontVariation.new()
