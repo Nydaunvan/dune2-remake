@@ -28,7 +28,7 @@ var skill := 0.6             # finesse de jeu (0..1)
 
 var build_q := {}
 var unit_q := {}
-var air_q := {}
+var _since_air := 2   # unités terrestres produites depuis la dernière unité volante
 var wave_size := 6
 var max_army := 22
 var slowdown := 1.4     # l'IA construit et produit un peu plus lentement que le joueur
@@ -67,7 +67,7 @@ const EASE_GRACE := 1.4    # premier assaut plus tardif
 const EASE_PAUSE := 1.3    # plus de répit entre les vagues
 const EASE_ARMY := 0.8     # armée plus petite
 const EASE_WAVE := 0.75    # vagues plus petites
-const EASE_MONEY := 0.8    # réserves de départ réduites
+const EASE_MONEY := 1.0    # mêmes réserves de départ que le joueur
 
 
 func setup(p_game, p_faction: String, p_team := 1) -> void:
@@ -286,21 +286,40 @@ func _progress(delta: float) -> void:
 	var ufactor: float = factor * game.unit_speed_bonus(team)
 	if not build_q.is_empty():
 		if not build_q["ready"] and not game.producer_busy("building", "", team):
-			build_q["progress"] += delta * factor / build_q["time"]
-			if build_q["progress"] >= 1.0:
-				build_q["ready"] = true
+			var dp := minf(delta * factor / build_q["time"], 1.0 - float(build_q["progress"]))
+			if _pay_step(build_q, dp, false):
+				build_q["progress"] += dp
+				if build_q["progress"] >= 1.0:
+					build_q["ready"] = true
 		if build_q["ready"] and _place(build_q["id"]):
 			build_q = {}
 	if not unit_q.is_empty() and not game.producer_busy("unit", unit_q["id"], team):
-		unit_q["progress"] += delta * ufactor / unit_q["time"]
-		if unit_q["progress"] >= 1.0:
-			game.spawn_for(unit_q["id"], team)
-			unit_q = {}
-	if not air_q.is_empty() and not game.producer_busy("unit", air_q["id"], team):
-		air_q["progress"] += delta * ufactor / air_q["time"]
-		if air_q["progress"] >= 1.0:
-			game.spawn_for(air_q["id"], team)
-			air_q = {}
+		var du := minf(delta * ufactor / unit_q["time"], 1.0 - float(unit_q["progress"]))
+		if _pay_step(unit_q, du, true):
+			unit_q["progress"] += du
+			if unit_q["progress"] >= 1.0:
+				game.spawn_for(unit_q["id"], team)
+				unit_q = {}
+
+
+## Prélève la part du prix correspondant à l'avancement (comme pour le joueur) ; faux si les fonds manquent
+## (la production se met alors en pause). Bâtiment : minerai + Solaris ; unité : Solaris + minerai.
+func _pay_step(q: Dictionary, dp: float, is_unit: bool) -> bool:
+	var tot_a := float(q.get("cost", 0))
+	var tot_b := float(q.get("sol", 0)) if not is_unit else float(q.get("ore_u", 0))
+	if tot_a <= 0.0 and tot_b <= 0.0:
+		return true # file reprise d'une ancienne sauvegarde : déjà payée
+	var ka := "sol" if is_unit else "ore"
+	var kb := "ore" if is_unit else "sol"
+	var ra: Array = game._pay_part(tot_a, dp, float(q.get("acc", 0.0)), game.funds(team, ka))
+	var rb: Array = game._pay_part(tot_b, dp, float(q.get("acc_s", 0.0)), game.funds(team, kb))
+	if not (ra[0] and rb[0]):
+		return false
+	game.spend(team, ka, int(ra[1]))
+	game.spend(team, kb, int(rb[1]))
+	q["acc"] = ra[2]
+	q["acc_s"] = rb[2]
+	return true
 
 
 ## Prochain bâtiment voulu selon le plan, l'âge de la partie et la finesse de l'IA.
@@ -465,11 +484,11 @@ func _think_build() -> void:
 	# Jamais de bâtiment sans l'énergie nécessaire : on construit d'abord une centrale
 	if GameData.BUILDINGS.has(want) and game.power_produced(team) - game.power_used(team) < -int(GameData.BUILDINGS[want]["power"]):
 		want = "centrale"
-	if not _available(want) or ore < _cost(want) or credits < GameData.sol_cost(want):
+	# Mêmes règles que le joueur : 10 % du prix pour lancer, le reste est prélevé au fil des travaux
+	if not _available(want) or ore < _cost(want) * game.START_FRAC or credits < GameData.sol_cost(want) * game.START_FRAC:
 		return
-	ore -= _cost(want)
-	credits -= GameData.sol_cost(want)
-	build_q = {"id": want, "progress": 0.0, "ready": false,
+	build_q = {"id": want, "progress": 0.0, "ready": false, "cost": _cost(want), "sol": GameData.sol_cost(want),
+			"acc": 0.0, "acc_s": 0.0,
 			"time": float(GameData.def(want)["time"]) * float(fdata["build_time_mult"])}
 
 
@@ -494,8 +513,7 @@ func _priority_upgrade() -> bool:
 				continue
 			var why: String = game.upgrade_block(b, ore)
 			if why == "" and ore >= game.upgrade_cost(b) + 100:
-				ore -= game.upgrade_cost(b)
-				game.begin_upgrade(b)
+				game.start_upgrade(b)
 				return true
 			# faute de minerai : on met de côté plutôt que de le dépenser ailleurs (90 s au plus, pas de blocage)
 			var saving: bool = why == "Minerai insuffisant" or (why == "" and ore < game.upgrade_cost(b) + 100)
@@ -534,8 +552,7 @@ func _try_upgrade() -> void:
 			if b.team != team or b.id != id or not b.alive:
 				continue
 			if game.upgrade_block(b, ore) == "" and ore >= game.upgrade_cost(b) + reserve:
-				ore -= game.upgrade_cost(b)
-				game.begin_upgrade(b)
+				game.start_upgrade(b)
 				return
 
 
@@ -622,17 +639,19 @@ func _think_units() -> void:
 			want = "mineur"
 		elif game.has_building("usine", team) and _army().size() < _army_limit() and _under_cap():
 			want = _pick_ground_unit()
-		if want != "" and _available(want) and credits >= _cost(want) and ore >= _ore_cost(want):
-			credits -= _cost(want)
-			ore -= _ore_cost(want)
-			unit_q = {"id": want, "progress": 0.0, "time": float(GameData.def(want)["time"])}
-	# Aérodrome : escadrille de bombardiers / chasseurs (finesse élevée)
-	if air_q.is_empty() and skill >= 0.5 and game.has_building("aerodrome", team) and _air_units().size() < 3 + int(skill * 6.0):
-		var aid := _pick_air_unit()
-		if aid != "" and _available(aid) and credits >= _cost(aid) + 200 and ore >= _ore_cost(aid):
-			credits -= _cost(aid)
-			ore -= _ore_cost(aid)
-			air_q = {"id": aid, "progress": 0.0, "time": float(GameData.def(aid)["time"])}
+		# Aérodrome : une unité volante de temps en temps (même file de production que le sol, comme le joueur)
+		if want != "recolteur" and want != "mineur" and skill >= 0.5 and game.has_building("aerodrome", team) \
+				and _air_units().size() < 3 + int(skill * 6.0) and _since_air >= 2:
+			var aid := _pick_air_unit()
+			if aid != "" and _available(aid):
+				want = aid
+		if want != "" and _available(want) and credits >= _cost(want) * game.START_FRAC and ore >= _ore_cost(want) * game.START_FRAC:
+			if GameData.UNITS[want].get("air", false):
+				_since_air = 0
+			else:
+				_since_air += 1
+			unit_q = {"id": want, "progress": 0.0, "time": float(GameData.def(want)["time"]),
+					"cost": _cost(want), "ore_u": _ore_cost(want), "acc": 0.0, "acc_s": 0.0}
 
 
 ## Choisit le prochain char selon ce que le joueur aligne : efficacité de l'arme contre ses blindages,
@@ -715,8 +734,8 @@ func _think_tech() -> void:
 		var cost := GameData.tech_cost(u.id)
 		if credits < cost + 400:
 			return
-		credits -= cost
-		u.tech_cost = 0.0
+		u.tech_cost = float(cost) # prélevé progressivement, comme pour le joueur
+		u.tech_acc = 0.0
 		u.tech_total = GameData.tech_time(u.id)
 		u.tech_left = u.tech_total
 		return
@@ -1229,7 +1248,7 @@ func _think_air() -> void:
 
 func export_state() -> Dictionary:
 	return {"credits": credits, "ore": ore, "build_q": build_q.duplicate(true), "unit_q": unit_q.duplicate(true),
-			"air_q": air_q.duplicate(true), "skill": skill,
+			"skill": skill,
 			"wave_size": wave_size, "assaulting": false, "wave_started": wave_started,
 			"wave_ended": wave_ended, "think_t": _think_t, "deploy_at": deploy_at, "active": active}
 
@@ -1239,7 +1258,8 @@ func restore_state(s: Dictionary) -> void:
 	ore = int(s["ore"])
 	build_q = s["build_q"]
 	unit_q = s["unit_q"]
-	air_q = s.get("air_q", {})
+	if unit_q.is_empty() and not s.get("air_q", {}).is_empty():
+		unit_q = s["air_q"] # anciennes sauvegardes : une seule file d'unités
 	skill = float(s.get("skill", skill))
 	wave_size = int(s["wave_size"])
 	assaulting = false

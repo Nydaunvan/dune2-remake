@@ -2277,12 +2277,19 @@ func upgrade_block(b: Building, money: int) -> String:
 		return "Niveau maximum atteint"
 	if b.id != "chantier" and b.level + 1 >= 3 and best_level("chantier", b.team) < 2:
 		return "Améliorez d'abord %s (niveau 2)" % GameData.dname("chantier")
-	if money < upgrade_cost(b) * (START_FRAC if b.team == 0 else 1.0):
+	if money < upgrade_cost(b) * START_FRAC:
 		return "Minerai insuffisant"
 	var extra := -(GameData.power_at(b.id, b.level + 1) - GameData.power_at(b.id, b.level))
 	if extra > 0 and power_free(b.team) < extra:
 		return "Énergie insuffisante (+%d requis) : améliorez une centrale" % (extra - power_free(b.team))
 	return ""
+
+
+## Lance une amélioration payée progressivement (même règle pour le joueur et l'IA).
+func start_upgrade(b: Building) -> void:
+	begin_upgrade(b)
+	b.up_cost = float(upgrade_cost(b))
+	b.up_acc = 0.0
 
 
 ## Lance le chronomètre d'amélioration (le coût est déjà payé).
@@ -2608,16 +2615,38 @@ func _nudge(u: Unit, off: Vector2) -> void:
 
 
 ## Fait avancer les améliorations de bâtiments et les modernisations d'unités.
+## Fonds d'un camp : « sol » (Solaris) ou « ore » (minerai) ; le joueur et l'IA suivent les mêmes règles de paiement.
+func funds(team: int, kind: String) -> int:
+	if ais.has(team):
+		return ais[team].credits if kind == "sol" else ais[team].ore
+	return credits if kind == "sol" else ore
+
+
+func spend(team: int, kind: String, amount: int) -> void:
+	if amount == 0:
+		return
+	if ais.has(team):
+		if kind == "sol":
+			ais[team].credits -= amount
+		else:
+			ais[team].ore -= amount
+	elif kind == "sol":
+		credits -= amount
+	else:
+		ore -= amount
+
+
 func _tick_upgrades(delta: float) -> void:
 	for b in buildings:
 		if b.alive and b.up_left > 0.0:
 			var dtu := minf(delta * (1.0 if power_ok(b.team) else 0.5), b.up_left)
-			if b.team == 0 and b.up_cost > 0.0:
-				var r := _pay_part(b.up_cost, dtu / maxf(b.up_total, 0.1), b.up_acc, ore)
+			if b.up_cost > 0.0:
+				var r := _pay_part(b.up_cost, dtu / maxf(b.up_total, 0.1), b.up_acc, funds(b.team, "ore"))
 				if not r[0]:
-					_warn_funds("Amélioration")
+					if b.team == 0:
+						_warn_funds("Amélioration")
 					continue
-				ore -= int(r[1])
+				spend(b.team, "ore", int(r[1]))
 				b.up_acc = r[2]
 			b.up_left -= dtu
 			if b.up_left <= 0.0:
@@ -2632,12 +2661,13 @@ func _tick_upgrades(delta: float) -> void:
 	for u in units:
 		if u.alive and u.tech_left > 0.0:
 			var dtt := minf(delta, u.tech_left)
-			if u.team == 0 and u.tech_cost > 0.0:
-				var r2 := _pay_part(u.tech_cost, dtt / maxf(u.tech_total, 0.1), u.tech_acc, credits)
+			if u.tech_cost > 0.0:
+				var r2 := _pay_part(u.tech_cost, dtt / maxf(u.tech_total, 0.1), u.tech_acc, funds(u.team, "sol"))
 				if not r2[0]:
-					_warn_funds("Modernisation")
+					if u.team == 0:
+						_warn_funds("Modernisation")
 					continue
-				credits -= int(r2[1])
+				spend(u.team, "sol", int(r2[1]))
 				u.tech_acc = r2[2]
 			u.tech_left -= dtt
 			if u.tech_left <= 0.0:

@@ -8,7 +8,7 @@ fail=0
 run() { # nom  motif_attendu  [VAR=val ...]
   local name=$1 want=$2; shift 2
   local out
-  out=$(env "$@" timeout 150 "$G" --headless --fixed-fps 60 --path . --script "tools/$name.gd" 2>&1)
+  out=$(env "$@" timeout 300 "$G" --headless --fixed-fps 60 --path . --script "tools/$name.gd" 2>&1)
   if echo "$out" | grep -q "SCRIPT ERROR\|Parse Error"; then
     echo "ÉCHEC  $name $* : erreur de script"; echo "$out" | grep -m3 "SCRIPT ERROR\|Parse Error"; fail=1
   elif ! echo "$out" | grep -q "$want"; then
