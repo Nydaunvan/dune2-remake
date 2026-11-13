@@ -1,4 +1,5 @@
 shader_type canvas_item;
+global uniform float gamma_fix; // 1.0 en Compatibilité, 2.2 en Forward+/Mobile (le moteur re-convertit alors la sortie en sRGB)
 // Terrain Dune : sable rosé, plateaux rocheux fissurés, montagnes, épice.
 // Le relief (hauteur + épice + minerai) vient d'une petite texture générée par le jeu ;
 // tout le détail (grain, dunes, fissures, ombres, nuages) est calculé ici, sur GPU.
@@ -163,5 +164,5 @@ void fragment() {
 	float cloud = fbm(cp * 0.06 + vec2(TIME * 0.012, TIME * 0.006));
 	col *= 0.9 + 0.2 * smoothstep(0.35, 0.7, cloud);
 
-	COLOR = vec4(col, 1.0);
+	COLOR = vec4(pow(max(col, vec3(0.0)), vec3(gamma_fix)), 1.0);
 }

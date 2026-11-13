@@ -8,6 +8,7 @@ var _hint: Label
 
 
 func _ready() -> void:
+	UiStyle.fix_gamma()
 	DisplayCfg.apply()
 	theme = UiStyle.theme()
 	RenderingServer.set_default_clear_color(Color("0c0610"))

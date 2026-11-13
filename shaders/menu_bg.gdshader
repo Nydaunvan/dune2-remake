@@ -1,4 +1,5 @@
 shader_type canvas_item;
+global uniform float gamma_fix; // 1.0 en Compatibilité, 2.2 en Forward+/Mobile (le moteur re-convertit alors la sortie en sRGB)
 
 uniform float time_offset = 0.0; // décalage du temps (captures d'écran de test)
 // Fond animé du menu : désert de dunes en couches (parallaxe), deux lunes, voie lactée,
@@ -490,5 +491,5 @@ void fragment() {
 	// Vignettage et grain de pellicule
 	col *= 1.0 - 0.60 * pow(length((uv - 0.5) * vec2(1.0, 1.05)) * 1.15, 2.2);
 	col += (hash(uv * 900.0 + fract(t)) - 0.5) * 0.018;
-	COLOR = vec4(max(col, vec3(0.0)), 1.0);
+	COLOR = vec4(pow(max(col, vec3(0.0)), vec3(gamma_fix)), 1.0);
 }

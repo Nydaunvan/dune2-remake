@@ -63,6 +63,14 @@ static func title_font() -> Font:
 	return _title
 
 
+## Les shaders 2D sont écrits pour sortir directement en sRGB. En Forward+ / Mobile le moteur
+## reconvertit pourtant leur sortie (rendu délavé) : on la pré-compense (gamma 2.2) pour obtenir
+## le même rendu qu'en Compatibilité.
+static func fix_gamma() -> void:
+	var m := RenderingServer.get_current_rendering_method()
+	RenderingServer.global_shader_parameter_set("gamma_fix", 2.2 if m == "forward_plus" or m == "mobile" else 1.0)
+
+
 static func body_font() -> Font:
 	if _body == null:
 		_body = FontVariation.new()
