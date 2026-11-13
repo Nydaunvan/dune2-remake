@@ -340,7 +340,20 @@ func _generate_layout() -> void:
 		plateaus.append([p, 6.0])
 		keys.append(p)
 	if mission.has("convoy"):
-		var dest := (c - Vector2.from_angle(a0) * (radius * 0.9) + Vector2(rng.randf_range(-3, 3), rng.randf_range(-3, 3))).round()
+		# Point d'évacuation : au bord de la carte, à une trentaine de cases du camp ennemi mais jamais dedans,
+		# du côté opposé à un éventuel allié (le convoi quitte la carte, il ne livre rien à l'ennemi)
+		var side := 1.0 if rng.randf() < 0.5 else -1.0
+		var dest := Vector2.ZERO
+		var best_d := -1.0
+		for sg in [side, -side]:
+			var cand := (c + Vector2.from_angle(a0 + PI + sg * 0.8) * size * 0.44).round()
+			var dmin := 1000.0
+			for other in [ally_cell, fourth_cell]:
+				if other.x >= 0:
+					dmin = minf(dmin, cand.distance_to(other))
+			if dmin > best_d:
+				best_d = dmin
+				dest = cand
 		mission_points["dest"] = dest
 		plateaus.append([dest, 6.0])
 		keys.append(dest)
@@ -3117,7 +3130,7 @@ func _update_objectives(dt: float) -> void:
 		for u in units.duplicate():
 			if u.convoy and u.alive and u.position.distance_to(dpos) < 3.5 * tile:
 				arrived += 1
-				popup(u.position, "Convoi arrivé", GameData.GREEN)
+				popup(u.position, "Convoi évacué", GameData.GREEN)
 				sfx.play_ui("unit_ready")
 				u.alive = false
 				units.erase(u)
@@ -3191,7 +3204,7 @@ func objective_info(i: int) -> Dictionary:
 			if not convoy_started:
 				var wait := int(maxf(float(mission["convoy"].get("start", 150.0)) - game_time, 0.0))
 				return {"text": "Le convoi part dans %d:%02d" % [wait / 60, wait % 60], "frac": 0.0}
-			return {"text": "Convoi arrivé : %d/%d (%d en route)" % [arrived, need, _convoy_alive()],
+			return {"text": "Convoi évacué : %d/%d (%d en route)" % [arrived, need, _convoy_alive()],
 					"frac": clampf(float(arrived) / need, 0.0, 1.0)}
 		"hold":
 			var t: float = mission["zone"]["time"]

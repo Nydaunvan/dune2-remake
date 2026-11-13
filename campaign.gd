@@ -58,7 +58,7 @@ const CAMPAIGNS := {
 			"objectives": [{"type": "escort"}, {"type": "train", "count": 6}, {"type": "harvest", "amount": 2500}],
 			"ai": {"slowdown": 1.6, "grace": 600.0, "pause": 80.0, "max_army": 10, "wave": 5, "credits": 1500, "ore": 1800},
 			"obj": "Escortez le convoi (4 camions sur 5), formez 6 unités et récoltez 2500 Solaris",
-			"brief": "Cinq camions chargés de cristaux de focalisation doivent atteindre notre laboratoire. {ENEMY} a posté des embuscades : sécurisez la route avec votre armée et ne perdez qu'un camion au plus.",
+			"brief": "Cinq camions chargés de cristaux de focalisation doivent quitter la région par le point d'évacuation, près des lignes de {ENEMY}, qui a posté des embuscades : sécurisez la route avec votre armée et ne perdez qu'un camion au plus.",
 		},
 		{
 			"id": "sommet", "title": "Le sommet", "enemy": "kharn", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
@@ -183,8 +183,8 @@ const CAMPAIGNS := {
 			"convoy": {"count": 4, "need": 3, "ambushes": 3, "start": 420.0, "ambush_size": 3},
 			"objectives": [{"type": "escort"}, {"type": "train", "count": 5}],
 			"ai": {"slowdown": 1.7, "grace": 600.0, "pause": 70.0, "max_army": 12, "wave": 5, "credits": 1500, "ore": 1800},
-			"obj": "Escortez le convoi de munitions : 3 camions sur 4 doivent arriver",
-			"brief": "Un convoi de munitions doit rejoindre le front. {ENEMY} a tendu trois embuscades sur la route, plus nombreuses mais moins bien défendues : brisez-les. {RIVAL} rôde aussi dans la région et ne fera aucun cadeau.",
+			"obj": "Escortez le convoi de munitions : 3 camions sur 4 doivent être évacués",
+			"brief": "Un convoi de munitions doit être évacué vers le front par le point d'évacuation, non loin des lignes de {ENEMY}, qui a tendu trois embuscades sur la route, plus nombreuses mais moins bien défendues : brisez-les. {RIVAL} rôde aussi dans la région et ne fera aucun cadeau.",
 		},
 		{
 			"id": "ecrasement", "title": "L'écrasement", "enemy": "solis", "rival": true, "size": 112, "credits": 2500, "ore": 2500,
@@ -283,8 +283,8 @@ const CAMPAIGNS := {
 			"convoy": {"count": 5, "need": 4, "ambushes": 2, "start": 300.0, "ambush_size": 2},
 			"objectives": [{"type": "escort"}, {"type": "train", "count": 4}],
 			"ai": {"slowdown": 2.0, "grace": 480.0, "pause": 80.0, "max_army": 8, "wave": 4, "credits": 1200, "ore": 1500},
-			"obj": "Faites passer 4 camions sur 5 jusqu'au point de livraison",
-			"brief": "Nos camions de marchandises doivent traverser le territoire de {ENEMY} avant que ses patrouilles ne réagissent. Le départ est rapide, vos éclaireurs doivent l'être aussi.",
+			"obj": "Évacuez 4 camions sur 5 par le point d'évacuation",
+			"brief": "Nos camions de marchandises doivent traverser le territoire de {ENEMY} et quitter la carte par le point d'évacuation avant que ses patrouilles ne réagissent. Le départ est rapide, vos éclaireurs doivent l'être aussi.",
 		},
 		{
 			"id": "filature", "title": "La filature", "enemy": "solis", "size": 96, "credits": 1800, "ore": 2000,
@@ -332,8 +332,8 @@ const CAMPAIGNS := {
 			"start_units": ["@0", "@1"],
 			"convoy": {"count": 6, "need": 5, "ambushes": 3, "start": 360.0, "ambush_size": 3},
 			"objectives": [{"type": "escort"}, {"type": "train", "count": 8}],
-			"obj": "Escortez la caravane : 5 camions sur 6 doivent arriver",
-			"brief": "Six camions chargés d'épice doivent traverser le désert. {ENEMY} a posté des embuscades sur le parcours : sécurisez la route, la caravane ne peut en perdre qu'un.",
+			"obj": "Escortez la caravane : 5 camions sur 6 doivent être évacués",
+			"brief": "Six camions chargés d'épice doivent traverser le désert jusqu'au point d'évacuation. {ENEMY} a posté des embuscades sur le parcours : sécurisez la route, la caravane ne peut en perdre qu'un.",
 		},
 		{
 			"id": "marche", "title": "Le marché noir", "enemy": "conclave", "size": 96, "credits": 2000, "ore": 2200,
@@ -373,7 +373,7 @@ const CAMPAIGNS := {
 			"objectives": [{"type": "escort"}, {"type": "kills", "count": 10}, {"type": "upgrade", "id": "raffinerie", "level": 2}],
 			"ai": {"slowdown": 1.5, "grace": 360.0, "pause": 70.0, "max_army": 14, "wave": 5, "credits": 1800, "ore": 2000},
 			"obj": "Escortez 4 camions sur 5, abattez 10 unités ennemies et passez la raffinerie au niveau 2",
-			"brief": "{ENEMY} a tendu ses embuscades sur la route et {RIVAL} attend que nous trébuchions. Escortez les camions jusqu'au bout, repoussez les deux camps et prouvez le savoir-faire du Cartel en modernisant la raffinerie.",
+			"brief": "{ENEMY} a tendu ses embuscades sur la route et {RIVAL} attend que nous trébuchions. Escortez les camions jusqu'au point d'évacuation, repoussez les deux camps et prouvez le savoir-faire du Cartel en modernisant la raffinerie.",
 		},
 		{
 			"id": "sabotage", "title": "Sabotage", "enemy": "solis", "enemy_base": true, "size": 96, "credits": 3000, "ore": 3000,
@@ -426,8 +426,8 @@ const CAMPAIGNS := {
 			"convoy": {"count": 5, "need": 4, "ambushes": 2, "start": 300.0, "ambush_size": 2},
 			"objectives": [{"type": "escort"}, {"type": "train", "count": 4}],
 			"ai": {"slowdown": 2.0, "grace": 480.0, "pause": 80.0, "max_army": 8, "wave": 4, "credits": 1200, "ore": 1500},
-			"obj": "Faites passer 4 camions sur 5 jusqu'au point de livraison",
-			"brief": "Cinq chariots chargés de cristaux bruts doivent rejoindre notre sanctuaire à travers les terres de {ENEMY}. Escortez-les : un éclat perdu se pleure, deux seraient une faute.",
+			"obj": "Évacuez 4 camions sur 5 par le point d'évacuation",
+			"brief": "Cinq chariots chargés de cristaux bruts doivent traverser les terres de {ENEMY} et quitter la carte par le point d'évacuation. Escortez-les : un éclat perdu se pleure, deux seraient une faute.",
 		},
 		{
 			"id": "veine", "title": "La veine de cristal", "enemy": "kharn", "size": 96, "credits": 1800, "ore": 2000,
@@ -985,7 +985,7 @@ static func objective_lines(faction: String, m: int, d: Dictionary) -> Array:
 				obj.append("Survivre %s" % _mins(float(o["time"])))
 			"escort":
 				var cv: Dictionary = d["convoy"]
-				obj.append("Escorter le convoi (%d camions) jusqu'au point de livraison : %d doivent arriver" % [int(cv["count"]), int(cv["need"])])
+				obj.append("Escorter le convoi (%d camions) jusqu'au point d'évacuation : %d doivent quitter la carte" % [int(cv["count"]), int(cv["need"])])
 			"outposts":
 				obj.append("Détruire les %d avant-postes ennemis" % int(d.get("outposts", 3)))
 			"hold":

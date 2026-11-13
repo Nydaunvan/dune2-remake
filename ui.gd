@@ -955,7 +955,7 @@ class InfoPanel extends GlassPanel:
 			if u.role == "mcv":
 				_c2(154.0, "Placez-le sur un sol rocheux dégagé puis cliquez sur DÉPLOYER pour créer votre " + GameData.dname("chantier") + " (3x3 cases).", 14, UiStyle.TEXT)
 			else:
-				_c2(154.0, "Cargaison à livrer au point cyan indiqué sur la carte et le radar.", 14, UiStyle.TEXT)
+				_c2(154.0, "Cargaison à évacuer par le point cyan, au bord de la carte (visible sur la carte et le radar).", 14, UiStyle.TEXT)
 			return
 		UiStyle.section(self, Vector2(34, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
 		var y := 152.0
