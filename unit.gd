@@ -341,7 +341,8 @@ func _emerge(delta: float) -> void:
 		emerging = false
 		lift = 1.0
 		z_index = 8 if air else 3
-		if _em_goal != Vector2.INF and path.is_empty() and position.distance_to(_em_goal) > 20.0:
+		# Récolteur / mineur : pas de détour par le point de ralliement, il file directement au champ
+		if not is_worker() and _em_goal != Vector2.INF and path.is_empty() and position.distance_to(_em_goal) > 20.0:
 			game.order_unit_move(self, _em_goal)
 
 

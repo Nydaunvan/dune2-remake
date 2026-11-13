@@ -34,5 +34,7 @@ run dock_test "OK" KIND=recolteur
 run dock_test "OK" KIND=mineur
 run dock_test3 "OK" KIND=recolteur
 run dock_test3 "OK" KIND=mineur
+run exit_test "OK" KIND=recolteur
+run exit_test "OK" KIND=mineur
 [ $fail = 0 ] && echo "TOUT EST BON" || echo "DES CONTRÔLES ONT ÉCHOUÉ"
 exit $fail
