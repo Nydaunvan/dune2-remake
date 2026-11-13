@@ -1641,6 +1641,8 @@ func order_context(world_pos: Vector2) -> void:
 			if loaded:
 				return
 		order_move(world_pos)
+		if not selected.is_empty():
+			Fx.ground_pulse(self, world_pos)
 		return
 	for u in selected:
 		u.order_attack(e)
@@ -1658,6 +1660,8 @@ func _friendly_ground_at(world_pos: Vector2):
 
 func order_amove(world_pos: Vector2) -> void:
 	var target := _world_to_cell(world_pos)
+	if not selected.is_empty():
+		Fx.ground_pulse(self, world_pos, GameData.RED)
 	var slots := _assign_slots(selected, target)
 	for u in selected:
 		var cell: Vector2i = slots.get(u, target)

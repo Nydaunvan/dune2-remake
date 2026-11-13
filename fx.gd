@@ -104,3 +104,38 @@ static func setup_display(node: Node, glow: bool) -> void:
 		var we := WorldEnvironment.new()
 		we.environment = env
 		node.add_child(we)
+
+
+## Impulsion au sol à l'endroit où l'on envoie des unités (clic droit) : anneaux qui s'étendent et s'effacent.
+static func ground_pulse(parent: Node, pos: Vector2, color: Color = Color(0.4, 1.0, 0.7)) -> void:
+	var n := GroundPulse.new()
+	n.color = Color(minf(color.r, 1.3), minf(color.g, 1.3), minf(color.b, 1.3))
+	n.position = pos
+	n.z_index = 45
+	parent.add_child(n)
+
+
+class GroundPulse:
+	extends Node2D
+	const LIFE := 0.7
+	var color := Color.WHITE
+	var age := 0.0
+
+	func _process(delta: float) -> void:
+		age += delta
+		if age >= LIFE:
+			queue_free()
+			return
+		queue_redraw()
+
+	func _draw() -> void:
+		var t := age / LIFE
+		var e := 1.0 - pow(1.0 - t, 3.0) # départ vif, fin douce
+		for i in 2:
+			var k := clampf(e - 0.22 * i, 0.0, 1.0)
+			if k <= 0.0:
+				continue
+			var a := (1.0 - t) * (0.95 - 0.35 * i)
+			var r := 6.0 + 24.0 * k
+			draw_arc(Vector2.ZERO, r, 0.0, TAU, 40, Color(color.r, color.g, color.b, a), 2.5 - 1.0 * i, true)
+		draw_circle(Vector2.ZERO, 5.0 * (1.0 - e), Color(color.r, color.g, color.b, (1.0 - t) * 0.7))
