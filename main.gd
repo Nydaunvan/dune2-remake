@@ -134,7 +134,7 @@ var noise_s := FastNoiseLite.new()
 
 
 func _ready() -> void:
-	UiStyle.fix_gamma()
+	UiStyle.fix_gamma(true)
 	RenderingServer.set_default_clear_color(Color("1c0f20"))
 	Fx.setup_display(self, FX_GLOW)
 	_save = {}

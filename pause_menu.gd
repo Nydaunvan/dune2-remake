@@ -38,6 +38,33 @@ func setup(p_game) -> void:
 	slots.save_requested.connect(_on_save)
 	slots.load_requested.connect(_on_load)
 	vb.add_child(slots)
+	var gb := HBoxContainer.new()
+	gb.alignment = BoxContainer.ALIGNMENT_CENTER
+	gb.add_theme_constant_override("separation", 14)
+	vb.add_child(gb)
+	var gl := Label.new()
+	gl.add_theme_font_size_override("font_size", 18)
+	gb.add_child(gl)
+	var gs := HSlider.new()
+	gs.min_value = 0.5
+	gs.max_value = 1.5
+	gs.step = 0.05
+	gs.value = DisplayCfg.gamma()
+	gs.custom_minimum_size = Vector2(320, 28)
+	gs.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var upd := func(v: float) -> void:
+		gl.text = "Gamma (carte) : %.2f" % v
+	upd.call(gs.value)
+	gs.value_changed.connect(func(v: float) -> void:
+		DisplayCfg.set_gamma(v)
+		UiStyle.fix_gamma(true)
+		upd.call(v))
+	gb.add_child(gs)
+	var gr := GameUI.NeonButton.new("1,00")
+	gr.accent = GameData.GREEN
+	gr.custom_minimum_size = Vector2(80, 36)
+	gr.pressed.connect(func() -> void: gs.value = 1.0)
+	gb.add_child(gr)
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 20)

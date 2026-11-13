@@ -32,3 +32,19 @@ static func toggle() -> bool:
 
 static func label() -> String:
 	return "FPS : ILLIMITÉS" if uncapped() else "FPS : SYNCHRO ÉCRAN"
+
+
+## Gamma en jeu (carte et brouillard seulement, jamais le menu) : 1.0 = réglage d'origine ;
+## plus petit = plus clair et plus doux, plus grand = plus sombre et plus contrasté.
+static func gamma() -> float:
+	var c := ConfigFile.new()
+	if c.load(PATH) != OK:
+		return 1.0
+	return clampf(float(c.get_value("display", "gamma", 1.0)), 0.5, 1.5)
+
+
+static func set_gamma(v: float) -> void:
+	var c := ConfigFile.new()
+	c.load(PATH)
+	c.set_value("display", "gamma", clampf(v, 0.5, 1.5))
+	c.save(PATH)
