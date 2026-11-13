@@ -351,9 +351,10 @@ func _next_building() -> String:
 	var tower_goal := mini(1 + int(skill * 3.0 + t / 360.0), 7)
 	if defs < tower_goal:
 		return tower
-	if skill >= 0.5 and _count("silo") < 2 and credits > 0.8 * game.storage_cap("spice", team):
+	# Comme le joueur, l'IA est plafonnée par ses stocks : elle construit des silos quand elle approche de la limite
+	if skill >= 0.3 and _count("silo") < 4 and credits > 0.8 * game.storage_cap("spice", team):
 		return "silo"
-	if skill >= 0.5 and _count("silo_minerai") < 2 and ore > 0.8 * game.storage_cap("ore", team):
+	if skill >= 0.3 and _count("silo_minerai") < 4 and ore > 0.8 * game.storage_cap("ore", team):
 		return "silo_minerai"
 	if skill >= 0.6 and t > 780.0:
 		for hid in _heavy_ids():
