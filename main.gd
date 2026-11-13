@@ -2475,8 +2475,10 @@ func repair_unit_tick(u: Unit, dt: float) -> bool:
 		credits -= whole
 		u.repair_acc -= whole
 	u.hp += amount
+	if u.hp >= u.max_hp - 0.5:
+		u.hp = u.max_hp # évite un résidu de PV : la barre de vie disparaît bien
 	u.queue_redraw()
-	return u.hp < u.max_hp - 0.5
+	return u.hp < u.max_hp
 
 
 func _tick_repairs(dt: float) -> void:

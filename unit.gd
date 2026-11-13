@@ -550,6 +550,9 @@ func _repair(delta: float) -> void:
 		state = "seek" if is_worker() else "idle"
 		_seek_started = false
 		repair_site = null
+		if hp >= max_hp - 0.5:
+			hp = max_hp
+			queue_redraw()
 		if hp >= max_hp - 0.5 and team == 0:
 			game.popup(position, "Réparé", GameData.GREEN)
 
@@ -1114,7 +1117,7 @@ func _draw_overlay() -> void:
 	# Tout est centré sur le modèle (relevé pour les volants) ; barre de vie toujours horizontale
 	var oc := to_local(visual_center())
 	draw_set_transform(oc, -rotation, Vector2.ONE)
-	if hp < max_hp:
+	if hp < max_hp - 0.05:
 		var w := 26.0
 		draw_rect(Rect2(-w / 2.0, -22, w, 4), Color(0, 0, 0, 0.6))
 		draw_rect(Rect2(-w / 2.0, -22, w * hp / max_hp, 4), GameData.GREEN if game.side_of(team) == 0 else GameData.RED)
