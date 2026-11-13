@@ -496,7 +496,7 @@ func _think_build() -> void:
 ## Améliorations qui débloquent des unités et des bâtiments : prioritaires dès que leur heure est venue.
 func _priority_upgrade() -> bool:
 	var t: float = game.game_time
-	if _economy_first():
+	if _economy_first() or _upgrades_running() >= 1:
 		return false
 	var plan: Array = []
 	if skill >= 0.2:
@@ -543,8 +543,18 @@ func _economy_first() -> bool:
 	return t > 240.0 and _army().size() < 3 and ore < 700
 
 
+## Améliorations en cours chez cette IA : une seule à la fois (le coût est prélevé au fil des travaux,
+## en lancer plusieurs en même temps vide le minerai et bloque production et construction).
+func _upgrades_running() -> int:
+	var n := 0
+	for b in game.buildings:
+		if b.team == team and b.alive and b.up_left > 0.0:
+			n += 1
+	return n
+
+
 func _try_upgrade() -> void:
-	if _economy_first():
+	if _economy_first() or _upgrades_running() >= 1:
 		return
 	var order := ["usine", "chantier", "centrale", "raffinerie", "fonderie", "tourelle", "radar"]
 	var reserve := 400 if skill < 0.5 else 250
