@@ -548,7 +548,7 @@ class BarsLayer extends Node2D:
 	var _last := ""
 
 	func _sig() -> String:
-		return "%d|%d|%d|%d|%d" % [int(b.hp), b.level, int(b.offline), int(b.repairing), int(b.hp < b.max_hp)]
+		return "%d|%d|%d|%d|%d|%d" % [int(b.hp), b.level, int(b.offline), int(b.repairing), int(b.hp < b.max_hp), int(b.up_left > 0.0)]
 
 	func _draw() -> void:
 		var s := Vector2(b.cell_size * b.tile)
