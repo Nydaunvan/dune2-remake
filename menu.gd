@@ -564,7 +564,11 @@ class FactionCard extends Control:
 		UiStyle.text_center(self, Rect2(plate.position.x, plate.position.y + 46, plate.size.x, 24), String(f["tagline"]), 17, acc)
 		var y := 304.0
 		for l in String(f["desc"]).split("\n"):
-			UiStyle.text(self, Vector2(24, y), l, 15, Color(1, 1, 1, 0.88), false, HORIZONTAL_ALIGNMENT_CENTER, size.x - 48)
+			var fs := 15
+			var fnt := UiStyle.body_font()
+			while fs > 11 and fnt.get_string_size(l, HORIZONTAL_ALIGNMENT_LEFT, -1, fs).x > size.x - 48.0:
+				fs -= 1
+			UiStyle.text(self, Vector2(24, y), l, fs, Color(1, 1, 1, 0.88), false, HORIZONTAL_ALIGNMENT_CENTER, size.x - 48)
 			y += 23.0
 		# Pied : état de sélection
 		var fy := size.y - 24.0
