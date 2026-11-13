@@ -110,10 +110,15 @@ vec3 moon(vec2 p, vec2 c, float r, vec3 lit, vec3 shade, vec3 halo_col, vec2 lig
 
 // Carte de hauteur du désert : grandes dunes allongées, bords arrondis, légèrement asymétriques
 float terrain(vec2 q) {
-	vec2 w = q + 3.2 * vec2(vnoise(q * 0.045), vnoise(q * 0.045 + 7.3)) - 1.6;
-	float n = 0.60 * vnoise(w * vec2(0.060, 0.105)) + 0.28 * vnoise(w * vec2(0.125, 0.21) + 3.1) + 0.12 * vnoise(w * vec2(0.26, 0.42) + 9.7);
-	n = smoothstep(0.05, 0.98, n); // pente douce : pas de falaises abruptes (traits verticaux avant-arrière)
-	return n * 5.4;
+	// Sommes de sinus : relief lisse, sans table de hachage. Les anciens bruits à base de fract()
+	// donnaient, selon le GPU/pilote, des rubans en travers des dunes.
+	float n = 0.5
+			+ 0.26 * sin(q.y * 0.62 + 2.4 * sin(q.x * 0.10 + 1.0) + 1.1 * sin(q.x * 0.27))
+			+ 0.22 * sin(q.y * 0.30 + 2.0 * sin(q.x * 0.06 + 2.0) + 0.8 * sin(q.x * 0.17))
+			+ 0.12 * sin(q.y * 1.15 + q.x * 0.22 + 2.6 * sin(q.x * 0.09))
+			+ 0.08 * sin(q.x * 0.31 + q.y * 0.45 + 4.0);
+	n = smoothstep(0.12, 0.88, n);
+	return n * 5.0;
 }
 
 
