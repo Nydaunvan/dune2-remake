@@ -1,6 +1,7 @@
 class_name ModelsMech
 ## Mechas : unités marcheuses (jambes) propres à chaque faction.
 ##   leg = "biped"   : bipède blindé (Solis : élancé, genoux en arrière ; Kharn : massif ; Conclave : obsidienne)
+##   leg = "quad"    : quadrupède blindé (Solis : sentinelle élancée à pattes de cerf ; Kharn : mastodonte à piliers)
 ##   leg = "crystal" : marcheur de cristal à pattes de prisme (Conclave)
 ##   leg = "spider"  : arachnide à six pattes (Vael)
 ## Les paramètres viennent de ModelsExt.STYLES (k = "mech"). Le modèle est cuit en sprites comme les chars :
@@ -17,6 +18,7 @@ static func build(r: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary) 
 	var col := Models.OBSIDIAN if p.get("obs", false) else body
 	match String(p.get("leg", "biped")):
 		"biped": _biped(g, col, hi, acc, p)
+		"quad": _quad(g, col, hi, acc, p)
 		"crystal": _crystal_walker(g, col, hi, acc, p)
 		"spider": _spider(g, col, hi, acc, p)
 
@@ -62,6 +64,12 @@ static func _muzzles_raw(p: Dictionary) -> Array:
 			if p.get("mk", "") == "geode":
 				return [Vector3(24.0, 17.0, 0.0)]
 			return [Vector3(8.0, 52.0, 0.0), Vector3(-2.0, 48.0, 6.0)]
+		"quad":
+			var qb := float(p.get("bl", 26.0))
+			var qy := float(p.get("h", 20.0)) + float(p.get("bh", 9.0))
+			if p.get("wp", "plasma") == "rockets":
+				return [Vector3(qb * 0.3 + 9.0, qy + 7.5, qb * 0.33), Vector3(qb * 0.3 + 9.0, qy + 7.5, -qb * 0.33)]
+			return [Vector3(qb * 0.1 + float(p.get("cl", 24.0)) + 3.0, qy + 7.0, 0.0)]
 		"spider":
 			var bl := float(p.get("bl", 10.0))
 			return [Vector3(10.0 + bl + 1.5, float(p.get("h", 12.0)) + 7.5, 0.0)]
@@ -246,6 +254,77 @@ static func _crystal_walker(g: Node3D, body: Color, hi: Color, acc: Color, p: Di
 	for sd in [-1.0, 1.0]:
 		Models._crystal(g, 15.0, 2.2, Vector3(1.0, 49.0, 5.0 * sd), gc, 0.25 * sd + 0.1, 0.0, 1.6)
 		Models._crystal(g, 10.0, 2.0, Vector3(-4.0, 44.0, 7.0 * sd), gc, 0.4 * sd, 0.0, 1.3)
+
+
+# --- Quadrupèdes ----------------------------------------------------------------------------------
+
+static func _quad(g: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary) -> void:
+	Models._seen["legs_quad"] = true
+	var h := float(p.get("h", 20.0))
+	var bw := float(p.get("bw", 14.0))
+	var bl := float(p.get("bl", 26.0))
+	var bh := float(p.get("bh", 9.0))
+	var lt := float(p.get("lt", 4.0))
+	var gc := _glow(p)
+	var ex: Array = p.get("x", [])
+	var heavy: bool = p.get("wp", "plasma") == "rockets"
+	# Quatre pattes : hanches, genou, pied (pattes avant : genou en avant ; arrière : jarret en arrière)
+	for fx in [1.0, -1.0]:
+		for sd in [-1.0, 1.0]:
+			var x: float = bl * 0.36 * fx
+			var z: float = (bw * 0.5 + (1.0 if heavy else 0.5)) * sd
+			var hip := Vector3(x, h, z)
+			var knee := Vector3(x + (3.0 if heavy else 5.0) * fx, h * 0.5, z + sd * 1.2)
+			var foot := Vector3(x - (1.0 if heavy else 2.0) * fx, 3.0, z + sd * 0.4)
+			_limb(g, hip, knee, lt + 1.2, body)
+			_limb(g, knee, foot, lt, body.darkened(0.15))
+			Models._ball(g, lt * 0.7, knee, Models.METAL)
+			Models._box(g, Vector3(lt + 5.0, 3.0, lt + 4.0), Vector3(foot.x + 1.0 * fx, 1.5, foot.z), Models.DARK)
+			if heavy:
+				Models._box(g, Vector3(lt + 3.0, h * 0.35, 1.4), Vector3(x + 1.0 * fx, h * 0.72, z + sd * (lt * 0.5 + 1.0)), Models.METAL)
+	# Châssis et dessus
+	var by := h + bh * 0.5
+	Models._box(g, Vector3(bl, bh, bw), Vector3(0, by, 0), body)
+	Models._box(g, Vector3(bl * 0.55, bh * 0.7, bw * 0.92), Vector3(bl * 0.2, by + bh * 0.5, 0), hi, Vector3(0, 0, -0.12))
+	Models._box(g, Vector3(bl * 0.7, 1.4, 1.2), Vector3(0, by + 1.0, bw * 0.5 + 0.2), gc, Vector3.ZERO, 1.4)
+	Models._box(g, Vector3(bl * 0.7, 1.4, 1.2), Vector3(0, by + 1.0, -bw * 0.5 - 0.2), gc, Vector3.ZERO, 1.4)
+	# Tête / museau à l'avant
+	var hx := bl * 0.5
+	if heavy:
+		Models._box(g, Vector3(10.0, bh + 3.0, bw * 0.8), Vector3(hx + 3.0, by + 0.5, 0), hi)
+		Models._box(g, Vector3(1.2, 2.0, bw * 0.55), Vector3(hx + 8.2, by + 2.0, 0), gc, Vector3.ZERO, 2.0)
+		for sd in [-1.0, 1.0]:
+			_limb(g, Vector3(hx + 6.0, by - 2.0, bw * 0.3 * sd), Vector3(hx + 15.0, by - 8.0, bw * 0.34 * sd), 2.6, Models.METAL)
+	else:
+		Models._ball(g, 5.0, Vector3(hx + 3.0, by + 2.0, 0), hi)
+		Models._box(g, Vector3(1.2, 2.0, 6.0), Vector3(hx + 7.4, by + 2.4, 0), gc, Vector3.ZERO, 2.2)
+		Models._box(g, Vector3(0.9, 9.0, 0.9), Vector3(hx - 1.0, by + 7.0, -bw * 0.3), Models.DARK)
+		Models._ball(g, 1.4, Vector3(hx - 1.0, by + 12.0, -bw * 0.3), gc, 2.0)
+	# Armement
+	var top := h + bh
+	if heavy:
+		for sd in [-1.0, 1.0]:
+			var z: float = bw * 0.33 * sd
+			Models._box(g, Vector3(16.0, 9.0, 8.0), Vector3(bl * 0.3, top + 5.0, z), Models.DARK)
+			Models._box(g, Vector3(2.0, 9.4, 8.4), Vector3(bl * 0.3 + 8.2, top + 5.0, z), Models.METAL)
+			for k in 3:
+				Models._cyl(g, 1.4, 1.4, 2.4, Vector3(bl * 0.3 + 9.0, top + 7.2 - k * 2.0, z + (k - 1) * 1.8), GLOWS["orange"], 6, Vector3(0, 0, PI / 2.0), 1.4)
+		if "stacks" in ex:
+			for sd in [-1.0, 1.0]:
+				Models._cyl(g, 2.0, 2.0, 10.0, Vector3(-bl * 0.4, top + 5.0, sd * bw * 0.25), Models.DARK, 6)
+				Models._ball(g, 1.6, Vector3(-bl * 0.4, top + 10.5, sd * bw * 0.25), GLOWS["orange"], 1.6)
+	else:
+		var cl := float(p.get("cl", 24.0))
+		Models._box(g, Vector3(12.0, 7.0, 8.0), Vector3(bl * 0.05, top + 4.0, 0), Models.METAL)
+		Models._barrel(g, bl * 0.1, top + 7.0, 0.0, cl, 2.0, Models.DARK)
+		Models._ball(g, 2.8, Vector3(bl * 0.1 + cl - 1.0, top + 7.0, 0.0), gc, 1.8)
+		if "pack" in ex:
+			Models._box(g, Vector3(7.0, bh * 0.9, bw * 0.7), Vector3(-bl * 0.4, top + 3.0, 0), Models.METAL)
+			for sd in [-1.0, 1.0]:
+				Models._cyl(g, 2.2, 2.2, 2.0, Vector3(-bl * 0.4 - 4.0, top + 3.0, sd * 4.0), gc, 6, Vector3(0, 0, PI / 2.0), 1.8)
+	if "plates" in ex:
+		for sd in [-1.0, 1.0]:
+			Models._box(g, Vector3(bl * 0.5, bh * 0.6, 1.4), Vector3(-bl * 0.1, by, (bw * 0.5 + 0.8) * sd), Models.METAL)
 
 
 # --- Arachnides -----------------------------------------------------------------------------------

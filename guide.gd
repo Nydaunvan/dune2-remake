@@ -245,7 +245,7 @@ func _p_units() -> String:
 		if GameData.UNIT_TECH.has(id):
 			line += "\n    Modernisation : " + GameData.tech_text(id)
 		s += line + "\n"
-	s += _h("Mechas") + "Chaque maison aligne ses propres [b]mechas[/b], des machines marcheuses produites à l'usine comme les autres unités terrestres : bipèdes blindés (Solis, Kharn), marcheurs de cristal ou géants d'obsidienne (Conclave), arachnides (Vael). Ils franchissent le terrain comme les autres unités terrestres, se balancent en marchant et laissent des empreintes dans le sable.\n"
+	s += _h("Mechas") + "Chaque maison aligne ses propres [b]mechas[/b], des machines marcheuses produites à l'usine comme les autres unités terrestres : bipèdes blindés (Solis, Kharn), quadrupèdes (Archonte Solis, Mastodonte Kharn), marcheurs de cristal ou géants d'obsidienne (Conclave), arachnides (Vael). Ils franchissent le terrain comme les autres unités terrestres, se balancent en marchant et laissent des empreintes dans le sable.\n"
 	s += _h("Unités volantes") + "Elles survolent la roche et le sable, plus haut que les unités terrestres. [b]Seules certaines unités et défenses peuvent les toucher[/b] (indiquées « touche les unités volantes ») ; les autres tirent sans effet sur elles. Un transport volant embarque des unités terrestres et les dépose n'importe où (touche U)."
 	return s
 

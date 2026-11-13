@@ -714,7 +714,7 @@ const UNITS := {
 		"cost": 350, "time": 8.0, "requires": ["fonderie"], "from": "fonderie",
 		"hp": 260, "speed": 80.0, "capacity": 160.0, "rate": 6.0,
 	},
-	# --- Mechas : marcheurs bipèdes ou arachnides, un par rôle et par faction (Usine) ---
+	# --- Mechas : marcheurs bipèdes, quadrupèdes ou arachnides, un par rôle et par faction (Usine) ---
 	"phalange": {
 		"name": "Phalange", "role": "combat", "desc": "Mécha à bouclier d'énergie : encaisse et tire au laser (sol)",
 		"armor": "medium", "weapon": "laser", "cost": 450, "time": 8.0, "level": 2,
@@ -722,7 +722,7 @@ const UNITS := {
 		"vision": 8,
 	},
 	"archonte": {
-		"name": "Archonte", "role": "combat", "desc": "Mécha lourd à canon plasma longue portée (sol)",
+		"name": "Archonte", "role": "combat", "desc": "Mécha quadrupède à canon plasma longue portée (sol)",
 		"armor": "heavy", "weapon": "plasma", "cost": 800, "time": 12.0, "level": 3,
 		"requires": ["usine", "atelier_solis"], "from": "usine", "hp": 800, "dps": 46, "speed": 62.0,
 		"range": 8, "vision": 11,
@@ -740,7 +740,7 @@ const UNITS := {
 		"vision": 8,
 	},
 	"mastodonte": {
-		"name": "Mastodonte", "role": "combat", "desc": "Mécha lourd à double lance-roquettes (sol et air)",
+		"name": "Mastodonte", "role": "combat", "desc": "Mécha quadrupède massif à double lance-roquettes (sol et air)",
 		"aa": true, "armor": "heavy", "weapon": "rocket", "cost": 1000, "time": 14.0, "level": 3,
 		"requires": ["usine", "forge_kharn"], "from": "usine", "hp": 1100, "dps": 44, "speed": 58.0,
 		"range": 8, "vision": 9, "vs_air": 0.8,

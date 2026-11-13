@@ -77,6 +77,18 @@ func _draw() -> void:
 				draw_colored_polygon(heel, dk)
 				draw_colored_polygon(toe, Color(0.3, 0.18, 0.1, al))
 				draw_line(c - fwd * 6.2 + perp * 3.4, c + fwd * 5.2 + perp * 2.6, Color(1.0, 0.85, 0.6, al * 0.45), 1.0, true) # bourrelet
+			"legs_quad":
+				# Quadrupède : quatre pattes en marche diagonale (avant gauche + arrière droite, puis l'inverse)
+				var fq := (b - a).normalized()
+				var sq: float = float(s[6])
+				var wq: float = off.length() * 1.25
+				var dq := Color(0.26, 0.15, 0.08, al * 1.15)
+				var pr := [[6.0, sq], [-6.0, -sq]]
+				for pw in pr:
+					var cq: Vector2 = b + fq * float(pw[0]) + perp * float(pw[1]) * wq
+					draw_circle(cq, 3.1, dq)
+					draw_circle(cq + fq * 0.8, 1.9, Color(0.34, 0.2, 0.11, al))
+					draw_line(cq - fq * 3.4 + perp * 2.0, cq + fq * 2.6 + perp * 2.6, Color(1.0, 0.85, 0.6, al * 0.4), 0.9, true)
 			"legs_crystal":
 				# Marcheur de cristal : pointes anguleuses (losanges) à peine enfoncées, avec un reflet violet
 				var fwd2 := (b - a).normalized()

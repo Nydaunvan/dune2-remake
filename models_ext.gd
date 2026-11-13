@@ -49,15 +49,15 @@ const STYLES := {
 	# Mechas (marcheurs) : Solis
 	"phalange": {"k": "mech", "leg": "biped", "kn": -1.0, "lt": 3.8, "lh": 16, "lz": 6, "tl": 11, "th": 11, "tw": 15, "hx": 9, "wp": "laser", "bl": 14,
 			"hd": "dome", "x": ["antenna"], "gc": "blue"},
-	"archonte": {"k": "mech", "leg": "biped", "kn": -1.0, "lt": 4.0, "lh": 21, "lz": 7, "tl": 12, "th": 12, "tw": 16, "hx": 8, "wp": "plasma", "bl": 24,
-			"hd": "dome", "fl": 14, "x": ["pack", "antenna"], "gc": "blue", "s": 1.08},
+	"archonte": {"k": "mech", "leg": "quad", "h": 22, "bw": 13, "bl": 26, "bh": 8, "lt": 3.2, "wp": "plasma", "cl": 26,
+			"x": ["pack"], "gc": "blue", "s": 1.05},
 	# Mechas Kharn
 	"cogneur": {"k": "mech", "leg": "biped", "kn": 1.0, "lt": 6.5, "lh": 13, "lz": 8, "tl": 16, "th": 14, "tw": 22, "hx": 9, "wp": "fists", "fl": 14,
 			"x": ["plates", "stacks"], "gc": "orange", "s": 1.0},
 	"gladiateur": {"k": "mech", "leg": "biped", "kn": 1.0, "lt": 5.0, "lh": 15, "lz": 7, "tl": 13, "th": 12, "tw": 18, "hx": 9, "wp": "mg", "bl": 12,
 			"x": ["plates", "antenna"], "gc": "red"},
-	"mastodonte": {"k": "mech", "leg": "biped", "kn": 1.0, "lt": 7.5, "lh": 17, "lz": 9, "tl": 18, "th": 16, "tw": 24, "hx": 9, "wp": "rockets", "fl": 16,
-			"x": ["plates", "stacks"], "gc": "orange", "s": 1.12},
+	"mastodonte": {"k": "mech", "leg": "quad", "h": 15, "bw": 24, "bl": 32, "bh": 13, "lt": 6.5, "wp": "rockets",
+			"x": ["stacks", "plates"], "gc": "orange", "s": 1.12},
 	# Mechas Conclave
 	"geode": {"k": "mech", "leg": "crystal", "mk": "geode", "gc": "violet"},
 	"stele": {"k": "mech", "leg": "crystal", "mk": "stele", "gc": "violet", "s": 0.82},
