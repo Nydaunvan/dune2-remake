@@ -112,8 +112,8 @@ vec3 moon(vec2 p, vec2 c, float r, vec3 lit, vec3 shade, vec3 halo_col, vec2 lig
 float terrain(vec2 q) {
 	vec2 w = q + 3.2 * vec2(vnoise(q * 0.045), vnoise(q * 0.045 + 7.3)) - 1.6;
 	float n = 0.60 * vnoise(w * vec2(0.060, 0.105)) + 0.28 * vnoise(w * vec2(0.125, 0.21) + 3.1) + 0.12 * vnoise(w * vec2(0.26, 0.42) + 9.7);
-	n = smoothstep(0.10, 0.92, n);
-	return n * n * (3.0 - 2.0 * n) * 5.0;
+	n = smoothstep(0.05, 0.98, n); // pente douce : pas de falaises abruptes (traits verticaux avant-arrière)
+	return n * 5.4;
 }
 
 
