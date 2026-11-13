@@ -1,6 +1,16 @@
 # Journal des versions — The Building of a Dynasty
 
-Version actuelle : **0.21**
+Version actuelle : **0.22**
+
+## 0.22 — Équilibre, accueil et ouvriers (2026-11-13)
+- Banc d'essai IA contre IA : équilibrage des quatre factions, cartes équitables, IA plus tactique (repli, raids, contre-attaques)
+- Régénération du Conclave hors combat, tirs qui touchent à toute fréquence d'images
+- Groupes de véhicules : plus d'unité qui tourne en rond ni de tireur coincé
+- Fins de campagne recalibrées d'après les rythmes mesurés, ressources de départ de l'escarmouche garanties
+- Récolteurs et mineurs : sortie d'usine directe vers le champ, déchargement sans blocage avec une unité qui sort
+- Accueil : rendu identique quel que soit le moteur de rendu, relief des dunes lissé, texte des cartes de faction complet
+- Curseur de gamma de la carte dans le menu pause (0,50 par défaut, jamais sur l'accueil)
+- Guide refait : onglets à gauche, terrain, réglages et rangs
 
 ## 0.21 — Tirs et campagnes (2026-11-12)
 - Les projectiles partent du bout du canon de chaque unité et défense

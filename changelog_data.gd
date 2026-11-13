@@ -2,6 +2,15 @@ class_name ChangelogData
 ## Journal des versions (du plus récent au plus ancien). Voir aussi CHANGELOG.md.
 
 const VERSIONS := [
+	["0.22", "2026-11-13", "Équilibre, accueil et ouvriers", [
+		"Banc d'essai IA contre IA : équilibrage des quatre factions, cartes équitables, IA plus tactique (repli, raids, contre-attaques)",
+		"Régénération du Conclave hors combat, tirs qui touchent à toute fréquence d'images",
+		"Groupes de véhicules : plus d'unité qui tourne en rond ni de tireur coincé",
+		"Fins de campagne recalibrées d'après les rythmes mesurés, ressources de départ de l'escarmouche garanties",
+		"Récolteurs et mineurs : sortie d'usine directe vers le champ, déchargement sans blocage avec une unité qui sort",
+		"Accueil : rendu identique quel que soit le moteur de rendu, relief des dunes lissé, texte des cartes de faction complet",
+		"Curseur de gamma de la carte dans le menu pause (0,50 par défaut, jamais sur l'accueil)",
+		"Guide refait : onglets à gauche, terrain, réglages et rangs"]],
 	["0.21", "2026-11-12", "Tirs et campagnes", ["Les projectiles partent du bout du canon de chaque unité et défense", "Bouton RÉINITIALISER dans la campagne : progression d'une faction remise à zéro, avec confirmation"]],
 	["0.20", "2026-11-12", "Accueil désert", ["Écran d'accueil : dunes en couches, deux lunes, voie lactée, étoiles, étoile filante", "Noms de faction centrés, capacité des mineurs exacte (160)"]],
 	["0.19", "2026-11-12", "Escarmouche paramétrable", ["Fenêtre de paramètres : 1 ou 2 adversaires, faction adverse, taille de carte, ressources, difficulté", "Adversaires indiqués dans les missions de campagne", "Difficulté croissante de 1 à 10, objectifs plus longs, finale à trois camps"]],

@@ -7,7 +7,7 @@ extends CanvasLayer
 const TABS := [
 	["start", "DÉMARRER"], ["controls", "COMMANDES"], ["economy", "ÉCONOMIE"],
 	["buildings", "BÂTIMENTS"], ["units", "UNITÉS"], ["factions", "FACTIONS"],
-	["campaign", "CAMPAGNES"], ["dangers", "DANGERS"], ["system", "SAUVEGARDE"],
+	["campaign", "CAMPAGNES"], ["dangers", "DANGERS"], ["system", "RÉGLAGES"],
 ]
 
 var faction := "solis"
@@ -47,7 +47,7 @@ func setup() -> void:
 	var margin := MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
 	for side in ["left", "right"]:
-		margin.add_theme_constant_override("margin_" + side, 90)
+		margin.add_theme_constant_override("margin_" + side, 70)
 	margin.add_theme_constant_override("margin_top", 30)
 	margin.add_theme_constant_override("margin_bottom", 30)
 	root.add_child(margin)
@@ -63,26 +63,32 @@ func setup() -> void:
 	_title.add_theme_color_override("font_color", GameData.FACTIONS[faction]["accent"])
 	vb.add_child(_title)
 
-	var tabs := HBoxContainer.new()
-	tabs.add_theme_constant_override("separation", 6)
-	tabs.alignment = BoxContainer.ALIGNMENT_CENTER
-	vb.add_child(tabs)
+	# Onglets à gauche, page à droite
+	var body := HBoxContainer.new()
+	body.add_theme_constant_override("separation", 16)
+	body.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vb.add_child(body)
+	var tabs := VBoxContainer.new()
+	tabs.add_theme_constant_override("separation", 8)
+	tabs.custom_minimum_size = Vector2(210, 0)
+	body.add_child(tabs)
 	for t in TABS:
 		var b := GameUI.NeonButton.new(t[1])
-		b.custom_minimum_size = Vector2(124, 38)
+		b.custom_minimum_size = Vector2(210, 44)
 		b.pressed.connect(_show.bind(t[0]))
 		tabs.add_child(b)
 		_tab_btns[t[0]] = b
 
 	var scroll := PanelContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	var sb := StyleBoxFlat.new()
 	sb.bg_color = Color(0.05, 0.03, 0.1, 0.97)
 	sb.border_color = Color(0.0, 0.8, 1.0, 0.5)
 	sb.set_border_width_all(1)
 	sb.set_content_margin_all(22)
 	scroll.add_theme_stylebox_override("panel", sb)
-	vb.add_child(scroll)
+	body.add_child(scroll)
 	_page = RichTextLabel.new()
 	_page.bbcode_enabled = true
 	_page.scroll_following = false
@@ -131,11 +137,7 @@ func _k(s: String) -> String:
 
 
 func _name(id: String) -> String:
-	if GameData.BUILDINGS.has(id):
-		return GameData.name_of(id, faction)
-	if GameData.UNITS.has(id):
-		return GameData.name_of(id, faction)
-	return id
+	return GameData.name_of(id, faction)
 
 
 # --- Pages écrites à la main -----------------------------------------------------
@@ -143,11 +145,11 @@ func _name(id: String) -> String:
 func _p_start() -> String:
 	return _h("Le but du jeu") + """Bâtissez une base sur la planète désertique, récoltez l'épice (Solaris) et le minerai, formez une armée puis détruisez vos adversaires. Il existe deux façons de jouer :
 • [b]Campagne[/b] : 15 à 18 missions par faction (Solis 15, Kharn 16, Vael 17, Conclave 18), chacune avec ses objectifs, son adversaire et son briefing. Les missions terminées débloquent de nouveaux bâtiments.
-• [b]Escarmouche[/b] : une carte aléatoire, un ou deux adversaires menés par l'IA. Tout se débloque en améliorant votre [b]""" + _name("chantier") + """[/b]. La fenêtre de paramètres de l'escarmouche permet de choisir 1 ou 2 adversaires (avec 2 adversaires, chaque faction attaque toutes les autres : chacun pour soi), la faction adverse, la taille de la carte, les ressources de départ et la difficulté de l'IA.
-""" + _h("Vos premières minutes") + """1. Sélectionnez l'[b]engin de chantier[/b] et appuyez sur """ + _k("D") + """ (ou bouton DÉPLOYER) : il devient un [b]""" + _name("chantier") + """[/b], le cœur de votre base.
-2. Construisez une [b]Centrale[/b] : sans énergie, rien ne fonctionne correctement.
-3. Posez une [b]Raffinerie[/b] puis une [b]Fonderie[/b] : elles produisent un récolteur d'épice et un mineur qui travaillent seuls.
-4. Ajoutez une [b]""" + _name("usine") + """[/b] pour produire vos unités de combat, puis des [b]""" + _name("tourelle") + """[/b] pour défendre la base.
+• [b]Escarmouche[/b] : une carte aléatoire, de un à trois adversaires menés par l'IA. Tout se débloque en améliorant votre bâtiment « """ + _name("chantier") + """ ». La fenêtre de paramètres de l'escarmouche permet de choisir 1, 2 ou 3 adversaires (dès 2 adversaires, chaque faction attaque toutes les autres : chacun pour soi), la faction adverse, la taille de la carte, les ressources de départ et la difficulté de l'IA.
+""" + _h("Vos premières minutes") + """1. Sélectionnez l'[b]engin de chantier[/b] et appuyez sur """ + _k("D") + """ (ou bouton DÉPLOYER) : il devient votre bâtiment « """ + _name("chantier") + """ », le cœur de votre base.
+2. Construisez d'abord votre production d'énergie (« """ + _name("centrale") + """ ») : sans énergie, rien ne fonctionne correctement.
+3. Posez « """ + _name("raffinerie") + """ » puis « """ + _name("fonderie") + """ » : chacun produit un engin de récolte (épice, minerai) qui travaille seul.
+4. Ajoutez « """ + _name("usine") + """ » pour produire vos unités de combat, puis des défenses (par exemple « """ + _name("tourelle") + """ ») pour protéger la base.
 5. Gardez toujours un peu d'avance en énergie, étendez vos récoltes et améliorez vos bâtiments.
 """ + _h("Gagner et perdre") + """Vous gagnez en détruisant tous les camps adverses (bâtiments et engins de chantier) ou, en campagne, en remplissant tous les objectifs de la mission (bouton OBJECTIFS ou touche """ + _k("O") + """). Vous perdez si toute votre base et vos engins de chantier disparaissent.
 """
@@ -167,24 +169,24 @@ func _p_controls() -> String:
 """ + _h("Interface") + """• [b]Barre du haut[/b] : Solaris, minerai, énergie (produite / consommée), temps de jeu, boutons OBJECTIFS, GUIDE et MENU.
 • [b]Colonne de droite[/b] : radar, journal des événements, onglets BÂTIMENTS / UNITÉS. Clic sur une icône pour la mettre en production ; un bâtiment terminé se pose ensuite sur la carte (clic gauche, clic droit pour annuler).
 • [b]Encart en bas à gauche[/b] : détails de ce que vous sélectionnez (PV, énergie, état, niveau, améliorations). Pour un bâtiment : AMÉLIORER, RÉPARER, DÉMOLIR.
-• [b]Zone de construction[/b] : on ne peut bâtir que dans un rayon d'environ 15 cases autour d'un """ + _name("chantier") + """ (un cercle cyan s'affiche pendant la pose). Pour une seconde base, produisez un [b]Engin de chantier[/b] à : """ + _name("usine") + """ (niveau 2), emmenez-le sur un sol rocheux dégagé et déployez-le (touche D).
+• [b]Zone de construction[/b] : on ne peut bâtir que dans un rayon d'environ 15 cases autour de votre « """ + _name("chantier") + """ » (un cercle cyan s'affiche pendant la pose). Pour une seconde base, produisez un [b]engin de chantier[/b] dans « """ + _name("usine") + """ » (niveau 2), emmenez-le sur un sol rocheux dégagé et déployez-le (touche D).
 • Les fenêtres sont translucides pour laisser voir le champ de bataille.
 """
 
 
 func _p_economy() -> String:
-	return _h("Les ressources") + """• [b]Solaris[/b] : obtenus en livrant l'épice à une Raffinerie. Servent à produire les unités.
-• [b]Minerai[/b] : livré à une Fonderie. Sert à construire et améliorer les bâtiments.
-• Le récolteur et le mineur travaillent automatiquement : ils cherchent la ressource, la récoltent (un nuage de poussière les entoure) puis rentrent à la raffinerie / fonderie la plus proche.
-• Le nombre d'engins est limité par le niveau de : """ + _name("chantier") + """ : récolteurs 2 / 3 / 5 et mineurs 1 / 2 / 3 aux niveaux 1 / 2 / 3.
+	return _h("Les ressources") + """• [b]Solaris[/b] : obtenus en livrant l'épice à « """ + _name("raffinerie") + """ ». Servent à produire les unités.
+• [b]Minerai[/b] : livré à « """ + _name("fonderie") + """ ». Sert à construire et améliorer les bâtiments.
+• Le récolteur et le mineur travaillent automatiquement : ils cherchent la ressource, la récoltent (un nuage de poussière les entoure) puis rentrent au dépôt le plus proche (« """ + _name("raffinerie") + """ » ou « """ + _name("fonderie") + """ »).
+• Le nombre d'engins est limité par le niveau du bâtiment « """ + _name("chantier") + """ » : récolteurs 2 / 3 / 5 et mineurs 1 / 2 / 3 aux niveaux 1 / 2 / 3.
 • [b]Paiement progressif[/b] : construire, produire une unité, améliorer un bâtiment ou moderniser une unité ne coûte pas tout d'un coup. Il suffit d'avoir 10 % du prix pour lancer l'opération ; le reste est prélevé au fur et à mesure de l'avancement. Si la caisse est vide, l'opération se met en pause jusqu'au retour des fonds. Annuler une production rembourse ce qui a déjà été payé.
-• Le stockage est limité ; construisez des [b]Silos d'épice[/b] et améliorez Raffineries et Fonderies pour l'agrandir.
+• Le stockage est limité ; construisez des silos (Solaris et minerai) et améliorez vos dépôts pour l'agrandir.
 """ + _h("L'énergie") + """Chaque bâtiment produit (""" + _name("centrale") + """, """ + _name("reacteur") + """) ou consomme de l'énergie ; la valeur est indiquée sur son icône et dans son encart. Améliorer un bâtiment peut augmenter sa consommation.
 En cas de [color=#ff7777][b]manque d'énergie[/b][/color] : plus aucune récolte n'est encaissée (""" + _name("raffinerie") + """, """ + _name("fonderie") + """) ; """ + _name("radar") + """, """ + _name("reparation") + """, """ + _name("aerodrome") + """ et les défenses s'éteignent (« HORS TENSION »). Reconstruisez ou améliorez vite votre production d'énergie (""" + _name("centrale") + """, """ + _name("reacteur") + """).
-""" + _h("Améliorer ses bâtiments") + """Un bâtiment s'améliore jusqu'au [b]niveau 3[/b] (bouton AMÉLIORER). Chaque niveau donne +25 % de PV et un bonus propre au bâtiment, et son [b]apparence évolue[/b] : plaques de blindage, antenne, modules de toit, puis bande énergétique et dôme doré au niveau 3. Les niveaux de """ + _name("chantier") + """ débloquent les bâtiments en escarmouche. Les niveaux de """ + _name("usine") + """ débloquent de nouvelles unités et permettent la [b]modernisation des unités[/b] (bonus permanents propres à chaque type).
-""" + _h("Réparer et démolir") + """• RÉPARER : remet un bâtiment à neuf contre du minerai (au plus la moitié de son prix, proportionnel aux dégâts). Les unités se réparent aussi dans un Centre de réparation.
+""" + _h("Améliorer ses bâtiments") + """Un bâtiment s'améliore jusqu'au [b]niveau 3[/b] (bouton AMÉLIORER). Chaque niveau donne +25 % de PV et un bonus propre au bâtiment, et son [b]apparence évolue[/b] : plaques de blindage, antenne, modules de toit, puis bande énergétique et dôme doré au niveau 3. Les niveaux du bâtiment « """ + _name("chantier") + """ » débloquent les bâtiments en escarmouche. Les niveaux du bâtiment « """ + _name("usine") + """ » débloquent de nouvelles unités et permettent la [b]modernisation des unités[/b] (bonus permanents propres à chaque type).
+""" + _h("Réparer et démolir") + """• RÉPARER : remet un bâtiment à neuf contre du minerai (au plus la moitié de son prix, proportionnel aux dégâts). Les unités se réparent aussi dans « """ + _name("reparation") + """ ».
 • DÉMOLIR : rembourse 40 % du coût.
-• Le Centre de réparation soigne les unités amies proches.
+• « """ + _name("reparation") + """ » soigne les unités amies proches.
 """
 
 
@@ -216,7 +218,7 @@ func _p_buildings() -> String:
 
 func _p_units() -> String:
 	var s := _h("Unités de " + GameData.FACTIONS[faction]["name"])
-	s += "Les unités se produisent dans : %s (terrestres) ou %s (volantes). Certaines exigent %s de niveau 2 ou 3. Une fois par type, la [b]modernisation[/b] (%s niveau 2) apporte des bonus permanents.\n" % [_name("usine"), _name("aerodrome"), _name("usine"), _name("usine")]
+	s += "Les unités se produisent dans « %s » (terrestres) ou « %s » (volantes). Certaines exigent le bâtiment « %s » au niveau 2 ou 3. Une fois par type, la [b]modernisation[/b] (« %s » niveau 2) apporte des bonus permanents.\n" % [_name("usine"), _name("aerodrome"), _name("usine"), _name("usine")]
 	for id in GameData.units_for(faction):
 		var d: Dictionary = GameData.UNITS[id]
 		var line := "\n[b]%s[/b]%s — %d Solaris" % [GameData.name_of(id, faction), " (volant)" if d.get("air", false) else "", int(d["cost"])]
@@ -284,24 +286,32 @@ Certaines missions imposent un [b]temps limite[/b], démarrent avec une [b]base 
 
 
 func _p_dangers() -> String:
-	return _h("Les vers de sable") + """Des vers géants vivent sous le sable. Ils attirent surtout les engins qui travaillent sur le sable (récolteurs), jamais ceux posés sur la roche.
+	return _h("Le terrain") + """• Le [b]sable[/b] est praticable partout, mais c'est là que travaillent les récolteurs (et que rôdent les vers). La [b]roche[/b] est sûre et c'est la seule où l'on peut bâtir.
+• Les [b]montagnes[/b] sont infranchissables pour toutes les unités terrestres. Les chaînes de montagnes barrent parfois la route directe entre deux camps, mais un passage reste toujours garanti entre les bases et vers chaque champ de ressources. Les unités volantes les survolent.
+• Les cartes sont équitables : chaque camp a ses champs de Solaris et de minerai à distance comparable ; des champs neutres sont répartis entre les bases.
+""" + _h("Les vers de sable") + """Des vers géants vivent sous le sable. Ils attirent surtout les engins qui travaillent sur le sable (récolteurs), jamais ceux posés sur la roche.
 • Quand un ver approche, un message s'affiche et une [color=#ff7777][b]zone de danger rouge[/b][/color] apparaît sur la carte et sur le radar.
 • Les récolteurs fuient automatiquement ; vous pouvez aussi les ramener à la raffinerie ou sur la roche.
 • Un ver mord au plus deux fois puis replonge, avec une longue pause avant le suivant.
 """ + _h("Le brouillard de guerre") + """Seul ce que vos unités et bâtiments voient est affiché. Le bâtiment « """ + _name("radar") + """ » étend fortement la vision. Les zones déjà explorées restent visibles mais sans les mouvements ennemis.
-""" + _h("Les armes et les blindages") + """Chaque arme est plus ou moins efficace selon le blindage de la cible (léger, moyen, lourd, bâtiment). Combinez les unités de votre faction. Les défenses et les Tourelles sont indispensables contre les assauts réguliers de l'IA : plus la partie avance, plus les vagues sont grosses.
+""" + _h("Les armes et les blindages") + """Chaque arme est plus ou moins efficace selon le blindage de la cible (léger, moyen, lourd, bâtiment). Combinez les unités de votre faction. Les défenses sont indispensables contre les assauts réguliers de l'IA : plus la partie avance, plus les vagues sont grosses.
 """ + _h("L'adversaire IA") + """L'IA construit comme vous, récolte, produit puis lance des vagues d'assaut après un délai, en défendant sa base quand elle est menacée. En mission, son rythme dépend du briefing (voir la fiche ENNEMI de chaque mission).
 """
 
 
 func _p_system() -> String:
-	return _h("Sauvegarde et chargement") + """• Vous pouvez sauvegarder à [b]tout moment[/b] : menu pause (Échap), bouton MENU en jeu ou touche F6 pour l'emplacement rapide.
+	return _h("Réglages d'affichage") + """• Menu pause (Échap) : bouton [b]FPS[/b] pour choisir entre images illimitées (écrans à haute fréquence) et synchronisation avec l'écran.
+• Menu pause : curseur [b]Gamma (carte)[/b], de 0,50 à 1,50, qui règle la luminosité et le contraste du terrain et du brouillard (réglage mémorisé, 0,50 par défaut). Il n'agit qu'en partie, jamais sur l'écran d'accueil ; le bouton à côté le remet à 0,50.
+• Le bouton [b]v0.xx[/b] du menu pause (ou la touche F2) ouvre le journal des versions.
+""" + _h("Sauvegarde et chargement") + """• Vous pouvez sauvegarder à [b]tout moment[/b] : menu pause (Échap), bouton MENU en jeu ou touche F6 pour l'emplacement rapide.
 • Quatre emplacements sont disponibles ; chacun indique la faction, le mode, le temps de jeu et la date.
 • Charger : depuis le menu pause, la touche F7 ou le bouton CHARGER du menu principal.
 • La carte est reconstruite à l'identique ; bâtiments, unités, ressources, files de production, brouillard exploré et IA sont restaurés.
 """ + _h("Menu principal") + """Choisissez votre faction, puis CAMPAGNE (liste des missions avec briefing détaillé), ESCARMOUCHE (jusqu'à 3 adversaires), CHARGER ou GUIDE. Les emblèmes des factions s'animent lorsque vous les survolez.
-""" + _h("Astuces") + """• Construisez votre Centrale avant tout, puis surveillez l'énergie en haut de l'écran.
+""" + _h("Rangs et bilan") + """Vos unités gagnent des [b]rangs[/b] à chaque élimination : gardez-les en vie. À la fin d'une partie, un tableau récapitulatif de la partie s'affiche.
+""" + _h("Astuces") + """• Construisez d'abord votre production d'énergie, puis surveillez l'énergie en haut de l'écran.
 • Placez les défenses entre votre base et l'ennemi, et des défenses antiaériennes si l'adversaire possède un bâtiment aérien (« """ + _name("aerodrome") + """ »).
 • Groupez vos unités avant de lancer un assaut ; ATTAQUER fait avancer le groupe en tirant sur tout ce qu'il croise.
 • Surveillez le journal en bas de la colonne de droite : il garde l'historique des alertes.
+• Les récolteurs et mineurs sortent d'usine et partent seuls vers leur champ : inutile de leur donner un ordre.
 """
