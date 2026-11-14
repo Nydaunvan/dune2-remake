@@ -95,7 +95,7 @@ var mech := false             # marcheur (mecha) : balancement et empreintes
 var _walk := 0.0              # phase de marche (radians), avance avec la distance parcourue (π par pas)
 var _z_t := 0.0               # prochain recalcul de la profondeur (devant / derrière un bâtiment)
 var _walk_idx := -1           # image de marche affichée (-1 : à l'arrêt)
-var _stride := 18.0           # distance parcourue pendant un demi-cycle de marche, en pixels
+var _stride := 18.0           # distance parcourue pendant un cycle complet de marche (deux pas), en pixels
 var _track_kind := ""        # chenilles | roues | coussin d'air (déduit du modèle 3D)
 var _work_fx: CPUParticles2D
 var _work_fx2: CPUParticles2D # éclats d'épice / de minerai au-dessus du nuage
@@ -116,8 +116,8 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	var mstyle: Dictionary = ModelsExt.STYLES.get(id, {})
 	mech = mstyle.get("k", "") == "mech"
 	if mech:
-		# Foulée : un demi-cycle de marche = 2 × demi-amplitude du pas du modèle, pour que les pieds ne glissent pas
-		_stride = 2.0 * ModelsMech.half_stride(mstyle) * float(mstyle.get("s", 1.0))
+		# Foulée : un cycle complet de marche = 2 × S / facteur d'appui, pour que les pieds posés ne glissent pas
+		_stride = ModelsMech.cycle_length(mstyle) * float(mstyle.get("s", 1.0))
 	# Au sol : devant les bâtiments, ou derrière quand il passe au nord de l'un d'eux (voir _physics_process) ; air au-dessus de tout
 	z_index = 8 if air else 3
 	slots = int(d.get("slots", 0))
@@ -693,7 +693,7 @@ func _physics_process(delta: float) -> void:
 	if mech:
 		var idx := -1
 		if not path.is_empty():
-			_walk += position.distance_to(_p0) * PI / _stride
+			_walk += position.distance_to(_p0) * TAU / _stride
 			idx = int(fposmod(_walk / TAU, 1.0) * Models.WALK_FRAMES) % Models.WALK_FRAMES
 		if idx != _walk_idx:
 			_walk_idx = idx

@@ -19,7 +19,7 @@ static var _seen := {}
 ## Phase de marche (0..1) du modèle en cours de cuisson, ou -1 pour la pose à l'arrêt (mechas seulement).
 static var walk_phase := -1.0
 ## Images de marche cuites par mécha et par angle (un cycle complet = deux pas).
-const WALK_FRAMES := 6
+const WALK_FRAMES := 8
 static var _kinds := {}
 
 
