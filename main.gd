@@ -3435,6 +3435,18 @@ func path_to(from_world: Vector2, to_cell: Vector2i) -> PackedVector2Array:
 	return grid.get_point_path(_world_to_cell(from_world), to_cell)
 
 
+## Vrai si un bâtiment se dresse juste au sud de ce point : l'unité est alors derrière lui (le toit du
+## bâtiment, dessiné vers le haut, doit la cacher) ; à l'intérieur de l'emprise, elle reste au premier plan.
+func unit_behind_building(p: Vector2) -> bool:
+	var c := world_to_cell(p)
+	if occupied.has(c):
+		return false
+	for k in range(1, 4):
+		if occupied.has(Vector2i(c.x, c.y + k)):
+			return true
+	return false
+
+
 func world_to_cell(p: Vector2) -> Vector2i:
 	return _world_to_cell(p)
 

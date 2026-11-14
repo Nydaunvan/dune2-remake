@@ -93,6 +93,7 @@ var _dust: CPUParticles2D
 var _track_last := Vector2.INF # dernière position où une trace a été laissée
 var mech := false             # marcheur (mecha) : balancement et empreintes
 var _walk := 0.0              # phase de marche (radians), avance avec la distance parcourue (π par pas)
+var _z_t := 0.0               # prochain recalcul de la profondeur (devant / derrière un bâtiment)
 var _walk_amp := 0.0          # intensité de la marche (0 à l'arrêt, 1 en marche) : départs et arrêts sans à-coup
 var _stride := 18.0           # longueur d'un pas, en pixels
 var _bob_amp := 2.0           # amplitude du balancement vertical, en pixels
@@ -132,7 +133,7 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 				var heavy: bool = float(mstyle.get("lt", 5.0)) >= 6.5
 				_stride = (21.0 if heavy else 17.0) * ms
 				_bob_amp = (2.4 if heavy else 1.9) * ms
-	# Toujours dessiné au-dessus des bâtiments (jamais caché derrière), air au-dessus du sol
+	# Au sol : devant les bâtiments, ou derrière quand il passe au nord de l'un d'eux (voir _physics_process) ; air au-dessus de tout
 	z_index = 8 if air else 3
 	slots = int(d.get("slots", 0))
 	speed = float(d.get("speed", 100.0)) * (GameData.AIR_SPEED_MULT if d.get("air", false) else GameData.SPEED_MULT)
@@ -697,6 +698,13 @@ func _physics_process(delta: float) -> void:
 	_repair(delta)
 	var _p0 := position
 	_move(delta)
+	if not air and not emerging:
+		_z_t -= delta
+		if _z_t <= 0.0:
+			_z_t = 0.1 + randf() * 0.05
+			var want := -1 if game.unit_behind_building(position) else 3
+			if z_index != want:
+				z_index = want # derrière un bâtiment : il le cache, devant sinon
 	if mech:
 		var moving := not path.is_empty()
 		if moving:
