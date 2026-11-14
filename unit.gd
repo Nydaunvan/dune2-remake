@@ -92,7 +92,10 @@ var _hurt_t := 0.0 # >0 : vient d'être attaqué, reste à l'abri près de la ba
 var _dust: CPUParticles2D
 var _track_last := Vector2.INF # dernière position où une trace a été laissée
 var mech := false             # marcheur (mecha) : balancement et empreintes
-var _walk := 0.0              # phase de marche (radians), avance avec la distance parcourue
+var _walk := 0.0              # phase de marche (radians), avance avec la distance parcourue (π par pas)
+var _walk_amp := 0.0          # intensité de la marche (0 à l'arrêt, 1 en marche) : départs et arrêts sans à-coup
+var _stride := 18.0           # longueur d'un pas, en pixels
+var _bob_amp := 2.0           # amplitude du balancement vertical, en pixels
 var _track_kind := ""        # chenilles | roues | coussin d'air (déduit du modèle 3D)
 var _work_fx: CPUParticles2D
 var _work_fx2: CPUParticles2D # éclats d'épice / de minerai au-dessus du nuage
@@ -110,7 +113,25 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	var d := GameData.def(id)
 	role = d.get("role", "combat")
 	air = d.get("air", false)
-	mech = ModelsExt.STYLES.get(id, {}).get("k", "") == "mech"
+	var mstyle: Dictionary = ModelsExt.STYLES.get(id, {})
+	mech = mstyle.get("k", "") == "mech"
+	if mech:
+		# Foulée et rebond propres à l'anatomie : les lourds posent le pied lentement, les arachnides trottinent
+		var ms := float(mstyle.get("s", 1.0))
+		match String(mstyle.get("leg", "biped")):
+			"quad":
+				_stride = 15.0 * ms
+				_bob_amp = 1.2 * ms
+			"spider":
+				_stride = 8.0 * ms
+				_bob_amp = 0.7
+			"crystal":
+				_stride = 17.0 * ms
+				_bob_amp = 1.3
+			_:
+				var heavy: bool = float(mstyle.get("lt", 5.0)) >= 6.5
+				_stride = (21.0 if heavy else 17.0) * ms
+				_bob_amp = (2.4 if heavy else 1.9) * ms
 	# Toujours dessiné au-dessus des bâtiments (jamais caché derrière), air au-dessus du sol
 	z_index = 8 if air else 3
 	slots = int(d.get("slots", 0))
@@ -676,9 +697,14 @@ func _physics_process(delta: float) -> void:
 	_repair(delta)
 	var _p0 := position
 	_move(delta)
-	if mech and not path.is_empty():
-		_walk += position.distance_to(_p0) * 0.32
-		queue_redraw() # balancement de marche
+	if mech:
+		var moving := not path.is_empty()
+		if moving:
+			_walk += position.distance_to(_p0) * PI / _stride
+		var tgt_amp := 1.0 if moving else 0.0
+		if not is_equal_approx(_walk_amp, tgt_amp) or moving:
+			_walk_amp = move_toward(_walk_amp, tgt_amp, delta * (4.0 if moving else 3.0))
+			queue_redraw() # balancement de marche
 	_dust.emitting = not air and not path.is_empty() and game.is_sand_at(position)
 	if not air and game.tracks != null:
 		if not path.is_empty() and game.is_sand_at(position):
@@ -1060,11 +1086,13 @@ func _draw_sprite() -> bool:
 		return true
 	draw_set_transform(Vector2(-5, 6).rotated(unrot), unrot, Vector2(1.0, 0.55))
 	draw_circle(Vector2.ZERO, radius * 1.25, Color(0.1, 0.03, 0.12, 0.28))
-	if mech and not path.is_empty():
-		# Marche : le corps monte et descend à chaque pas et penche d'un côté puis de l'autre
-		var bob := absf(sin(_walk)) * 2.6
-		var sway := sin(_walk) * 0.045
-		draw_set_transform(Vector2(0, -bob).rotated(unrot), model_rot + sway, Vector2.ONE)
+	if mech and _walk_amp > 0.001:
+		# Marche : à chaque pas le corps s'élève doucement puis s'abaisse à la pose du pied (courbe lisse, sans
+		# rebond sec), avec un léger déport latéral du poids et un très faible tangage ; pas de roulis.
+		var step_wave := 0.5 - 0.5 * cos(2.0 * _walk)          # 0 pied posé, 1 milieu du pas
+		var bob := step_wave * _bob_amp * _walk_amp
+		var shift := sin(_walk) * _bob_amp * 0.35 * _walk_amp  # transfert de poids d'un pied sur l'autre
+		draw_set_transform(Vector2(0, -bob).rotated(unrot) + Vector2(0, shift), model_rot, Vector2(1.0, 1.0 + 0.012 * step_wave * _walk_amp))
 	else:
 		draw_set_transform(Vector2.ZERO, model_rot, Vector2.ONE)
 	draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
