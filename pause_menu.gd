@@ -91,6 +91,16 @@ func setup(p_game) -> void:
 	vers.custom_minimum_size = Vector2(110, 56)
 	vers.pressed.connect(func() -> void: Changelog.open(game))
 	hb.add_child(vers)
+	if game.mission.is_empty():
+		# Mode test : ressources infinies et tout débloqué (aussi sur F8)
+		var adm := GameUI.NeonButton.new("ADMIN : OUI" if game.admin else "MODE ADMIN")
+		adm.accent = GameData.GOLD
+		adm.custom_minimum_size = Vector2(190, 56)
+		adm.pressed.connect(func() -> void:
+			game.toggle_admin()
+			adm.text = "ADMIN : OUI" if game.admin else "MODE ADMIN"
+			adm.queue_redraw())
+		hb.add_child(adm)
 	var menu := GameUI.NeonButton.new("MENU PRINCIPAL")
 	menu.accent = GameData.RED
 	menu.custom_minimum_size = Vector2(250, 56)

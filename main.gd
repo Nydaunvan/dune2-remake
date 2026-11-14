@@ -114,6 +114,8 @@ var _ore_acc := {}
 var _inc_acc := {0: 0.0, 1: 0.0, 2: 0.0}
 var credits := 1000 # Solaris (épice raffinée) : payent les unités
 var ore := 1500     # Minerai : paye les bâtiments
+var admin := false  # mode test (escarmouche) : Solaris et minerai infinis, tout est débloqué
+const ADMIN_STOCK := 999999
 var game_time := 0.0
 var production := {"building": [], "unit": []} # files d'attente (le premier élément est en cours)
 ## Rayon (en cases) de la zone de construction autour d'un Chantier.
@@ -1445,6 +1447,9 @@ func _check_end() -> void:
 
 func _process(delta: float) -> void:
 	game_time += delta
+	if admin and not over:
+		credits = ADMIN_STOCK
+		ore = ADMIN_STOCK
 	if not over:
 		_obj_t -= delta
 		if _obj_t <= 0.0:
@@ -1584,6 +1589,8 @@ func _unhandled_input(event: InputEvent) -> void:
 				ui.toast("Son coupé" if off else "Son activé", GameData.AMBER)
 			KEY_F10:
 				get_tree().change_scene_to_file("res://menu.tscn")
+			KEY_F8: # mode admin (escarmouche)
+				toggle_admin()
 			KEY_F9: # test : fait surgir un ver tout de suite
 				if worm == null and not units.is_empty():
 					var sand := _harvesters_on_sand()
@@ -1993,6 +2000,23 @@ func on_command(cmd: String) -> void:
 
 # --- Production & construction ------------------------------------------------
 
+## Mode admin (test) : réservé à l'escarmouche. Ressources infinies et tout débloqué pour le joueur.
+func toggle_admin() -> void:
+	if not mission.is_empty():
+		ui.toast("Le mode admin n'est disponible qu'en escarmouche", GameData.AMBER)
+		return
+	admin = not admin
+	if admin:
+		credits = ADMIN_STOCK
+		ore = ADMIN_STOCK
+		ui.toast("MODE ADMIN activé : Solaris et minerai infinis, tout est débloqué", GameData.GOLD)
+	else:
+		credits = mini(credits, 3000)
+		ore = mini(ore, 3000)
+		ui.toast("Mode admin désactivé", GameData.AMBER)
+	sfx.play_ui("ready", -4.0)
+
+
 func is_unlocked(id: String) -> bool:
 	if not GameData.BUILDINGS.has(id):
 		return true
@@ -2000,6 +2024,8 @@ func is_unlocked(id: String) -> bool:
 	var f: String = d.get("faction", "")
 	if f != "" and f != faction_id:
 		return false
+	if admin:
+		return true
 	if mission.is_empty():
 		return best_level("chantier") >= chantier_needed(id)  # escarmouche : tout se débloque en montant le Chantier
 	return int(d.get("unlock", 0)) <= tier
@@ -2016,6 +2042,8 @@ func is_available(id: String) -> bool:
 		return false
 	if unit_level_block(id) != "":
 		return false
+	if admin:
+		return true # prérequis ignorés en mode test
 	for r in GameData.def(id)["requires"]:
 		if not has_building(r):
 			return false
@@ -2034,6 +2062,8 @@ func worker_cap(id: String, team := 0) -> int:
 
 
 func worker_block(id: String, team := 0) -> String:
+	if admin and team == 0:
+		return ""
 	var cap := worker_cap(id, team)
 	if cap <= 0:
 		return ""
@@ -2091,6 +2121,8 @@ func army_count(team := 0) -> int:
 
 
 func unit_level_block(id: String, team := 0) -> String:
+	if admin and team == 0:
+		return ""
 	if GameData.BUILDINGS.has(id):
 		return building_block(id, team)
 	var cap := army_cap(team)
@@ -2190,6 +2222,8 @@ func count_buildings(id: String, team := 0) -> int:
 ## Taille maximale d'une file d'attente : petite au départ, grandit avec le Chantier (bâtiments)
 ## ou l'Usine et ses niveaux (unités).
 func queue_max(cat: String) -> int:
+	if admin:
+		return 12
 	if cat == "building":
 		return 2 + 2 * (best_level("chantier") - 1)
 	return mini(8, 2 + 2 * (best_level("usine") - 1) + maxi(0, count_buildings("usine") - 1))
