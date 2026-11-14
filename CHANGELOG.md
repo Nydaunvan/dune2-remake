@@ -1,6 +1,15 @@
 # Journal des versions — The Building of a Dynasty
 
-Version actuelle : **0.22**
+Version actuelle : **0.23**
+
+## 0.23 — Mechas, vers et installateur (2026-11-14)
+- Installateur Windows : raccourcis bureau et menu Démarrer, désinstallation depuis les paramètres de Windows, icône du jeu
+- Mise à jour automatique : le menu principal détecte une nouvelle version publiée sur GitHub et l'installe en un clic
+- Dix mechas marcheurs uniques : bipèdes, quadrupèdes (Archonte, Mastodonte), marcheurs de cristal et arachnides, avec marche animée et empreintes propres
+- Vers de sable : points de vie énormes, ciblables même enfouis, individus qui gardent leurs blessures d'une apparition à l'autre
+- Nouveaux objectifs de campagne : repousser des assauts, abattre des vers géants (à la place de « tenir x minutes »)
+- IA : une seule amélioration de bâtiment à la fois, plus de minerai vidé ni de production bloquée
+- Nouveau bandeau de ressources net et lisse
 
 ## 0.22 — Équilibre, accueil et ouvriers (2026-11-13)
 - Banc d'essai IA contre IA : équilibrage des quatre factions, cartes équitables, IA plus tactique (repli, raids, contre-attaques)

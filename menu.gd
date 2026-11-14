@@ -5,6 +5,10 @@ extends Control
 var selected := GameSession.faction
 var cards := {}
 var _hint: Label
+var _upd_label: Label
+var _upd_row: HBoxContainer
+var _updater: Updater
+var _upd_retry := false
 
 
 func _ready() -> void:
@@ -86,6 +90,86 @@ func _ready() -> void:
 		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT:
 			Changelog.open(self))
 	vb.add_child(ver)
+
+	# Mises à jour : vérification automatique au démarrage (version Windows exportée), réessai d'un clic
+	_upd_label = Label.new()
+	_upd_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_upd_label.add_theme_font_size_override("font_size", 17)
+	_upd_label.add_theme_color_override("font_outline_color", Color(0.05, 0.02, 0.08, 0.95))
+	_upd_label.add_theme_constant_override("outline_size", 7)
+	_upd_label.mouse_filter = Control.MOUSE_FILTER_STOP
+	_upd_label.gui_input.connect(func(e: InputEvent) -> void:
+		if e is InputEventMouseButton and e.pressed and e.button_index == MOUSE_BUTTON_LEFT and _upd_retry:
+			_check_update())
+	vb.add_child(_upd_label)
+	_upd_row = HBoxContainer.new()
+	_upd_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	_upd_row.add_theme_constant_override("separation", 16)
+	_upd_row.visible = false
+	vb.add_child(_upd_row)
+	var upd_go := PlateButton.new("METTRE À JOUR", 3)
+	upd_go.custom_minimum_size = Vector2(250, 56)
+	upd_go.pressed.connect(_start_update)
+	_upd_row.add_child(upd_go)
+	var upd_later := PlateButton.new("PLUS TARD", 1)
+	upd_later.custom_minimum_size = Vector2(200, 56)
+	upd_later.pressed.connect(func() -> void:
+		_upd_row.visible = false
+		_upd_status("Mise à jour %s disponible — reportée" % String(Updater.last_info.get("version", "")), GameData.GOLD))
+	_upd_row.add_child(upd_later)
+	if Updater.can_apply() or OS.has_environment("DYNASTY_UPDATE_TEST"):
+		if Updater.last_info.is_empty():
+			_check_update()
+		else:
+			_on_update_found(Updater.last_info)
+
+
+func _upd_status(text: String, col: Color, retry := false) -> void:
+	_upd_retry = retry
+	_upd_label.text = text
+	_upd_label.add_theme_color_override("font_color", col)
+	_upd_label.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND if retry else Control.CURSOR_ARROW
+
+
+func _check_update() -> void:
+	_upd_status("Recherche de mises à jour…", Color(1, 1, 1, 0.5))
+	if _updater != null:
+		_updater.queue_free()
+	_updater = Updater.new()
+	add_child(_updater)
+	_updater.found.connect(_on_update_found)
+	_updater.uptodate.connect(func() -> void: _upd_status("Le jeu est à jour — vérifier à nouveau", Color(0.55, 1.0, 0.65, 0.8), true))
+	_updater.failed.connect(func(m: String) -> void:
+		_upd_row.visible = false
+		_upd_status("Mise à jour impossible (%s) — réessayer" % m, Color(1.0, 0.6, 0.5, 0.9), true))
+	_updater.check()
+
+
+func _on_update_found(info: Dictionary) -> void:
+	if _updater == null or not is_instance_valid(_updater):
+		_updater = Updater.new()
+		add_child(_updater)
+		_updater.info = info
+		_updater.failed.connect(func(m: String) -> void:
+			_upd_row.visible = false
+			_upd_status("Mise à jour impossible (%s) — réessayer" % m, Color(1.0, 0.6, 0.5, 0.9), true))
+	_upd_status("Nouvelle version %s disponible (vous avez la %s)" % [info["version"], ChangelogData.current()], GameData.GOLD)
+	_upd_row.visible = true
+
+
+func _start_update() -> void:
+	if not Updater.can_apply():
+		_upd_status("Mise à jour automatique : uniquement dans le jeu installé (Windows)", Color(1.0, 0.75, 0.4, 0.95))
+		return
+	_upd_row.visible = false
+	_upd_status("Téléchargement de la version %s…" % _updater.info["version"], GameData.GOLD)
+	_updater.progress.connect(func(done: int, total: int) -> void:
+		if total > 0:
+			_upd_status("Téléchargement de la version %s : %d %%" % [_updater.info["version"], int(100.0 * done / total)], GameData.GOLD))
+	_updater.downloaded.connect(func() -> void:
+		_upd_status("Installation… le jeu va redémarrer", GameData.GOLD)
+		_updater.install_and_quit())
+	_updater.download()
 
 
 func _label(text: String, size: int, color: Color, outline: bool) -> Label:
