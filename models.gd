@@ -16,6 +16,10 @@ const OBSIDIAN := Color(0.16, 0.12, 0.24)
 
 ## Type de déplacement observé pendant la construction du modèle : "tracks", "wheels" ou "hover" (voir move_kind).
 static var _seen := {}
+## Phase de marche (0..1) du modèle en cours de cuisson, ou -1 pour la pose à l'arrêt (mechas seulement).
+static var walk_phase := -1.0
+## Images de marche cuites par mécha et par angle (un cycle complet = deux pas).
+const WALK_FRAMES := 6
 static var _kinds := {}
 
 

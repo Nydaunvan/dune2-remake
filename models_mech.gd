@@ -47,6 +47,44 @@ static func _limb(parent: Node3D, a: Vector3, b: Vector3, thick: float, col: Col
 	m.transform = Transform3D(Basis.looking_at(dir, up), (a + b) * 0.5)
 
 
+# --- Marche : poses des pattes ----------------------------------------------------------------
+
+## Demi-amplitude d'un pas (unités du modèle) : un pas complet fait 2 × S, c'est aussi la distance que parcourt
+## le mécha pendant une demi-foulée (voir Unit._stride) pour que les pieds ne glissent pas sur le sol.
+static func half_stride(p: Dictionary) -> float:
+	match String(p.get("leg", "biped")):
+		"quad": return float(p.get("h", 20.0)) * 0.34
+		"spider": return 4.6 + float(p.get("h", 12.0)) * 0.12
+		"crystal": return 6.0 if p.get("mk", "") == "geode" else 7.0
+	return float(p.get("lh", 15.0)) * 0.36
+
+
+## Position d'un pied (décalage avant/arrière, hauteur) pour une patte de phase `off` (0 ou 0.5) : appui puis
+## balancier levé. Sans phase de marche (modèle « à l'arrêt »), le pied reste posé à sa place.
+static func _foot(off: float, s: float, lift: float) -> Vector2:
+	var ph := Models.walk_phase
+	if ph < 0.0:
+		return Vector2.ZERO
+	var t := fposmod(ph + off, 1.0)
+	if t < 0.5:
+		return Vector2(s * (1.0 - 4.0 * t), 0.0)
+	var u := (t - 0.5) * 2.0
+	return Vector2(-s + 2.0 * s * u, lift * sin(PI * u))
+
+
+## Genou d'une jambe à deux segments (cinématique inverse dans le plan avant/haut), plié du côté `bend`.
+static func _knee(hip: Vector3, ankle: Vector3, l1: float, l2: float, bend: float) -> Vector3:
+	var d := ankle - hip
+	var dl := clampf(d.length(), 0.5, l1 + l2 - 0.05)
+	var dir := d.normalized()
+	var a := (l1 * l1 - l2 * l2 + dl * dl) / (2.0 * dl)
+	var hh := sqrt(maxf(l1 * l1 - a * a, 0.0))
+	var perp := Vector3(-dir.y, dir.x, 0.0)
+	if perp.x * bend < 0.0:
+		perp = -perp
+	return hip + dir * minf(a, dl) + perp * hh
+
+
 # --- Bipèdes ------------------------------------------------------------------------------------
 
 static func _dims(p: Dictionary) -> Dictionary:
@@ -102,13 +140,17 @@ static func _biped(g: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary)
 	var fl := float(p.get("fl", 13.0))
 	var ex: Array = p.get("x", [])
 	# Jambes : pied, tibia, genou, cuisse
+	var hs := half_stride(p)
 	for sd in [-1.0, 1.0]:
 		var z: float = lz * sd
-		Models._box(g, Vector3(fl, 3.0, lt + 3.0), Vector3(fl * 0.2, 1.5, z), Models.DARK)
-		Models._box(g, Vector3(fl * 0.45, 2.0, lt + 1.0), Vector3(fl * 0.55, 3.6, z), body.darkened(0.1), Vector3(0, 0, -0.25))
-		var ankle := Vector3(-1.0 * kn, 4.0, z)
-		var knee := Vector3(4.0 * kn, lh * 0.52, z)
+		var fo := _foot(0.0 if sd < 0.0 else 0.5, hs, lh * 0.3)
 		var hip := Vector3(0.0, lh, z)
+		var ankle := Vector3(-1.0 * kn + fo.x, 4.0 + fo.y, z)
+		var l1 := Vector3(4.0 * kn, lh * 0.52, 0.0).distance_to(Vector3(0, lh, 0.0)) * 1.12
+		var l2 := Vector3(-1.0 * kn, 4.0, 0.0).distance_to(Vector3(4.0 * kn, lh * 0.52, 0.0)) * 1.12
+		var knee := _knee(hip, ankle, l1, l2, kn)
+		Models._box(g, Vector3(fl, 3.0, lt + 3.0), Vector3(fl * 0.2 + fo.x, 1.5 + fo.y, z), Models.DARK)
+		Models._box(g, Vector3(fl * 0.45, 2.0, lt + 1.0), Vector3(fl * 0.55 + fo.x, 3.6 + fo.y, z), body.darkened(0.1), Vector3(0, 0, -0.25))
 		_limb(g, ankle, knee, lt, body.darkened(0.15))
 		_limb(g, knee, hip, lt + 1.5, body)
 		Models._ball(g, lt * 0.62, knee, Models.METAL)
@@ -218,11 +260,13 @@ static func _crystal_walker(g: Node3D, body: Color, hi: Color, acc: Color, p: Di
 		Models._seen["legs_crystal"] = true
 		# Géode : coque d'obsidienne ouverte sur un coeur de cristaux, portée par quatre pointes
 		var h := 13.0
+		var hs := half_stride(p)
 		for sx in [-1.0, 1.0]:
 			for sz in [-1.0, 1.0]:
+				var fo := _foot(0.0 if sx * sz > 0.0 else 0.5, hs, 5.0)
 				var top := Vector3(sx * 7.0, h, sz * 7.0)
-				var knee := Vector3(sx * 13.0, h + 3.0, sz * 12.0)
-				var foot := Vector3(sx * 15.0, 0.0, sz * 15.0)
+				var knee := Vector3(sx * 13.0 + fo.x * 0.5, h + 3.0 + fo.y * 0.4, sz * 12.0)
+				var foot := Vector3(sx * 15.0 + fo.x, fo.y, sz * 15.0)
 				_limb(g, top, knee, 3.2, Models.OBSIDIAN)
 				_limb(g, knee, foot, 2.6, Models.OBSIDIAN.lightened(0.08))
 				Models._crystal(g, 5.0, 2.2, foot + Vector3(0, 2.0, 0), gc, 0.0, 0.0, 1.4)
@@ -239,12 +283,14 @@ static func _crystal_walker(g: Node3D, body: Color, hi: Color, acc: Color, p: Di
 		return
 	# Stèle : obélisque sur deux piliers, anneaux flottants et aiguilles tournées vers le ciel
 	Models._seen["legs_crystal"] = true
+	var hs2 := half_stride(p)
 	for sd in [-1.0, 1.0]:
 		var z: float = 6.0 * sd
-		Models._box(g, Vector3(10.0, 2.5, 8.0), Vector3(1.0, 1.25, z), Models.OBSIDIAN)
-		_limb(g, Vector3(1.0, 2.5, z), Vector3(-3.0, 15.0, z), 4.0, Models.OBSIDIAN.lightened(0.06))
-		_limb(g, Vector3(-3.0, 15.0, z), Vector3(0.0, 27.0, z * 0.7), 4.6, Models.OBSIDIAN)
-		Models._crystal(g, 7.0, 2.4, Vector3(5.0, 8.0, z), gc, -0.3, 0.0, 1.2)
+		var fo := _foot(0.0 if sd < 0.0 else 0.5, hs2, 5.0)
+		Models._box(g, Vector3(10.0, 2.5, 8.0), Vector3(1.0 + fo.x, 1.25 + fo.y, z), Models.OBSIDIAN)
+		_limb(g, Vector3(1.0 + fo.x, 2.5 + fo.y, z), Vector3(-3.0 + fo.x * 0.4, 15.0 + fo.y * 0.5, z), 4.0, Models.OBSIDIAN.lightened(0.06))
+		_limb(g, Vector3(-3.0 + fo.x * 0.4, 15.0 + fo.y * 0.5, z), Vector3(0.0, 27.0, z * 0.7), 4.6, Models.OBSIDIAN)
+		Models._crystal(g, 7.0, 2.4, Vector3(5.0 + fo.x, 8.0 + fo.y, z), gc, -0.3, 0.0, 1.2)
 	Models._box(g, Vector3(14.0, 4.0, 15.0), Vector3(0, 27.0, 0), Models.OBSIDIAN)
 	Models._cyl(g, 4.0, 7.5, 18.0, Vector3(0, 38.0, 0), body, 4, Vector3(0, 0.78, 0))
 	Models._cyl(g, 1.8, 1.8, 12.0, Vector3(0, 38.0, 0), gc, 4, Vector3(0, 0.78, 0), 1.7)
@@ -269,17 +315,24 @@ static func _quad(g: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary) 
 	var ex: Array = p.get("x", [])
 	var heavy: bool = p.get("wp", "plasma") == "rockets"
 	# Quatre pattes : hanches, genou, pied (pattes avant : genou en avant ; arrière : jarret en arrière)
+	var hs := half_stride(p)
 	for fx in [1.0, -1.0]:
 		for sd in [-1.0, 1.0]:
 			var x: float = bl * 0.36 * fx
 			var z: float = (bw * 0.5 + (1.0 if heavy else 0.5)) * sd
+			# Trot : les pattes en diagonale (avant gauche + arrière droite) avancent ensemble
+			var fo := _foot(0.0 if fx * sd > 0.0 else 0.5, hs, h * 0.28)
 			var hip := Vector3(x, h, z)
-			var knee := Vector3(x + (3.0 if heavy else 5.0) * fx, h * 0.5, z + sd * 1.2)
-			var foot := Vector3(x - (1.0 if heavy else 2.0) * fx, 3.0, z + sd * 0.4)
+			var foot := Vector3(x - (1.0 if heavy else 2.0) * fx + fo.x, 3.0 + fo.y, z + sd * 0.4)
+			var knee0 := Vector3(x + (3.0 if heavy else 5.0) * fx, h * 0.5, z + sd * 1.2)
+			var l1 := knee0.distance_to(hip) * 1.12
+			var l2 := knee0.distance_to(Vector3(x - (1.0 if heavy else 2.0) * fx, 3.0, z + sd * 0.4)) * 1.12
+			var knee := _knee(hip, foot, l1, l2, fx)
+			knee.z = z + sd * 1.2
 			_limb(g, hip, knee, lt + 1.2, body)
 			_limb(g, knee, foot, lt, body.darkened(0.15))
 			Models._ball(g, lt * 0.7, knee, Models.METAL)
-			Models._box(g, Vector3(lt + 5.0, 3.0, lt + 4.0), Vector3(foot.x + 1.0 * fx, 1.5, foot.z), Models.DARK)
+			Models._box(g, Vector3(lt + 5.0, 3.0, lt + 4.0), Vector3(foot.x + 1.0 * fx, 1.5 + fo.y, foot.z), Models.DARK)
 			if heavy:
 				Models._box(g, Vector3(lt + 3.0, h * 0.35, 1.4), Vector3(x + 1.0 * fx, h * 0.72, z + sd * (lt * 0.5 + 1.0)), Models.METAL)
 	# Châssis et dessus
@@ -338,12 +391,16 @@ static func _spider(g: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary
 	var bl := float(p.get("bl", 10.0))
 	# Six pattes : chaque patte = attache, genou haut, pied au sol
 	var rows := [[8.0, 14.0, 12.0, 22.0], [1.0, 6.0, 15.0, 8.0], [-6.0, -12.0, 13.0, -18.0]]
-	for row in rows:
+	var hs := half_stride(p)
+	for ri in rows.size():
+		var row: Array = rows[ri]
 		for sd in [-1.0, 1.0]:
 			var ax: float = row[0]
+			# Démarche en trépied : (avant G, milieu D, arrière G) avancent pendant que les trois autres poussent
+			var fo := _foot(0.0 if (ri % 2 == 0) == (sd < 0.0) else 0.5, hs, 5.5)
 			var a := Vector3(ax, h - 1.0, bw * 0.4 * sd)
-			var knee := Vector3(ax + row[1] * 0.35, h + 6.0, (bw * 0.4 + row[2] * 0.55) * sd)
-			var foot := Vector3(ax + row[3] * 0.55, 0.0, (bw * 0.4 + row[2]) * sd)
+			var foot := Vector3(ax + row[3] * 0.55 + fo.x, fo.y, (bw * 0.4 + row[2]) * sd)
+			var knee := Vector3(ax + row[1] * 0.35 + fo.x * 0.5, h + 6.0 + fo.y * 0.35, (bw * 0.4 + row[2] * 0.55) * sd)
 			_limb(g, a, knee, lt * 1.15, body.darkened(0.12))
 			_limb(g, knee, foot, lt * 0.9, body.darkened(0.25))
 			Models._ball(g, lt * 0.8, knee, Models.METAL)

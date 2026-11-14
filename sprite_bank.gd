@@ -37,6 +37,11 @@ func setup(p_game, faction_ids: Array) -> void:
 		for id in ids:
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": ANGLES,
 					"frame": UNIT_FRAME, "extra": UNIT_EXTRA})
+			# Mechas : images de marche (pattes qui bougent), une par phase du cycle
+			if ModelsExt.STYLES.get(id, {}).get("k", "") == "mech":
+				for k in Models.WALK_FRAMES:
+					_jobs.append({"key": "%s|%s|w%d" % [id, f, k], "id": id, "accent": accent, "faction": f, "angles": ANGLES,
+							"frame": UNIT_FRAME, "extra": UNIT_EXTRA, "phase": float(k) / Models.WALK_FRAMES})
 		var bids: Array = ["chantier", "centrale", "raffinerie", "fonderie", "usine", "tourelle"]
 		for id in GameData.buildings_for(f):
 			if not bids.has(id):
@@ -172,7 +177,9 @@ func _bake(job: Dictionary) -> void:
 	var view_h: float = frame_px.y * cos(TILT) + float(job["extra"])
 	_vp.size = Vector2i(int(ceil(frame_px.x * SS)), int(ceil(view_h * SS)))
 	_cam.size = view_h
+	Models.walk_phase = float(job.get("phase", -1.0))
 	var model := Models.build(job["id"], job["accent"], job.get("faction", ""))
+	Models.walk_phase = -1.0
 	_holder.add_child(model)
 	var out: Array = []
 	var rects: Array = []
