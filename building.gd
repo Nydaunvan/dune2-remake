@@ -289,6 +289,10 @@ func _draw_sprite(s: Vector2) -> bool:
 		return false
 	var fid: String = game.faction_id_of(team)
 	var key := "%s|%s" % [id, fid]
+	var tiered := false
+	if level > 1 and bank.has("%s|L%d" % [key, level]):
+		key = "%s|L%d" % [key, level] # modèle propre à ce niveau d'évolution
+		tiered = true
 	var tex = bank.frame(key)
 	if tex == null:
 		return false
@@ -296,15 +300,17 @@ func _draw_sprite(s: Vector2) -> bool:
 	var c := s / 2.0
 	# Ombre portée (bas-gauche)
 	draw_rect(Rect2(Vector2(-10, 8), s - Vector2(4, 4)), Color(0.1, 0.03, 0.12, 0.25))
-	var tint := Color(1, 1, 1) if level < 3 else Color(1.1, 1.08, 1.14)
+	var tint := Color(1, 1, 1) if (level < 3 or tiered) else Color(1.1, 1.08, 1.14)
 	draw_texture_rect(tex, Rect2(c - sz / 2.0, sz), false, tint)
-	if level > 1:
+	if level > 1 and not tiered:
 		_draw_upgrade(s, fid)
 	_draw_anim(s, fid, bank)
 	if weapon != "":
 		var hk := "%s_tete|%s" % [id, fid]
 		if not bank.has(hk):
 			hk = "tourelle_tete|%s" % fid
+		if level > 1 and bank.has("%s|L%d" % [hk, level]):
+			hk = "%s|L%d" % [hk, level]
 		var ht = bank.frame(hk, aim)
 		if ht != null:
 			var hs := bank.draw_size(hk)

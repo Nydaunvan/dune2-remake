@@ -91,6 +91,10 @@ static func turret_offset(id: String, hull_rot: float) -> Vector2:
 
 ## Modèle de l'unité `id`, ou de sa tourelle seule (`<id>_tete`) : la coque est cuite sans tourelle, la tourelle à part,
 ## centrée sur son pivot, pour qu'elle puisse tourner indépendamment de la coque.
+## Palier visuel du bâtiment à cuire (1 = modèle de base, 2 et 3 = modules ajoutés, voir ModelsTiers).
+static var tier := 1
+
+
 static func build(id: String, accent: Color, faction := "") -> Node3D:
 	var head := id.ends_with("_tete")
 	var base := id.trim_suffix("_tete")
@@ -106,7 +110,13 @@ static func build(id: String, accent: Color, faction := "") -> Node3D:
 			else:
 				(tur as Node3D).visible = false
 		return m
-	return _build_model(id, accent, faction)
+	var m2 := _build_model(id, accent, faction)
+	if tier > 1:
+		if head:
+			ModelsTiers.head(m2, id, accent, tier)
+		else:
+			ModelsTiers.apply(m2, id, accent, tier)
+	return m2
 
 
 static func _build_model(id: String, accent: Color, faction := "") -> Node3D:

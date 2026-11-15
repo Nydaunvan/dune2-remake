@@ -21,19 +21,29 @@ func _initialize() -> void:
 	_run()
 func _run() -> void:
 	var accent: Color = GameData.FACTIONS[fac]["color"]
+	var lvls := [1, 2, 3] if OS.get_environment("TIERS") == "1" else [1]
+	var all_ids: Array = []
 	for id in ids:
+		for lv in lvls:
+			all_ids.append(id if lv == 1 else "%s|L%d" % [id, lv])
+	for kid in all_ids:
+		var id: String = String(kid).split("|")[0]
+		var tr := 1 if kid == id else int(String(kid).split("|L")[1])
 		if not GameData.BUILDINGS.has(id):
 			continue
 		var cs: Vector2i = GameData.def(id)["size"]
 		var fr := Vector2(cs * 32) + Vector2(SpriteBank.BUILDING_MARGIN, SpriteBank.BUILDING_MARGIN)
 		Models.hd = hd
-		await sb._bake({"key": id, "id": id, "accent": accent, "faction": fac, "angles": 1, "frame": fr, "extra": SpriteBank.BUILDING_EXTRA, "ss": sb.ss, "hd": hd})
+		Models.tier = tr
+		await sb._bake({"key": kid, "id": id, "accent": accent, "faction": fac, "angles": 1, "frame": fr, "extra": SpriteBank.BUILDING_EXTRA, "ss": sb.ss, "hd": hd, "tier": tr})
 		Models.hd = false
+		Models.tier = 1
+	ids = all_ids
 	canvas = Node2D.new()
 	root.add_child(canvas)
 	var bg := ColorRect.new()
 	bg.color = Color("c98f78")
-	bg.size = Vector2(1800, 1100)
+	bg.size = Vector2(1800, 1400)
 	root.add_child(bg)
 	root.move_child(bg, 0)
 	canvas.draw.connect(func() -> void:
@@ -43,7 +53,7 @@ func _run() -> void:
 		for id in ids:
 			if not sb.has(id):
 				continue
-			var sz := sb.draw_size(id) * 3.0
+			var sz := sb.draw_size(id) * 2.2
 			if x + sz.x > 1780:
 				x = 40.0
 				y += rowh + 30.0

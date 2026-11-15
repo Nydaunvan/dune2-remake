@@ -14,6 +14,8 @@ var hd_units := false     # coques HD (shader de tôle, détails de surface) pou
 const ANGLES := 16
 const UNIT_FRAME := Vector2(104, 104)
 const UNIT_EXTRA := 44.0
+## Bâtiments à paliers visuels (niveaux 2 et 3 cuits à part).
+const TIERED := ["chantier", "centrale", "raffinerie", "fonderie", "usine", "tourelle", "radar", "reparation"]
 const BUILDING_MARGIN := 44.0
 const BUILDING_EXTRA := 70.0
 
@@ -65,9 +67,17 @@ func setup(p_game, faction_ids: Array) -> void:
 			var fr := Vector2(cs * 32) + Vector2(BUILDING_MARGIN, BUILDING_MARGIN)
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": 1,
 					"frame": fr, "extra": BUILDING_EXTRA, "ss": ss_building, "hd": true})
+			if TIERED.has(id): # paliers d'évolution : un modèle différent aux niveaux 2 et 3
+				for lv in [2, 3]:
+					_jobs.append({"key": "%s|%s|L%d" % [id, f, lv], "id": id, "accent": accent, "faction": f, "angles": 1,
+							"frame": fr, "extra": BUILDING_EXTRA, "ss": ss_building, "hd": true, "tier": lv})
 			if id == "radar":
 				_jobs.append({"key": "radar_tete|%s" % f, "id": "radar_tete", "accent": accent, "faction": f,
 						"angles": 32, "frame": Vector2(96, 96), "extra": 60.0})
+			if id == "tourelle":
+				for lv in [2, 3]:
+					_jobs.append({"key": "tourelle_tete|%s|L%d" % [f, lv], "id": "tourelle_tete", "accent": accent, "faction": f, "angles": ANGLES,
+							"frame": Vector2(96, 96), "extra": 60.0, "tier": lv})
 			if id != "tourelle" and GameData.def(id).has("weapon"):
 				_jobs.append({"key": "%s_tete|%s" % [id, f], "id": "%s_tete" % id, "accent": accent, "faction": f,
 						"angles": ANGLES, "frame": Vector2(96, 96), "extra": 60.0})
@@ -232,9 +242,11 @@ func _bake(job: Dictionary) -> void:
 	_cam.size = view_h
 	Models.walk_phase = float(job.get("phase", -1.0))
 	Models.hd = hd_units and bool(job.get("hd", false))
+	Models.tier = int(job.get("tier", 1))
 	var model := Models.build(job["id"], job["accent"], job.get("faction", ""))
 	Models.walk_phase = -1.0
 	Models.hd = false
+	Models.tier = 1
 	_holder.add_child(model)
 	var out: Array = []
 	var rects: Array = []
