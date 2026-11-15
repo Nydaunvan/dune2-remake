@@ -227,11 +227,110 @@ func _make_viewport() -> void:
 func _bake_all() -> void:
 	for job in _jobs:
 		total += int(job["angles"])
+	_cache_prepare()
+	var t0 := Time.get_ticks_msec()
+	var hits := 0
 	for job in _jobs:
+		if _cache_load(job):
+			hits += 1
+			done += int(job["angles"])
+			if hits % 6 == 0:
+				await get_tree().process_frame # laisse l'écran de chargement respirer
+			continue
 		await _bake(job)
+		_cache_save(job)
 		done += int(job["angles"])
+	print("SpriteBank : %d/%d jeux d'images lus du cache, %.1f s" % [hits, _jobs.size(), (Time.get_ticks_msec() - t0) / 1000.0])
 	ready_all = true
 	finished.emit()
+
+
+# --- Cache disque : les images cuites sont gardées entre deux parties -------------------------------------------------
+# Une cuisson complète prend de longues secondes ; relue du disque (données brutes compressées zstd, mipmaps comprises),
+# elle est quasi instantanée. Le cache est invalidé dès que le code des modèles, les shaders, la version ou les réglages changent.
+
+const CACHE_FILES := ["models.gd", "models_ext.gd", "models_fac.gd", "models_mech.gd", "models_tiers.gd", "sprite_bank.gd",
+		"game_data.gd", "shaders/hull.gdshader"]
+var _cache_dir := ""
+var _cache_sig := ""
+
+
+func _cache_prepare() -> void:
+	_cache_dir = ""
+	var sig: String = ChangelogData.current() + "|" + String(Engine.get_version_info().get("string", ""))
+	for f in CACHE_FILES:
+		sig += "|" + FileAccess.get_md5("res://" + f)
+	sig += "|%s|%s|%s|%s|%s" % [hd_units, ss, ss_unit, ss_mech, ss_building]
+	_cache_sig = sig.md5_text().substr(0, 12)
+	var root := "user://sprite_cache"
+	var da := DirAccess.open("user://")
+	if da == null:
+		return
+	if not da.dir_exists("sprite_cache"):
+		da.make_dir("sprite_cache")
+	var rd := DirAccess.open(root)
+	if rd == null:
+		return
+	# on supprime les caches des anciennes versions
+	for d in rd.get_directories():
+		if d != _cache_sig:
+			var old := DirAccess.open("%s/%s" % [root, d])
+			if old != null:
+				for f in old.get_files():
+					old.remove(f)
+			rd.remove(d)
+	if not rd.dir_exists(_cache_sig):
+		rd.make_dir(_cache_sig)
+	_cache_dir = "%s/%s" % [root, _cache_sig]
+
+
+func _cache_path(job: Dictionary) -> String:
+	return "%s/%s.bin" % [_cache_dir, String(job["key"]).replace("|", "_")]
+
+
+func _cache_save(job: Dictionary) -> void:
+	if _cache_dir == "" or not _tex.has(job["key"]):
+		return
+	var imgs: Array = []
+	for t in _tex[job["key"]]:
+		var im: Image = (t as ImageTexture).get_image()
+		var raw := im.get_data()
+		imgs.append({"w": im.get_width(), "h": im.get_height(), "f": int(im.get_format()), "m": im.has_mipmaps(),
+				"n": raw.size(), "d": raw.compress(FileAccess.COMPRESSION_ZSTD)})
+	var f := FileAccess.open(_cache_path(job), FileAccess.WRITE)
+	if f == null:
+		return
+	f.store_var({"imgs": imgs, "used": _used[job["key"]], "off": _off[job["key"]], "full": _full[job["key"]], "size": _size[job["key"]]})
+	f.close()
+
+
+func _cache_load(job: Dictionary) -> bool:
+	if _cache_dir == "" or not FileAccess.file_exists(_cache_path(job)):
+		return false
+	var f := FileAccess.open(_cache_path(job), FileAccess.READ)
+	if f == null:
+		return false
+	var data = f.get_var()
+	f.close()
+	if not (data is Dictionary) or not data.has("imgs"):
+		return false
+	var out: Array = []
+	for e in data["imgs"]:
+		var raw: PackedByteArray = (e["d"] as PackedByteArray).decompress(int(e["n"]), FileAccess.COMPRESSION_ZSTD)
+		if raw.size() != int(e["n"]):
+			return false
+		var im := Image.create_from_data(int(e["w"]), int(e["h"]), bool(e["m"]), int(e["f"]) as Image.Format, raw)
+		if im == null or im.is_empty():
+			return false
+		out.append(ImageTexture.create_from_image(im))
+	if out.size() != int(job["angles"]):
+		return false
+	_tex[job["key"]] = out
+	_used[job["key"]] = data["used"]
+	_off[job["key"]] = data["off"]
+	_full[job["key"]] = data["full"]
+	_size[job["key"]] = data["size"]
+	return true
 
 
 func _bake(job: Dictionary) -> void:
