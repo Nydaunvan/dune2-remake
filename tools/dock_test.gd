@@ -4,6 +4,8 @@ extends SceneTree
 var main
 var frame := 0
 var h
+var foot_cell := Vector2i(-1, -1)
+var left_foot := false
 var tank
 var fails := 0
 var ore0 := 0.0
@@ -23,6 +25,17 @@ func _check(ok: bool, msg: String) -> void:
 		fails += 1
 func _process(_d: float) -> bool:
 	frame += 1
+	if frame == 2:
+		# bâtiments collés au pied de la rampe : la sortie doit rester possible
+		for b in main.buildings:
+			if b.id == "raffinerie" and b.team == 0:
+				var q: Dictionary = Models.ramp_of("raffinerie")
+				var foot: Vector2 = b.world_center() + Vector2(q["x"], q["z0"] + 4.0)
+				var fc: Vector2i = main.world_to_cell(foot)
+				for off in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(-1, 1), Vector2i(1, 1)]:
+					main._place_building("mur", fc + off, 0, false)
+				foot_cell = fc
+				break
 	if frame == 3:
 		h = main._spawn_unit("recolteur", main._find_free_cell(Vector2i(main.start_cell) + Vector2i(0, 6)), 0)
 		h.cargo = h.cargo_cap
@@ -37,12 +50,15 @@ func _process(_d: float) -> bool:
 			work_frames += 1
 		if h._dk == "down" and h.cargo == 0.0:
 			emptied = true
+		if h._dk == "" and saw_work and h.position.distance_to(Vector2(foot_cell) * 32.0 + Vector2(16, 16)) > 48.0:
+			left_foot = true
 	if frame == 1500:
 		_check(saw_work, "la moissonneuse est montée sur la plaque et a déchargé")
 		_check(maxlift > 3.0, "hauteur de rampe atteinte (%.1f px)" % maxlift)
 		_check(work_frames > 60, "déchargement progressif (%d images, pas instantané)" % work_frames)
 		_check(emptied, "cargaison vidée avant la descente")
 		_check(h._dk == "" and h.ramp_lift == 0.0, "redescendue (état %s, lift %.1f)" % [h._dk, h.ramp_lift])
+		_check(left_foot, "la moissonneuse a pu repartir malgré les murs collés à la rampe (pos %s)" % str(h.position))
 		_check(float(main.credits) > ore0, "crédits encaissés (%d -> %d)" % [int(ore0), int(main.credits)])
 		tank = main._spawn_unit("brute", main._find_free_cell(Vector2i(main.start_cell) + Vector2i(0, 8)), 0)
 		tank.hp = tank.max_hp * 0.4

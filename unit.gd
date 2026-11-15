@@ -98,6 +98,7 @@ var _dk_kind := ""            # unload | repair
 var _dk_t := 0.0
 var _dk_dur := 1.0
 var _dk_total := 0.0
+var _dk_out := Vector2.ZERO   # point de sortie dégagé après la rampe
 var ramp_lift := 0.0          # hauteur due à la rampe (px écran)
 var turret := false           # tourelle indépendante de la coque (sprite de tourelle cuit à part)
 var turret_rot := 0.0         # cap (monde) de la tourelle
@@ -1164,7 +1165,7 @@ func _dock_begin(b, kind: String) -> int:
 	b.dock_user = self
 	_dk_b = b
 	_dk_kind = kind
-	_dk = "in"
+	_dk = "stage"
 	_dk_t = 0.0
 	path = PackedVector2Array()
 	z_index = 5
@@ -1226,12 +1227,30 @@ func _dock_update(delta: float) -> void:
 		_seek_started = false
 		return
 	var pts := _ramp_pts(b)
-	rotation = lerp_angle(rotation, -PI / 2.0, clampf(8.0 * delta, 0.0, 1.0))
+	var up := -PI / 2.0
 	match _dk:
+		"stage":
+			# on se présente face à la rampe : point d'approche 40 px en avant du pied, cap sur ce point
+			var s: Vector2 = pts["A"] + Vector2(0.0, 40.0)
+			if not game._is_walkable(game.world_to_cell(s)):
+				s = pts["A"]
+			var d: Vector2 = s - position
+			if d.length() > 3.0:
+				rotation = lerp_angle(rotation, d.angle(), clampf(10.0 * delta, 0.0, 1.0))
+			if absf(angle_difference(rotation, d.angle())) < 0.5 or d.length() <= 3.0:
+				if _dock_move(s, 70.0, delta):
+					_dk = "align"
+		"align":
+			rotation = lerp_angle(rotation, up, clampf(9.0 * delta, 0.0, 1.0))
+			if absf(angle_difference(rotation, up)) < 0.08:
+				rotation = up
+				_dk = "in"
 		"in":
-			if _dock_move(pts["A"], 60.0, delta) and absf(angle_difference(rotation, -PI / 2.0)) < 0.2:
+			rotation = up
+			if _dock_move(pts["A"], 50.0, delta): # marche avant, dans l'axe de la rampe
 				_dk = "up"
 		"up":
+			rotation = up
 			if position.y > pts["zb"] + 0.1:
 				_dock_move(pts["B"], 34.0, delta)
 			elif _dock_move(pts["P"], 30.0, delta):
@@ -1239,6 +1258,7 @@ func _dock_update(delta: float) -> void:
 				_dk_t = 0.0
 			_dock_lift(pts)
 		"work":
+			rotation = up
 			ramp_lift = pts["h"]
 			if _dk_kind == "unload":
 				_dk_t += delta
@@ -1255,6 +1275,7 @@ func _dock_update(delta: float) -> void:
 							game.popup(position, "Réparé", GameData.GREEN)
 					_dk = "down"
 		"down":
+			rotation = up
 			var done := false
 			if position.y < pts["zb"] - 0.1:
 				_dock_move(pts["B"], 30.0, delta)
@@ -1262,6 +1283,13 @@ func _dock_update(delta: float) -> void:
 				done = _dock_move(pts["A"], 34.0, delta)
 			_dock_lift(pts)
 			if done:
+				_dk = "out"
+				_dk_out = game.clear_exit_spot(pts["A"])
+		"out":
+			# on recule jusqu'à une case réellement libre et reliée au reste de la carte, puis on repart
+			rotation = up
+			_dock_move(_dk_out, 40.0, delta)
+			if position.distance_to(_dk_out) < 1.0:
 				_dock_finish()
 				return
 	queue_redraw()
