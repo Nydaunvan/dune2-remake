@@ -20,9 +20,17 @@ const BUILDING_MARGIN := 44.0
 const BUILDING_EXTRA := 70.0
 
 signal finished
+signal core_ready      # le nécessaire pour démarrer (camp du joueur) est cuit : la partie peut commencer
+signal batch_done      # un lot de modèles vient d'être terminé : les dessins peuvent être rafraîchis
 
 var game
 var ready_all := false
+var core_ok := false      # vrai dès que les modèles indispensables au départ sont prêts
+var core_total := 0
+var core_done := 0
+const LANES := 4          # viseurs de cuisson en parallèle pendant le chargement
+const CORE_UNITS := ["mcv", "recolteur", "mineur", "convoi"]
+const CORE_BUILDINGS := ["chantier", "centrale", "raffinerie", "fonderie", "usine", "tourelle"]
 var total := 0
 var done := 0
 var _tex := {}   # clé -> Array[Texture2D]
@@ -34,12 +42,18 @@ var _vp: SubViewport
 var _cam: Camera3D
 var _holder: Node3D
 var _jobs: Array = []
+var _fac_order: Array = []
+var _lanes: Array = []      # {vp, cam, holder} : chaque voie cuit ses images indépendamment
+var _next_job := 0
+var _active := 0
 
 
 func setup(p_game, faction_ids: Array) -> void:
 	game = p_game
+	_fac_order = faction_ids.duplicate()
 	_make_viewport()
 	for f in faction_ids:
+		var first: bool = faction_ids.find(f) == 0 # le camp du joueur est cuit en premier
 		var accent: Color = GameData.FACTIONS[f]["color"]
 		var ids: Array = ["recolteur", "mineur", "mcv", "convoi"] + GameData.FACTIONS[f]["units"] + GameData.FACTIONS[f]["air"]
 		for id in ids:
@@ -180,14 +194,23 @@ func draw_size(key: String) -> Vector2:
 
 
 func _make_viewport() -> void:
-	_vp = SubViewport.new()
-	_vp.own_world_3d = true
-	_vp.transparent_bg = true
-	_vp.msaa_3d = Viewport.MSAA_4X
-	_vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
-	_vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
-	_vp.size = Vector2i(256, 256)
-	add_child(_vp)
+	var lane := _make_lane()
+	_vp = lane["vp"]
+	_cam = lane["cam"]
+	_holder = lane["holder"]
+	_lanes = [lane]
+
+
+## Une voie de cuisson : sous-fenêtre 3D propre (monde, soleil, caméra orthographique inclinée).
+func _make_lane() -> Dictionary:
+	var vp := SubViewport.new()
+	vp.own_world_3d = true
+	vp.transparent_bg = true
+	vp.msaa_3d = Viewport.MSAA_4X
+	vp.screen_space_aa = Viewport.SCREEN_SPACE_AA_FXAA
+	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	vp.size = Vector2i(256, 256)
+	add_child(vp)
 
 	var env := Environment.new()
 	env.background_mode = Environment.BG_CLEAR_COLOR
@@ -197,7 +220,7 @@ func _make_viewport() -> void:
 	env.tonemap_mode = Environment.TONE_MAPPER_LINEAR
 	var we := WorldEnvironment.new()
 	we.environment = env
-	_vp.add_child(we)
+	vp.add_child(we)
 
 	# Soleil venant du haut-droite : les ombres tombent vers le bas-gauche, comme le terrain
 	var sun := DirectionalLight3D.new()
@@ -208,41 +231,108 @@ func _make_viewport() -> void:
 	sun.shadow_normal_bias = 1.0
 	sun.directional_shadow_mode = DirectionalLight3D.SHADOW_ORTHOGONAL
 	sun.directional_shadow_max_distance = 700.0
-	_vp.add_child(sun)
+	vp.add_child(sun)
 	sun.look_at_from_position(Vector3(120, 170, -70), Vector3.ZERO, Vector3.UP)
 
-	_holder = Node3D.new()
-	_vp.add_child(_holder)
+	var holder := Node3D.new()
+	vp.add_child(holder)
 
-	_cam = Camera3D.new()
-	_cam.projection = Camera3D.PROJECTION_ORTHOGONAL
-	_cam.keep_aspect = Camera3D.KEEP_HEIGHT
-	_cam.near = 1.0
-	_cam.far = 1500.0
-	_vp.add_child(_cam)
-	_cam.look_at_from_position(Vector3(0, cos(TILT), sin(TILT)) * 600.0, Vector3.ZERO, Vector3.UP)
-	_cam.current = true
+	var cam := Camera3D.new()
+	cam.projection = Camera3D.PROJECTION_ORTHOGONAL
+	cam.keep_aspect = Camera3D.KEEP_HEIGHT
+	cam.near = 1.0
+	cam.far = 1500.0
+	vp.add_child(cam)
+	cam.look_at_from_position(Vector3(0, cos(TILT), sin(TILT)) * 600.0, Vector3.ZERO, Vector3.UP)
+	cam.current = true
+	return {"vp": vp, "cam": cam, "holder": holder}
+
+
+## Ordre de cuisson : 0 = indispensable au départ (camp du joueur), 1 = reste du camp du joueur, 2 = ses paliers et animations,
+## 3-4 = camps adverses (cachés par le brouillard au début).
+func _prio(job: Dictionary) -> int:
+	var fi: int = _fac_order.find(job["faction"])
+	var extra: bool = job.has("tier") or job.has("phase")
+	var base := String(job["id"]).trim_suffix("_tete")
+	if fi <= 0:
+		if not extra and (base in CORE_UNITS or base in CORE_BUILDINGS):
+			return 0
+		return 2 if extra else 1
+	return 4 if extra else 3
 
 
 func _bake_all() -> void:
+	for k in _jobs.size():
+		_jobs[k]["prio"] = _prio(_jobs[k])
+		_jobs[k]["ord"] = k
+	_jobs.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return a["prio"] < b["prio"] or (a["prio"] == b["prio"] and a["ord"] < b["ord"]))
 	for job in _jobs:
 		total += int(job["angles"])
-	_cache_prepare()
-	var t0 := Time.get_ticks_msec()
-	var hits := 0
+		if job["prio"] == 0:
+			core_total += int(job["angles"])
+	_core_left = 0
 	for job in _jobs:
+		if job["prio"] == 0:
+			_core_left += 1
+	if _core_left == 0:
+		core_ok = true
+		core_ready.emit()
+	_cache_prepare()
+	_t0 = Time.get_ticks_msec()
+	_hits = 0
+	# plusieurs voies en parallèle : chacune attend sa propre image, les rendus se font dans la même trame
+	while _lanes.size() < LANES:
+		_lanes.append(_make_lane())
+	_active = _lanes.size()
+	for i in _lanes.size():
+		_worker(i)
+
+
+var _core_left := 0
+var _t0 := 0
+var _hits := 0
+
+
+func _worker(idx: int) -> void:
+	var lane: Dictionary = _lanes[idx]
+	var quick := 0
+	while true:
+		if idx > 0 and core_ok:
+			break # le nécessaire est prêt : on laisse le jeu tourner, une seule voie finit le reste en douceur
+		if _next_job >= _jobs.size():
+			break
+		var job: Dictionary = _jobs[_next_job]
+		_next_job += 1
+		var n := int(job["angles"])
 		if _cache_load(job):
-			hits += 1
-			done += int(job["angles"])
-			if hits % 6 == 0:
+			_hits += 1
+			quick += 1
+			if quick % 6 == 0:
 				await get_tree().process_frame # laisse l'écran de chargement respirer
-			continue
-		await _bake(job)
-		_cache_save(job)
-		done += int(job["angles"])
-	print("SpriteBank : %d/%d jeux d'images lus du cache, %.1f s" % [hits, _jobs.size(), (Time.get_ticks_msec() - t0) / 1000.0])
-	ready_all = true
-	finished.emit()
+		else:
+			await _bake(job, lane)
+			_cache_save(job)
+		done += n
+		if job["prio"] == 0:
+			core_done += n
+			_core_left -= 1
+			if _core_left == 0:
+				core_ok = true
+				core_ready.emit()
+				batch_done.emit()
+		elif _next_job < _jobs.size() and _jobs[_next_job]["prio"] != job["prio"]:
+			batch_done.emit()
+	_active -= 1
+	if _active == 0:
+		# la voie 0 reste en place ; les voies supplémentaires sont libérées
+		while _lanes.size() > 1:
+			var l: Dictionary = _lanes.pop_back()
+			(l["vp"] as SubViewport).queue_free()
+		print("SpriteBank : %d/%d jeux d'images lus du cache, %.1f s" % [_hits, _jobs.size(), (Time.get_ticks_msec() - _t0) / 1000.0])
+		ready_all = true
+		finished.emit()
+		batch_done.emit()
 
 
 # --- Cache disque : les images cuites sont gardées entre deux parties -------------------------------------------------
@@ -333,12 +423,15 @@ func _cache_load(job: Dictionary) -> bool:
 	return true
 
 
-func _bake(job: Dictionary) -> void:
+func _bake(job: Dictionary, lane: Dictionary = {}) -> void:
+	var vp: SubViewport = lane.get("vp", _vp)
+	var cam: Camera3D = lane.get("cam", _cam)
+	var holder: Node3D = lane.get("holder", _holder)
 	var frame_px: Vector2 = job["frame"]
 	var jss: float = float(job.get("ss", ss))
 	var view_h: float = frame_px.y * cos(TILT) + float(job["extra"])
-	_vp.size = Vector2i(int(ceil(frame_px.x * jss)), int(ceil(view_h * jss)))
-	_cam.size = view_h
+	vp.size = Vector2i(int(ceil(frame_px.x * jss)), int(ceil(view_h * jss)))
+	cam.size = view_h
 	Models.walk_phase = float(job.get("phase", -1.0))
 	Models.hd = hd_units and bool(job.get("hd", false))
 	Models.tier = int(job.get("tier", 1))
@@ -346,17 +439,17 @@ func _bake(job: Dictionary) -> void:
 	Models.walk_phase = -1.0
 	Models.hd = false
 	Models.tier = 1
-	_holder.add_child(model)
+	holder.add_child(model)
 	var out: Array = []
 	var rects: Array = []
 	var offs: Array = []
-	var full := Vector2(_vp.size)
+	var full := Vector2(vp.size)
 	for i in int(job["angles"]):
 		# Angle 2D (sens horaire à l'écran) -> rotation autour de Y : signe inversé
 		model.rotation.y = -TAU * i / float(job["angles"])
-		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+		vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 		await RenderingServer.frame_post_draw
-		var img := _vp.get_texture().get_image()
+		var img := vp.get_texture().get_image()
 		var used := Rect2i(img.get_used_rect())
 		if job.get("crop", false) and used.size.x > 0 and used.size.y > 0:
 			# on ne garde que la zone dessinée (+1 pixel) : indispensable pour tenir en mémoire à haute résolution
@@ -369,7 +462,7 @@ func _bake(job: Dictionary) -> void:
 			rects.append(Rect2(used))
 		img.generate_mipmaps()
 		out.append(ImageTexture.create_from_image(img))
-	_holder.remove_child(model)
+	holder.remove_child(model)
 	model.queue_free()
 	_tex[job["key"]] = out
 	_used[job["key"]] = rects

@@ -92,6 +92,13 @@ func init_combat(p_game, p_team: int) -> void:
 		set_physics_process(false)
 
 
+## De nouveaux modèles 3D viennent d'être cuits : on retente le dessin 3D (niveaux, têtes de tourelle…).
+func refresh_sprites() -> void:
+	_sprite_ok = false
+	set_process(true)
+	queue_redraw()
+
+
 func _process(delta: float) -> void:
 	if GameData.def(id).get("wall", false):
 		set_process(false)

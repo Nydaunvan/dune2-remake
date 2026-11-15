@@ -677,6 +677,13 @@ func _sprite_key() -> String:
 	return "%s|%s" % [id, game.faction_id_of(team)]
 
 
+## De nouveaux modèles 3D viennent d'être cuits : on retente le dessin 3D.
+func refresh_sprites() -> void:
+	_sprite_ready = false
+	_frame_idx = -1
+	queue_redraw()
+
+
 func _process(_delta: float) -> void:
 	if selected or (air and alive and Models.rotors(id).size() > 0):
 		queue_redraw() # anneau de sélection pulsé / pales en rotation

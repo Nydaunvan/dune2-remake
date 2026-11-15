@@ -25,14 +25,20 @@ func _check(ok: bool, m: String) -> void:
 func _run() -> void:
 	var a := _mk()
 	var t0 := Time.get_ticks_msec()
-	await a._bake_all()
+	a._bake_all()
+	while not a.ready_all:
+		await process_frame
+	print("cuisson : core_ok=", a.core_ok, " core %d/%d" % [a.core_done, a.core_total])
 	var t_bake := (Time.get_ticks_msec() - t0) / 1000.0
 	var b := _mk()
 	t0 = Time.get_ticks_msec()
-	await b._bake_all()
+	b._bake_all()
+	while not b.ready_all:
+		await process_frame
 	var t_load := (Time.get_ticks_msec() - t0) / 1000.0
 	print("cuisson %.1f s / cache %.2f s" % [t_bake, t_load])
 	_check(t_load < t_bake * 0.5, "relecture bien plus rapide")
+	_check(a.core_ok and a.core_total == 16 + 1, "indispensable détecté (%d images)" % a.core_total)
 	for k in ["recolteur|solis", "raffinerie|solis", "raffinerie|solis|L2"]:
 		_check(b.has(k), "clé %s présente" % k)
 		var n: int = a._tex[k].size()

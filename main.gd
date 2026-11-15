@@ -202,6 +202,7 @@ func _ready() -> void:
 		for t in team_factions.values():
 			if t not in facs:
 				facs.append(t)
+		bank.batch_done.connect(_refresh_sprites)
 		bank.setup(self, facs)
 	await _load_step(0.05, "Tracé de la carte…")
 	_generate_layout()
@@ -234,8 +235,8 @@ func _ready() -> void:
 	_update_fog() # les bases non découvertes restent cachées dès la 1re image
 	_load_terrain = 1.0
 	if loading != null:
-		while not bank.ready_all or not sfx.warm_finished():
-			loading.set_progress(_overall(), "Préparation des modèles 3D…" if not bank.ready_all else "Génération des sons…")
+		while not bank.core_ok or not sfx.warm_finished():
+			loading.set_progress(_overall(), "Préparation des modèles 3D…" if not bank.core_ok else "Génération des sons…")
 			await get_tree().process_frame
 		sfx.warm_wait()
 		await loading.finish("Prêt")
@@ -258,10 +259,24 @@ var _load_terrain := 0.0
 
 func _overall() -> float:
 	var bf := 1.0
-	if bank != null and bank.total > 0:
+	if bank != null and bank.core_total > 0:
+		bf = float(bank.core_done) / float(bank.core_total) # seul le nécessaire au départ fait attendre ; le reste se cuit en jeu
+	elif bank != null and bank.total > 0:
 		bf = float(bank.done) / float(bank.total)
 	var sf := sfx.warm_progress() if sfx != null else 1.0
 	return 0.40 * _load_terrain + 0.50 * bf + 0.10 * sf
+
+
+## Un lot de modèles vient d'être cuit en arrière-plan : bâtiments, unités et icônes reprennent leur dessin 3D.
+func _refresh_sprites() -> void:
+	for b in buildings:
+		if is_instance_valid(b):
+			b.refresh_sprites()
+	for u in units:
+		if is_instance_valid(u):
+			u.refresh_sprites()
+	if ui != null:
+		ui.propagate_call("queue_redraw")
 
 
 ## Avance l'écran de chargement et laisse une image s'afficher.
