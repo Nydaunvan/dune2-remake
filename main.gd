@@ -3573,16 +3573,32 @@ func path_to(from_world: Vector2, to_cell: Vector2i) -> PackedVector2Array:
 	return grid.get_point_path(_world_to_cell(from_world), to_cell)
 
 
-## Vrai si un bâtiment se dresse juste au sud de ce point : l'unité est alors derrière lui (le toit du
-## bâtiment, dessiné vers le haut, doit la cacher) ; à l'intérieur de l'emprise, elle reste au premier plan.
+## Vrai si ce point (pieds d'une unité) est derrière un bâtiment : au nord de sa face avant, sous l'emprise de son toit
+## (dessiné vers le haut). Au sud de la face avant, ou sur le côté, l'unité est devant et reste visible.
 func unit_behind_building(p: Vector2) -> bool:
-	var c := world_to_cell(p)
-	if occupied.has(c):
+	if occupied.has(world_to_cell(p)):
 		return false
-	for k in range(1, 4):
-		if occupied.has(Vector2i(c.x, c.y + k)):
-			return true
-	return false
+	var behind := false
+	for b in buildings:
+		if not b.alive:
+			continue
+		var top: float = float(b.cell.y) * TILE
+		var bottom: float = top + float(b.cell_size.y) * TILE
+		if p.y > bottom + 40.0 or p.y < top - 80.0:
+			continue
+		var left: float = float(b.cell.x) * TILE
+		var right: float = left + float(b.cell_size.x) * TILE
+		if p.x < left - 10.0 or p.x > right + 10.0:
+			continue
+		if p.y >= bottom - 2.0:
+			if p.y <= bottom + 14.0:
+				return false # collé à la face avant d'un bâtiment : devant lui (rampe, ombre, plaque)
+			continue
+		if p.y < top + 2.0:
+			var reach := 44.0 if GameData.def(b.id).get("wall", false) else 78.0
+			if p.y > top - reach:
+				behind = true
+	return behind
 
 
 func world_to_cell(p: Vector2) -> Vector2i:
