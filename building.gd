@@ -111,7 +111,7 @@ func _process(delta: float) -> void:
 
 ## Bâtiments dont le dessin est animé en continu.
 func _animated() -> bool:
-	return id in ["radar", "tour_sonique", "tour_prisme", "serre", "mur_cristal", "centrale", "reacteur", "relais_solaire", "fonderie", "raffinerie",
+	return id in ["radar", "tour_sonique", "tour_prisme", "serre", "mur_cristal", "centrale", "reacteur", "fonderie", "raffinerie",
 			"chantier", "marche", "reparation", "aerodrome", "usine"]
 
 
@@ -384,13 +384,6 @@ func _draw_anim(s: Vector2, fid: String, bank) -> void:
 			for i in 3:
 				var a := t * 2.0 + i * TAU / 3.0
 				draw_circle(p + Vector2(cos(a), sin(a) * 0.6) * 15.0, 2.0, Color(0.8, 1.0, 1.0, 0.8))
-		"relais_solaire":
-			var ph := 0.5 + 0.5 * sin(t * 2.0)
-			var p := c + Models.project(Vector3(0, 36.0, 0), 0.0)
-			draw_circle(p, 5.0 + 2.0 * ph, Color(1.0, 0.6, 0.2, 0.25 + 0.3 * ph))
-			var sh := fmod(t * 0.5, 1.0)
-			var q := c + Models.project(Vector3(lerpf(-20.0, 20.0, sh), 29.0, 0), 0.0)
-			draw_circle(q, 3.0, Color(1.0, 0.95, 0.7, 0.5 * sin(sh * PI)))
 		"chantier":
 			var ph := 0.5 + 0.5 * sin(t * 2.2)
 			draw_circle(c + Models.project(Vector3(0, 56.0, 0), 0.0), 5.0 + 2.0 * ph, Color(0.3, 0.8, 1.0, 0.2 + 0.3 * ph))
@@ -502,8 +495,8 @@ func center_cell() -> Vector2:
 ## Mur : dessiné à plat dans sa case, pour que les segments s'alignent parfaitement.
 func _draw_wall(s: Vector2) -> void:
 	var fid: String = game.faction_id_of(team) if game != null else ""
-	var steel: bool = id == "mur_acier" or id == "mur_titane" or (id == "mur" and fid == "kharn")
-	var crystal: bool = id == "mur_cristal" or id == "mur_obsidienne" or (id == "mur" and fid == "conclave")
+	var steel: bool = id == "mur" and (fid == "kharn" or level >= 2)
+	var crystal: bool = id == "mur" and fid == "conclave"
 	var base := GameData.wall_color(id, fid)
 	var acc: Color = GameData.FACTIONS[fid]["color"] if GameData.FACTIONS.has(fid) else Color.WHITE
 	draw_rect(Rect2(Vector2.ZERO, s), base.darkened(0.35))                       # flanc

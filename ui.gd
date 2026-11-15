@@ -1162,19 +1162,19 @@ class InfoPanel extends GlassPanel:
 			"reparation":
 				rows.append(["Soins", "%d PV/s" % int(d["heal"])])
 				rows.append(["Rayon", "%d cases" % int(d["heal_range"])])
-			"reacteur", "relais_solaire":
+			"reacteur":
 				rows.append(["Énergie", "+%d" % b.power])
 			"marche":
 				rows.append(["Revenu", "+%d Solaris/s" % int(d["income"])])
 			"serre":
 				rows.append(["Revenu", "+%d minerai/s" % int(d["ore_income"])])
-			"mur", "mur_acier", "mur_cristal":
+			"mur":
 				rows.append(["Rôle", "Barrière"])
 			_:
 				_generic_rows(rows, b, d)
 		if b.power < 0:
 			rows.append(["Consomme", "%d énergie" % -b.power])
-		elif b.power == 0 and b.id != "mur" and b.id != "mur_acier" and b.id != "mur_cristal" and not d.get("wall", false):
+		elif b.power == 0 and b.id != "mur" and not d.get("wall", false):
 			rows.append(["Consomme", "0 énergie"])
 		rows.append(["Vision", "%d cases" % b.vision])
 		if b.offline:

@@ -1130,7 +1130,7 @@ func _value_of(id: String) -> float:
 	match id:
 		"raffinerie", "fonderie":
 			return 3.0
-		"centrale", "reacteur", "relais_solaire":
+		"centrale", "reacteur":
 			return 3.0
 		"usine", "aerodrome":
 			return 2.6
@@ -1138,7 +1138,7 @@ func _value_of(id: String) -> float:
 			return 2.2
 		"radar":
 			return 1.6
-		"mur", "mur_acier", "mur_cristal", "mur_titane", "mur_epines", "mur_obsidienne":
+		"mur":
 			return 0.2
 		"serre":
 			return 2.0

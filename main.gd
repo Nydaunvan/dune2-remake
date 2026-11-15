@@ -845,7 +845,7 @@ func storage_cap(kind: String, team := 0) -> int:
 	var cap: int = GameData.STORAGE_BASE
 	for b in buildings:
 		if b.team == team and b.alive and GameData.STORAGE.has(b.id):
-			cap += int(GameData.STORAGE[b.id][idx])
+			cap += int(float(GameData.STORAGE[b.id][idx]) * (1.0 + 0.25 * float(b.level - 1)))
 	return cap
 
 
@@ -2242,7 +2242,9 @@ func queue_max(cat: String) -> int:
 
 
 ## Production d'unités plus rapide avec le niveau de l'Usine.
-func unit_speed_bonus(team := 0) -> float:
+func unit_speed_bonus(team := 0, unit_id := "") -> float:
+	if unit_id != "" and String(GameData.def(unit_id).get("from", "usine")) == "aerodrome":
+		return 1.0 + 0.25 * (best_level("aerodrome", team) - 1) # appareils : niveau de l'Aérodrome
 	return 1.0 + 0.25 * (best_level("usine", team) - 1)
 
 
@@ -2300,26 +2302,33 @@ func _building_effects(dt: float) -> void:
 		if not b.alive or b.offline or b.up_left > 0.0:
 			continue
 		var d := GameData.def(b.id)
+		var lvl_inc := 1.0 + 0.4 * float(b.level - 1) # revenu : +40 % par niveau
 		if d.has("income"):
-			_inc_acc[b.team] = float(_inc_acc.get(b.team, 0.0)) + float(d["income"]) * dt
+			_inc_acc[b.team] = float(_inc_acc.get(b.team, 0.0)) + float(d["income"]) * lvl_inc * dt
 		if d.has("ore_income"):
-			_ore_acc[b.team] = float(_ore_acc.get(b.team, 0.0)) + float(d["ore_income"]) * dt
-		if (b.id == "mur_cristal" or b.id == "mur_obsidienne") and b.hp < b.max_hp:
+			_ore_acc[b.team] = float(_ore_acc.get(b.team, 0.0)) + float(d["ore_income"]) * lvl_inc * dt
+		if b.id == "mur" and faction_id_of(b.team) == "conclave" and b.hp < b.max_hp:
 			b.hp = minf(b.max_hp, b.hp + 12.0 * dt) # le cristal se régénère
-		if d.has("aura_regen"):
-			# Aura de réparation : les bâtiments alliés proches regagnent des PV
-			var ar: float = float(d.get("aura_range", 6)) * TILE
+		# Aura de réparation : bâtiments alliés proches (centre de réparation niveau 3)
+		var aura := float(d.get("aura_regen", 0.0))
+		var aura_range := float(d.get("aura_range", 6))
+		if b.id == "reparation" and b.level >= 3:
+			aura = 8.0
+			aura_range = 7.0
+		if aura > 0.0:
+			var ar: float = aura_range * TILE
 			for o in buildings:
 				if o.alive and o != b and o.team == b.team and o.hp < o.max_hp \
 						and o.world_center().distance_to(b.world_center()) < ar + o.radius_px():
-					o.hp = minf(o.max_hp, o.hp + float(d["aura_regen"]) * dt)
+					o.hp = minf(o.max_hp, o.hp + aura * dt)
 					o.queue_redraw()
 		if d.has("heal"):
-			var r: float = float(d["heal_range"]) * TILE
+			var r: float = (float(d["heal_range"]) + float(b.level - 1)) * TILE # portée +1 case par niveau
+			var rate := float(d["heal"]) * (1.0 + 0.35 * float(b.level - 1))
 			for u in units:
 				if u.alive and side_of(u.team) == side_of(b.team) and u.hp < u.max_hp \
 						and u.position.distance_to(b.world_center()) < r + b.radius_px():
-					u.hp = minf(u.max_hp, u.hp + float(d["heal"]) * dt)
+					u.hp = minf(u.max_hp, u.hp + rate * dt)
 					u.queue_redraw()
 	for t in _ore_acc.keys():
 		var ow := int(_ore_acc[t])
@@ -2921,7 +2930,7 @@ func _update_production(delta: float) -> void:
 		var p: Dictionary = q[0]
 		if producer_busy(cat, p["id"]):
 			continue # le bâtiment producteur est en travaux
-		var f := factor * (unit_speed_bonus() if cat == "unit" else 1.0)
+		var f := factor * (unit_speed_bonus(0, String(p["id"])) if cat == "unit" else 1.0)
 		var dp := minf(delta * f / p["time"], 1.0 - float(p["progress"]))
 		var cost_t := float(p.get("cost", 0))
 		var sol_t := float(p.get("sol", 0))
@@ -3621,8 +3630,16 @@ func _apply_state() -> void:
 				dirty[c] = {"kind": r["kind"], "frac": a / float(r["max"])}
 	# Bâtiments (de gros bâtiments d'abord : ordre sans importance, les cases sont disjointes)
 	for bd in d["buildings"]:
-		var b := _place_building(String(bd["id"]), bd["cell"], int(bd["team"]), false)
+		var mig := GameData.migrate_building(String(bd["id"]), int(bd.get("level", 1)))
+		if String(mig["id"]) == "":
+			continue # ancien bâtiment fusionné sans équivalent de même taille
+		var b := _place_building(String(mig["id"]), bd["cell"], int(bd["team"]), false)
 		b.restore_state(bd)
+		if int(mig["level"]) > b.level:
+			b.level = int(mig["level"])
+			b.max_hp = b.base_hp * (1.0 + GameData.LEVEL_HP * (b.level - 1))
+			b.hp = minf(b.hp, b.max_hp)
+			b.power = GameData.power_at(b.id, b.level)
 	# Unités
 	var made: Array = []
 	for ud in d["units"]:

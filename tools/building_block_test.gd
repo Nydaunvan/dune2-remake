@@ -11,7 +11,7 @@ func _initialize() -> void:
 func _process(_d: float) -> bool:
 	f += 1
 	if f == 5:
-		for id in ["reacteur", "aerodrome", "batterie", "reparation", "radar", "tourelle", "tour_sonique", "relais_solaire"]:
+		for id in ["reacteur", "aerodrome", "batterie", "reparation", "radar", "tourelle", "tour_sonique"]:
 			print(id, " -> '", main.building_block(id), "'")
 		for b in main.buildings:
 			if b.team == 0 and b.id in ["usine", "centrale"]:

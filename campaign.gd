@@ -511,7 +511,7 @@ const CAMPAIGNS := {
 		{
 			"id": "monolithes", "title": "La ligne des monolithes", "enemy": "kharn", "size": 112, "credits": 3000, "ore": 3000,
 			"start_units": ["@0", "@0", "@1"],
-			"objectives": [{"type": "build", "label": "la ligne", "ids": {"tourelle": 4, "tour_geode": 2}}, {"type": "waves", "count": 3}, {"type": "kills", "count": 20}],
+			"objectives": [{"type": "build", "label": "la ligne", "ids": {"tourelle": 6}}, {"type": "waves", "count": 3}, {"type": "kills", "count": 20}],
 			"obj": "Bâtissez 4 tourelles et 2 tours géodes, repoussez 3 assauts et abattez 20 unités",
 			"brief": "Les monolithes forment une ligne que rien ne doit franchir. Doublez-la de tourelles et de tours géodes : {ENEMY} y viendra mourir, et le Conclave regénérera pendant ce temps.",
 		},
