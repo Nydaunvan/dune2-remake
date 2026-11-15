@@ -1292,10 +1292,10 @@ func _update_fog() -> void:
 	var rdata := PackedByteArray()
 	rdata.resize(map_w * map_h * 4)
 	for i in data.size():
-		rdata[i * 4] = 8
-		rdata[i * 4 + 1] = 3
-		rdata[i * 4 + 2] = 20
-		rdata[i * 4 + 3] = int(data[i] * 0.92)
+		rdata[i * 4] = 0
+		rdata[i * 4 + 1] = 0
+		rdata[i * 4 + 2] = 0
+		rdata[i * 4 + 3] = data[i]
 	fog_radar_img.set_data(map_w, map_h, false, Image.FORMAT_RGBA8, rdata)
 	fog_radar_tex.update(fog_radar_img)
 	# Les ennemis n'apparaissent que dans les zones visibles ; leurs bâtiments restent une fois repérés

@@ -7,5 +7,5 @@ uniform sampler2D fog : filter_linear, repeat_disable;
 void fragment() {
 	float f = texture(fog, UV).r;
 	float shade = smoothstep(0.0, 1.0, f);
-	COLOR = vec4(pow(vec3(0.04, 0.015, 0.08), vec3(gamma_fix)), shade * 0.94);
+	COLOR = vec4(0.0, 0.0, 0.0, shade); // l'inconnu est noir total
 }
