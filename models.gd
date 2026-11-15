@@ -390,6 +390,9 @@ static func _cyl_mesh(rt: float, rb: float, h: float, sides: int) -> CylinderMes
 ## Cylindre / cône (r_top = 0). Axe Y par défaut ; tourner de (PI/2,0,0) pour l'axe Z, (0,0,PI/2) pour l'axe X.
 static func _cyl(parent: Node3D, r_top: float, r_bot: float, h: float, pos: Vector3, col: Color,
 		sides := 8, rot := Vector3.ZERO, emit := 0.0, smooth := false) -> MeshInstance3D:
+	if hd and sides >= 8 and sides <= 12:
+		sides = 28 # HD : cuves, tours et tambours bien ronds (les prismes à 4 ou 6 pans restent anguleux)
+		smooth = true
 	var m := CylinderMesh.new()
 	m.top_radius = r_top
 	m.bottom_radius = r_bot

@@ -52,6 +52,8 @@ var _target
 var dock_user = null # véhicule actuellement sur la rampe (déchargement / réparation)
 var door_t := 0.0   # porte de production ouverte (secondes restantes)
 var door_dur := 1.7
+var shot_t := 0.0   # éclat de tir récent (toutes les défenses)
+var shot_at := Vector2.ZERO # position locale du bout de canon lors du dernier tir
 var fx_t := 0.0     # éclat de tir (tour sonique)
 var _phase := randf() * 20.0
 
@@ -105,6 +107,7 @@ func _process(delta: float) -> void:
 		return
 	door_t = maxf(0.0, door_t - delta)
 	fx_t = maxf(0.0, fx_t - delta)
+	shot_t = maxf(0.0, shot_t - delta)
 	if visible and _on_screen():
 		queue_redraw() # animations : radar, tour sonique, énergie, fonderie, portes
 
@@ -112,7 +115,94 @@ func _process(delta: float) -> void:
 ## Bâtiments dont le dessin est animé en continu.
 func _animated() -> bool:
 	return id in ["radar", "tour_sonique", "tour_prisme", "serre", "mur_cristal", "centrale", "reacteur", "fonderie", "raffinerie",
-			"chantier", "marche", "reparation", "aerodrome", "usine"]
+			"chantier", "marche", "reparation", "aerodrome", "usine", "silo", "silo_minerai", "comptoir_solis", "caravanserail",
+			"fonderie_lourde", "bunker", "tour_acide", "batterie", "mortier_lourd", "batterie_mortiers", "lanceur_spores", "canon_solaire",
+			"marteau_guerre", "pluie_acide", "nova_cristal", "tourelle"]
+
+
+## Animations des autres bâtiments : jauges de silo, étincelles de revenu, fumées, lueurs d'armes, charge des armes orbitales,
+## éclat de tir. Plus le niveau est haut, plus c'est dense ; hors tension, tout s'éteint.
+func _draw_anim_more(c: Vector2, t: float, powered: bool, acc: Color) -> void:
+	var k := 1.0 if powered else 0.25
+	match id:
+		"silo", "silo_minerai":
+			var spice := id == "silo"
+			var fill := clampf(float(game.credits if spice else game.ore) / maxf(float(game.storage_cap("spice" if spice else "ore", team)), 1.0), 0.0, 1.0)
+			var xs: Array = [-14.0, 14.0] if spice else [0.0]
+			for x in xs:
+				var base: Vector2 = c + Models.project(Vector3(x, 12.0, 0.0), 0.0)
+				var hgt := 22.0 * fill
+				var col := Color(1.0, 0.7, 0.25) if spice else Color(0.45, 0.8, 1.0)
+				draw_rect(Rect2(base + Vector2(-2, -hgt * 0.55), Vector2(4, hgt * 0.55)), Color(col.r, col.g, col.b, 0.35 + 0.3 * k))
+				draw_circle(base + Vector2(0, -hgt * 0.55), 2.2, Color(col.r, col.g, col.b, 0.9))
+			var top := c + Models.project(Vector3(0, 36.0, 0.0), 0.0)
+			var bl := 0.5 + 0.5 * sin(t * 2.2)
+			draw_circle(top, 3.0 + bl, Color(1.0, 0.4, 0.2, 0.3 + 0.4 * bl * k))
+		"comptoir_solis", "marche", "caravanserail", "serre", "fonderie_lourde":
+			# pièces / étincelles qui montent du toit : le revenu se voit
+			var ore := id in ["caravanserail", "serre", "fonderie_lourde"]
+			var col2 := Color(0.6, 0.85, 1.0) if ore else Color(1.0, 0.85, 0.3)
+			var n := 3 + level
+			for i in n:
+				var ph := fmod(t * 0.5 + i / float(n), 1.0)
+				var p := c + Models.project(Vector3(-20.0 + i * (40.0 / maxf(n - 1, 1.0)), 24.0 + ph * 22.0, 4.0), 0.0)
+				draw_circle(p, 2.0 + (1.0 - ph) * 1.4, Color(col2.r, col2.g, col2.b, (1.0 - ph) * 0.85 * k))
+			if id == "fonderie_lourde":
+				for i in 3:
+					var ph2 := fmod(t * 0.4 + i * 0.33, 1.0)
+					draw_circle(c + Models.project(Vector3(18.0 + i * 8.0, 40.0 + ph2 * 30.0, -12.0), 0.0) + Vector2(ph2 * 10.0, 0),
+							4.0 + ph2 * 8.0, Color(0.34, 0.32, 0.36, (1.0 - ph2) * 0.3 * k))
+		"bunker", "tour_acide", "batterie", "mortier_lourd", "batterie_mortiers", "lanceur_spores":
+			var ph3 := 0.5 + 0.5 * sin(t * (3.0 if _target != null else 1.4))
+			var top2 := c + Models.project(Vector3(0, 30.0, 0), 0.0)
+			var col3 := Color(0.5, 1.0, 0.4) if id in ["tour_acide", "lanceur_spores"] else Color(1.0, 0.35, 0.25)
+			draw_circle(top2 + Vector2(10, -4), 2.0 + ph3, Color(col3.r, col3.g, col3.b, (0.35 + 0.5 * ph3) * k))
+			if id in ["tour_acide", "lanceur_spores"]: # bulles qui montent de la cuve
+				for i in 3:
+					var ph4 := fmod(t * 0.6 + i * 0.33, 1.0)
+					draw_circle(c + Models.project(Vector3(-6.0 + i * 6.0, 18.0 + ph4 * 14.0, 2.0), 0.0), 1.6, Color(0.6, 1.0, 0.45, (1.0 - ph4) * 0.7 * k))
+		"canon_solaire", "marteau_guerre", "pluie_acide", "nova_cristal":
+			# arme orbitale : anneaux de charge, plus vifs quand elle est prête
+			var ready := 1.0 if cooldown <= 0.0 else 0.35
+			var col4 := Color(1.0, 0.8, 0.3)
+			match id:
+				"marteau_guerre": col4 = Color(1.0, 0.3, 0.2)
+				"pluie_acide": col4 = Color(0.5, 1.0, 0.35)
+				"nova_cristal": col4 = Color(0.8, 0.5, 1.0)
+			var cc := c + Models.project(Vector3(0, 30.0, 0), 0.0)
+			for i in 3:
+				var a0 := t * (1.4 + i * 0.5) + i * 2.1
+				draw_arc(cc, 14.0 + i * 7.0, a0, a0 + 1.7, 20, Color(col4.r, col4.g, col4.b, 0.55 * ready * k), 2.0, true)
+			var pu := 0.5 + 0.5 * sin(t * 4.0)
+			draw_circle(cc, 5.0 + 3.0 * pu * ready, Color(col4.r, col4.g, col4.b, (0.3 + 0.4 * pu) * ready * k))
+		"usine", "chantier":
+			if _anim_busy():
+				# voyants chenillards sur le toit et vapeur : on produit
+				for i in 5:
+					var on := int(t * 6.0) % 5 == i
+					var p2 := c + Models.project(Vector3(-32.0 + i * 16.0, 22.0, 10.0), 0.0)
+					draw_circle(p2, 2.0, Color(acc.r, acc.g, acc.b, 0.9 if on else 0.25))
+				for i in 2:
+					var ph5 := fmod(t * 0.7 + i * 0.5, 1.0)
+					draw_circle(c + Models.project(Vector3(32.0, 36.0 + ph5 * 22.0, -18.0), 0.0) + Vector2(ph5 * 8.0, 0), 3.0 + ph5 * 6.0, Color(0.85, 0.85, 0.9, (1.0 - ph5) * 0.3 * k))
+	# Éclat de tir (toutes les défenses)
+	if shot_t > 0.0 and weapon != "":
+		var f := shot_t / 0.2
+		var mp := c + shot_at
+		draw_circle(mp, 6.0 * f + 2.0, Color(1.0, 0.9, 0.55, 0.85 * f))
+		for i in 4:
+			var a5 := aim + (i - 1.5) * 0.35
+			draw_line(mp, mp + Vector2.from_angle(a5) * 11.0 * f, Color(1.0, 0.8, 0.4, 0.8 * f), 1.6)
+
+
+func _anim_busy() -> bool:
+	if game == null:
+		return false
+	for cat in ["building", "unit"]:
+		var q: Array = game.production[cat]
+		if not q.is_empty() and String(GameData.def(q[0]["id"]).get("from", "chantier" if cat == "building" else "usine")) == id and not q[0]["ready"]:
+			return true
+	return false
 
 
 ## Véhicule en cours de déchargement : flot de particules de la benne vers la trémie, lueur du bec de déversement.
@@ -280,6 +370,8 @@ func _physics_process(delta: float) -> void:
 			from = world_center() + Models.muzzle_offset(hk, snapped, _muzzle_i)
 			_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(hk)
 		fx_t = 0.6 if id == "tour_sonique" else (0.25 if id == "tour_prisme" else 0.0)
+		shot_t = 0.2
+		shot_at = from - position
 		game.fire(self, _target, weapon, dps * float(wd["cd"]), from)
 
 
@@ -411,6 +503,7 @@ func _draw_anim(s: Vector2, fid: String, bank) -> void:
 				draw_rect(Rect2(p - Vector2(8, 2), Vector2(16, 4)), Color(1.0, 0.3, 0.9, 0.18 + 0.3 * ph))
 		"reparation":
 			_draw_repair_fx(c, t)
+	_draw_anim_more(c, t, powered, acc)
 	# Porte de production : s'ouvre quand une unité sort
 	if door_t > 0.0 and Models.DOORS.has(id):
 		var d: Dictionary = Models.DOORS[id]
