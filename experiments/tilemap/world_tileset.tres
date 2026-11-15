@@ -1,0 +1,45 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://experiments/tilemap/tiles.png" id="1_ojnd5"]
+
+[sub_resource type="TileSetAtlasSource" id="TileSetAtlasSource_fwasp"]
+texture = ExtResource("1_ojnd5")
+texture_region_size = Vector2i(32, 32)
+0:0/0 = 0
+0:0/0/custom_data_0 = "sable"
+0:0/0/custom_data_1 = true
+0:0/0/custom_data_2 = 1.0
+1:0/0 = 0
+1:0/0/custom_data_0 = "sable"
+1:0/0/custom_data_1 = true
+1:0/0/custom_data_2 = 1.0
+2:0/0 = 0
+2:0/0/custom_data_0 = "roche"
+2:0/0/custom_data_1 = true
+2:0/0/custom_data_2 = 0.7
+3:0/0 = 0
+3:0/0/custom_data_0 = "epice"
+3:0/0/custom_data_1 = true
+3:0/0/custom_data_2 = 0.9
+0:1/0 = 0
+0:1/0/custom_data_0 = "dune"
+0:1/0/custom_data_2 = 0.6
+1:1/0 = 0
+1:1/0/custom_data_0 = "dune"
+1:1/0/custom_data_2 = 0.6
+2:1/0 = 0
+2:1/0/custom_data_0 = "roche_profonde"
+3:1/0 = 0
+3:1/0/custom_data_0 = "sable_sombre"
+3:1/0/custom_data_1 = true
+3:1/0/custom_data_2 = 1.0
+
+[resource]
+tile_size = Vector2i(32, 32)
+custom_data_layer_0/name = "kind"
+custom_data_layer_0/type = 4
+custom_data_layer_1/name = "buildable"
+custom_data_layer_1/type = 1
+custom_data_layer_2/name = "speed"
+custom_data_layer_2/type = 3
+sources/0 = SubResource("TileSetAtlasSource_fwasp")
