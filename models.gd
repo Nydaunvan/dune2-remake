@@ -644,29 +644,59 @@ static func _centrale(r: Node3D, acc: Color) -> void:
 	_cyl(r, 1.8, 1.8, 30, Vector3(0, 12, -2), DARK, 6, Vector3(0, 0, PI / 2.0))
 
 
+## Rampe de déchargement : plan incliné + plateforme plane (le véhicule monte, s'arrête sur la plaque, décharge dans la trémie).
+## x : centre, z0 : bord bas de la rampe (côté sol), plate_z : centre de la plaque, y_top : hauteur de la plaque.
+static func _ramp(r: Node3D, x: float, z0: float, plate_z: float, plate_d: float, y_top: float, w: float, acc: Color) -> void:
+	var z_foot := plate_z + plate_d / 2.0
+	var run := z0 - z_foot
+	var ang := atan2(y_top, run)
+	var ln := sqrt(run * run + y_top * y_top)
+	_box(r, Vector3(w, 1.6, ln), Vector3(x, y_top / 2.0 + 1.0, z_foot + run / 2.0), Color(0.42, 0.44, 0.5), Vector3(ang, 0, 0))
+	for sx in [-1.0, 1.0]: # rives et balises de la rampe
+		_box(r, Vector3(1.6, 2.4, ln), Vector3(x + sx * (w / 2.0 - 0.8), y_top / 2.0 + 2.2, z_foot + run / 2.0), METAL, Vector3(ang, 0, 0))
+	for i in 3:
+		_box(r, Vector3(w - 6, 0.5, 1.4), Vector3(x, y_top * (0.25 + 0.25 * i) + 2.0, z_foot + run * (0.8 - 0.3 * i)), acc, Vector3(ang, 0, 0), 0.9)
+	_box(r, Vector3(w, y_top, plate_d), Vector3(x, y_top / 2.0, plate_z), Color(0.28, 0.29, 0.35)) # plaque
+	_box(r, Vector3(w - 2, 0.8, plate_d - 2), Vector3(x, y_top + 0.4, plate_z), Color(0.5, 0.52, 0.58))
+	for sx in [-1.0, 1.0]:
+		_box(r, Vector3(1.2, 0.6, plate_d - 3), Vector3(x + sx * (w / 2.0 - 2.0), y_top + 1.0, plate_z), acc, Vector3.ZERO, 1.0)
+
+
 static func _raffinerie(r: Node3D, acc: Color) -> void:
 	_slab(r, 96, 64, acc)
-	_cyl(r, 15, 16, 24, Vector3(-26, 15, -4), LIGHT, 8)
-	_cyl(r, 0.5, 15.5, 8, Vector3(-26, 31, -4), METAL, 8)
-	_cyl(r, 16.5, 16.5, 2.0, Vector3(-26, 18, -4), acc, 8)
-	_box(r, Vector3(34, 15, 30), Vector3(18, 10.5, -4), METAL)
-	_box(r, Vector3(26, 1.5, 22), Vector3(18, 18.5, -4), GLOW_ORANGE, Vector3.ZERO, 1.3)
-	_cyl(r, 3, 3, 40, Vector3(-4, 16, 6), DARK, 6, Vector3(0, 0, PI / 2.0))
-	_box(r, Vector3(26, 2, 14), Vector3(-20, 3.5, 22), Color(0.2, 0.2, 0.24)) # quai
-	for i in 4:
-		_box(r, Vector3(3, 0.5, 14), Vector3(-30 + i * 6.0, 4.8, 22), acc, Vector3.ZERO, 0.7)
+	# Cuve de stockage (fond gauche) et bloc de traitement (droite)
+	_round(r, 15, 24, Vector3(-28, 15, -14), LIGHT)
+	_cyl(r, 0.5, 15.5, 8, Vector3(-28, 31, -14), METAL, 16)
+	_cyl(r, 16.5, 16.5, 2.0, Vector3(-28, 18, -14), acc, 16)
+	_box(r, Vector3(34, 15, 30), Vector3(22, 10.5, -8), METAL)
+	_box(r, Vector3(26, 1.5, 22), Vector3(22, 18.5, -8), GLOW_ORANGE, Vector3.ZERO, 1.3)
+	_cyl(r, 2.2, 2.2, 8, Vector3(30, 26, -14), DARK, 12)
+	_cyl(r, 2.2, 2.2, 8, Vector3(22, 26, -14), DARK, 12)
+	# Quai de déchargement : rampe + plaque sous la trémie
+	_ramp(r, -20.0, 33.0, 12.0, 20.0, 6.0, 28.0, acc)
+	_box(r, Vector3(24, 14, 10), Vector3(-20, 13.0, -2), Color(0.24, 0.26, 0.32))       # trémie
+	_box(r, Vector3(24, 1.2, 12), Vector3(-20, 20.0, -2), METAL, Vector3(0.0, 0.0, 0.0)) # auvent
+	_box(r, Vector3(18, 5, 1.5), Vector3(-20, 11.0, 3.3), DARK)                          # bec de déversement
+	_box(r, Vector3(18, 0.5, 1.5), Vector3(-20, 13.6, 3.4), GLOW_ORANGE, Vector3.ZERO, 1.6)
+	_cyl(r, 3, 3, 30, Vector3(-4, 14, -8), DARK, 12, Vector3(0, 0, PI / 2.0))           # convoyeur vers le traitement
+	_cyl(r, 3, 3, 18, Vector3(-28, 12, -2), DARK, 12, Vector3(0, 0, PI / 2.0))
+	_box(r, Vector3(14, 6, 8), Vector3(-34, 22, 4), acc.darkened(0.2))                   # cabine de contrôle
 
 
 static func _fonderie(r: Node3D, acc: Color) -> void:
 	_slab(r, 96, 64, acc)
-	_box(r, Vector3(50, 18, 42), Vector3(-14, 12, -3), Color(0.24, 0.26, 0.32))
-	_box(r, Vector3(50, 3, 42), Vector3(-14, 22.5, -3), METAL)
-	for x in [16.0, 30.0]:
-		_cyl(r, 4, 5.5, 34, Vector3(x, 20, -14), METAL, 6)
-		_cyl(r, 4.5, 4.5, 2.0, Vector3(x, 37, -14), GLOW_ORANGE, 6, Vector3.ZERO, 1.8)
-	_box(r, Vector3(30, 5, 3), Vector3(-14, 11, 19), GLOW_ORANGE, Vector3.ZERO, 2.2) # gueulard
-	_box(r, Vector3(20, 3, 12), Vector3(26, 5, 14), DARK)
-	_box(r, Vector3(18, 1.0, 6), Vector3(26, 7, 14), GLOW_BLUE, Vector3.ZERO, 1.2)
+	_box(r, Vector3(46, 18, 38), Vector3(-18, 12, -8), Color(0.24, 0.26, 0.32))
+	_box(r, Vector3(46, 3, 38), Vector3(-18, 22.5, -8), METAL)
+	for x in [8.0, 20.0]:
+		_round(r, 4.6, 34, Vector3(x, 20, -20), METAL)
+		_cyl(r, 5.2, 5.2, 2.0, Vector3(x, 37, -20), GLOW_ORANGE, 12, Vector3.ZERO, 1.8)
+	_box(r, Vector3(30, 5, 3), Vector3(-18, 11, 11.5), GLOW_ORANGE, Vector3.ZERO, 2.2) # gueulard
+	# Quai de déchargement (à droite) : rampe + plaque + trémie
+	_ramp(r, 28.0, 33.0, 10.0, 20.0, 6.0, 26.0, acc)
+	_box(r, Vector3(22, 12, 10), Vector3(28, 12.0, -6), DARK)
+	_box(r, Vector3(22, 1.2, 12), Vector3(28, 18.6, -6), METAL)
+	_box(r, Vector3(16, 4, 1.5), Vector3(28, 10.0, -0.6), Color(0.12, 0.13, 0.16))
+	_box(r, Vector3(16, 0.5, 1.5), Vector3(28, 12.4, -0.5), GLOW_BLUE, Vector3.ZERO, 1.5)
 
 
 static func _usine(r: Node3D, acc: Color) -> void:
@@ -743,12 +773,18 @@ static func _radar_tete(r: Node3D, _acc: Color) -> void:
 
 static func _reparation(r: Node3D, acc: Color) -> void:
 	_slab(r, 96, 64, acc)
+	# Portique au-dessus de la plateforme de réparation
 	for x in [-34.0, 34.0]:
-		_box(r, Vector3(8, 26, 8), Vector3(x, 15, 0), METAL)
-	_box(r, Vector3(76, 6, 10), Vector3(0, 30, 0), LIGHT)
-	_box(r, Vector3(70, 1.2, 4), Vector3(0, 33.2, 0), GLOW_GREEN, Vector3.ZERO, 1.6)
-	_box(r, Vector3(60, 2, 36), Vector3(0, 4, 4), Color(0.2, 0.22, 0.26))
-	_box(r, Vector3(14, 8, 6), Vector3(0, 22, -3), acc.darkened(0.2))
+		_box(r, Vector3(8, 28, 8), Vector3(x, 16, -6), METAL)
+		_box(r, Vector3(10, 3, 10), Vector3(x, 31.5, -6), LIGHT)
+	_box(r, Vector3(78, 6, 10), Vector3(0, 33, -6), LIGHT)
+	_box(r, Vector3(70, 1.2, 3), Vector3(0, 36.4, -6), GLOW_GREEN, Vector3.ZERO, 1.6)
+	# Plateforme où le véhicule s'immobilise, avec rampe d'accès par l'avant
+	_ramp(r, 0.0, 33.0, 8.0, 28.0, 4.0, 44.0, acc)
+	for sx in [-1.0, 1.0]: # rails de guidage des bras
+		_box(r, Vector3(2, 1.4, 26), Vector3(sx * 28.0, 5.0, 8.0), METAL)
+	_box(r, Vector3(14, 10, 6), Vector3(0, 11, -22), acc.darkened(0.2))   # poste de contrôle au fond
+	_box(r, Vector3(10, 0.8, 3), Vector3(0, 16.2, -20.5), GLOW_GREEN, Vector3.ZERO, 1.4)
 
 
 static func _reacteur(r: Node3D, acc: Color) -> void:

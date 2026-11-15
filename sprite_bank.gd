@@ -9,6 +9,7 @@ const TILT := deg_to_rad(30.0)
 var ss := 2.0             # pixels de texture par pixel du monde : bâtiments et par défaut
 var ss_unit := 2.0        # véhicules et tourelles (2 = standard ; 4 = ultra HD)
 var ss_mech := 2.0        # mécas (9 jeux d'images chacun) : un peu moins, pour la mémoire (2 = standard ; 3 = HD)
+var ss_building := 2.0    # bâtiments (3 = HD)
 var hd_units := false     # coques HD (shader de tôle, détails de surface) pour les véhicules et leurs tourelles
 const ANGLES := 16
 const UNIT_FRAME := Vector2(104, 104)
@@ -63,7 +64,7 @@ func setup(p_game, faction_ids: Array) -> void:
 			var cs: Vector2i = GameData.def(id)["size"]
 			var fr := Vector2(cs * 32) + Vector2(BUILDING_MARGIN, BUILDING_MARGIN)
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": 1,
-					"frame": fr, "extra": BUILDING_EXTRA})
+					"frame": fr, "extra": BUILDING_EXTRA, "ss": ss_building, "hd": true})
 			if id == "radar":
 				_jobs.append({"key": "radar_tete|%s" % f, "id": "radar_tete", "accent": accent, "faction": f,
 						"angles": 32, "frame": Vector2(96, 96), "extra": 60.0})
