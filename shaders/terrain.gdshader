@@ -112,7 +112,7 @@ float vis(float wl, float pw) {
 }
 
 // Micro-relief (pixels monde) : rides de sable, strates de roche, crêtes de montagne. Sert à calculer la lumière.
-float micro(vec2 wp, float pw, float w_r, float w_m, vec2 wv) {
+float micro(vec2 wp, float pw, float w_r, float w_m, vec2 wv, float rz) {
 	float hs = 0.0;
 	float hr = 0.0;
 	float hm = 0.0;
@@ -127,7 +127,8 @@ float micro(vec2 wp, float pw, float w_r, float w_m, vec2 wv) {
 		float ph2 = dot(wp, vec2(0.78, -0.62)) / 2.6 + wv.x * 9.0 + wv.y * 6.0;
 		float fine = sin(ph2) * vis(16.0, pw) * amp;
 		float grain = (vnoise(wp / 1.7) - 0.5) * vis(3.4, pw) + (vnoise(wp / 0.8) - 0.5) * vis(1.6, pw);
-		hs = dune * 1.2 + rip * 0.5 * amp * vis(44.0, pw) + fine * 0.12 + grain * 0.1;
+		// rz = zone rippée (grande échelle) : hors de ces zones le sable est presque lisse, sans rides ni grandes dunes
+		hs = dune * 1.2 * (0.12 + 0.88 * rz) + rip * 0.5 * amp * rz * vis(44.0, pw) + fine * 0.12 * rz + grain * (0.045 + 0.055 * rz);
 	}
 	if (w_r > 0.001 && w_m < 0.999) {
 		float st = sin(wp.y / 5.5 + wv.x * 11.0 + vnoise(wp / 26.0) * 4.0);
@@ -191,6 +192,7 @@ void fragment() {
 
 	float warp = fbm(cp * 0.7);
 	vec2 wv = vec2(fbm3(cp * 0.45 + 7.0), fbm3(cp * 0.45 + 31.0)); // gauchissement des rides
+	float rz = smoothstep(0.47, 0.6, fbm3(cp * 0.17 + 21.0)); // zones de sable rippé (≈ un tiers de la carte)
 	// Trois matériaux calculés puis fondus avec des seuils adoucis (anti-aliasing des contours)
 	float w_m = smoothstep(mountain_h - aa, mountain_h + aa, h);
 	float w_r = smoothstep(rock_h - aa, rock_h + aa, h);
@@ -200,9 +202,9 @@ void fragment() {
 	float lit = 0.0;
 	if (dt > 0.05) {
 		float e = max(1.0, pw * 0.6);
-		float m0 = micro(wp, pw, w_r, w_m, wv);
-		float mx = micro(wp + vec2(e, 0.0), pw, w_r, w_m, wv);
-		float my = micro(wp + vec2(0.0, e), pw, w_r, w_m, wv);
+		float m0 = micro(wp, pw, w_r, w_m, wv, rz);
+		float mx = micro(wp + vec2(e, 0.0), pw, w_r, w_m, wv, rz);
+		float my = micro(wp + vec2(0.0, e), pw, w_r, w_m, wv, rz);
 		float str = mix(3.0, 2.4, w_r) + 1.4 * w_m;
 		vec3 n = normalize(vec3((m0 - mx) / e * str, (m0 - my) / e * str, 1.0));
 		lit = (dot(n, L) - L.z) * dt;
@@ -218,7 +220,7 @@ void fragment() {
 	if (w_r < 0.999) {
 		float d = fbm(cp * 0.9 + 3.0);
 		float ripple = 0.5 + 0.5 * sin(dot(cp, vec2(0.45, 0.8)) * 5.0 + warp * 9.0);
-		col_s = mix(sand_a, sand_b, d * 0.6 + ripple * 0.4);
+		col_s = mix(sand_a, sand_b, d * 0.6 + ripple * 0.4 * (0.25 + 0.75 * rz));
 		col_s *= 0.93 + 0.14 * fbm3(cp * 0.2 + 50.0);          // grandes plaques plus claires ou plus sombres
 		col_s *= 0.95 + 0.1 * vnoise(wp * 0.9);
 		col_s = mix(col_s, col_s * vec3(1.06, 0.97, 0.9), smoothstep(0.45, 0.8, vnoise(cp * 0.8 + 90.0))); // veines plus chaudes
