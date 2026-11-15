@@ -6,7 +6,10 @@ extends Node
 ## pour que l'emprise au sol reste alignée sur la grille tout en montrant les flancs.
 
 const TILT := deg_to_rad(30.0)
-var ss := 2.0             # pixels de texture par pixel du monde (2 = standard ; 4 = ultra HD pour les véhicules)
+var ss := 2.0             # pixels de texture par pixel du monde : bâtiments et par défaut
+var ss_unit := 2.0        # véhicules et tourelles (2 = standard ; 4 = ultra HD)
+var ss_mech := 2.0        # mécas (9 jeux d'images chacun) : un peu moins, pour la mémoire (2 = standard ; 3 = HD)
+var hd_units := false     # coques HD (shader de tôle, détails de surface) pour les véhicules et leurs tourelles
 const ANGLES := 16
 const UNIT_FRAME := Vector2(104, 104)
 const UNIT_EXTRA := 44.0
@@ -22,6 +25,8 @@ var done := 0
 var _tex := {}   # clé -> Array[Texture2D]
 var _used := {}  # clé -> Array[Rect2] zone opaque de chaque image
 var _size := {}  # clé -> taille de dessin dans le monde (Vector2)
+var _off := {}   # clé -> Array[Vector2] : position (pixels de texture) de l'image rognée dans l'image complète
+var _full := {}  # clé -> taille (pixels) de l'image complète, avant rognage
 var _vp: SubViewport
 var _cam: Camera3D
 var _holder: Node3D
@@ -35,13 +40,19 @@ func setup(p_game, faction_ids: Array) -> void:
 		var accent: Color = GameData.FACTIONS[f]["color"]
 		var ids: Array = ["recolteur", "mineur", "mcv", "convoi"] + GameData.FACTIONS[f]["units"] + GameData.FACTIONS[f]["air"]
 		for id in ids:
+			var is_mech: bool = ModelsExt.STYLES.get(id, {}).get("k", "") == "mech"
+			var uss := ss_mech if is_mech else ss_unit
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": ANGLES,
-					"frame": UNIT_FRAME, "extra": UNIT_EXTRA})
+					"frame": UNIT_FRAME, "extra": UNIT_EXTRA, "ss": uss, "crop": true, "hd": true})
+			# Tourelle indépendante : cuite à part, centrée sur son pivot, 16 angles
+			if Models.has_turret(id):
+				_jobs.append({"key": "%s_tete|%s" % [id, f], "id": "%s_tete" % id, "accent": accent, "faction": f, "angles": ANGLES,
+						"frame": Vector2(96, 96), "extra": 44.0, "ss": ss_unit, "crop": true, "hd": true})
 			# Mechas : images de marche (pattes qui bougent), une par phase du cycle
-			if ModelsExt.STYLES.get(id, {}).get("k", "") == "mech":
+			if is_mech:
 				for k in Models.WALK_FRAMES:
 					_jobs.append({"key": "%s|%s|w%d" % [id, f, k], "id": id, "accent": accent, "faction": f, "angles": ANGLES,
-							"frame": UNIT_FRAME, "extra": UNIT_EXTRA, "phase": float(k) / Models.WALK_FRAMES})
+							"frame": UNIT_FRAME, "extra": UNIT_EXTRA, "phase": float(k) / Models.WALK_FRAMES, "ss": uss, "crop": true, "hd": true})
 		var bids: Array = ["chantier", "centrale", "raffinerie", "fonderie", "usine", "tourelle"]
 		for id in GameData.buildings_for(f):
 			if not bids.has(id):
@@ -92,10 +103,50 @@ func visual_box(key: String, angle := 0.0) -> Rect2:
 	var ur: Rect2 = used_rect(key, angle)
 	if arr.is_empty() or ur.size == Vector2.ZERO:
 		return Rect2()
-	var tsz: Vector2 = arr[0].get_size()
-	var dsz: Vector2 = _size.get(key, tsz)
-	var k := dsz / tsz
-	return Rect2(ur.position * k - dsz / 2.0, ur.size * k)
+	var fsz: Vector2 = _full.get(key, arr[0].get_size())
+	var dsz: Vector2 = _size.get(key, fsz)
+	var k := dsz / fsz
+	var off: Vector2 = _off_of(key, angle)
+	return Rect2((off + ur.position) * k - dsz / 2.0, ur.size * k)
+
+
+## Rectangle de dessin (coordonnées de dessin, centre = origine) de l'image `frame(key, angle)` : les images des
+## véhicules sont rognées à leur zone utile, donc l'image n'occupe qu'une partie du cadre complet.
+func draw_rect(key: String, angle := 0.0) -> Rect2:
+	var arr: Array = _tex.get(key, [])
+	if arr.is_empty():
+		return Rect2()
+	var tex: Texture2D = arr[frame_index(key, angle)]
+	var fsz: Vector2 = _full.get(key, tex.get_size())
+	var dsz: Vector2 = _size.get(key, fsz)
+	var k := dsz / fsz
+	return Rect2(_off_of(key, angle) * k - dsz / 2.0, tex.get_size() * k)
+
+
+## Centre du modèle (origine du dessin) en pixels de l'image `frame(key, angle)` (rognée ou non).
+func centre_px(key: String, angle := 0.0) -> Vector2:
+	var arr: Array = _tex.get(key, [])
+	if arr.is_empty():
+		return Vector2.ZERO
+	var tex: Texture2D = arr[frame_index(key, angle)]
+	var fsz: Vector2 = _full.get(key, tex.get_size())
+	return fsz * 0.5 - _off_of(key, angle)
+
+
+## Pixels de texture par unité de dessin, selon chaque axe (l'axe vertical est comprimé par la projection oblique).
+func px_scale(key: String) -> Vector2:
+	var arr: Array = _tex.get(key, [])
+	if arr.is_empty():
+		return Vector2.ONE
+	var fsz: Vector2 = _full.get(key, arr[0].get_size())
+	return fsz / _size.get(key, fsz)
+
+
+func _off_of(key: String, angle: float) -> Vector2:
+	var offs: Array = _off.get(key, [])
+	if offs.is_empty():
+		return Vector2.ZERO
+	return offs[frame_index(key, angle)]
 
 
 ## Angle exact de l'image choisie pour `angle` (écart résiduel = angle - snap_angle).
@@ -174,26 +225,42 @@ func _bake_all() -> void:
 
 func _bake(job: Dictionary) -> void:
 	var frame_px: Vector2 = job["frame"]
+	var jss: float = float(job.get("ss", ss))
 	var view_h: float = frame_px.y * cos(TILT) + float(job["extra"])
-	_vp.size = Vector2i(int(ceil(frame_px.x * ss)), int(ceil(view_h * ss)))
+	_vp.size = Vector2i(int(ceil(frame_px.x * jss)), int(ceil(view_h * jss)))
 	_cam.size = view_h
 	Models.walk_phase = float(job.get("phase", -1.0))
+	Models.hd = hd_units and bool(job.get("hd", false))
 	var model := Models.build(job["id"], job["accent"], job.get("faction", ""))
 	Models.walk_phase = -1.0
+	Models.hd = false
 	_holder.add_child(model)
 	var out: Array = []
 	var rects: Array = []
+	var offs: Array = []
+	var full := Vector2(_vp.size)
 	for i in int(job["angles"]):
 		# Angle 2D (sens horaire à l'écran) -> rotation autour de Y : signe inversé
 		model.rotation.y = -TAU * i / float(job["angles"])
 		_vp.render_target_update_mode = SubViewport.UPDATE_ONCE
 		await RenderingServer.frame_post_draw
 		var img := _vp.get_texture().get_image()
-		rects.append(Rect2(img.get_used_rect()))
+		var used := Rect2i(img.get_used_rect())
+		if job.get("crop", false) and used.size.x > 0 and used.size.y > 0:
+			# on ne garde que la zone dessinée (+1 pixel) : indispensable pour tenir en mémoire à haute résolution
+			var cr := used.grow(1).intersection(Rect2i(Vector2i.ZERO, img.get_size()))
+			img = img.get_region(cr)
+			offs.append(Vector2(cr.position))
+			rects.append(Rect2(used.position - cr.position, used.size))
+		else:
+			offs.append(Vector2.ZERO)
+			rects.append(Rect2(used))
 		img.generate_mipmaps()
 		out.append(ImageTexture.create_from_image(img))
 	_holder.remove_child(model)
 	model.queue_free()
 	_tex[job["key"]] = out
 	_used[job["key"]] = rects
+	_off[job["key"]] = offs
+	_full[job["key"]] = full
 	_size[job["key"]] = Vector2(frame_px.x, view_h / cos(TILT))

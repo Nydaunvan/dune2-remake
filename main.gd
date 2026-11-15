@@ -192,6 +192,9 @@ func _ready() -> void:
 	# Les modèles 3D sont cuits en parallèle de la génération de la carte
 	if loading != null:
 		bank = SpriteBank.new()
+		bank.hd_units = DisplayCfg.vehicles_hd()
+		bank.ss_unit = 4.0 if bank.hd_units else 2.0
+		bank.ss_mech = 3.0 if bank.hd_units else 2.0
 		bank.process_mode = Node.PROCESS_MODE_ALWAYS
 		add_child(bank)
 		var facs: Array = []

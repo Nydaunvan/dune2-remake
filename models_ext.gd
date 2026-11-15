@@ -214,6 +214,15 @@ static func _g(p: Dictionary) -> Color:
 
 # --- Unités au sol ------------------------------------------------------------------------------
 
+## Pivot de tourelle d'une unité « tank » (x, y, z du modèle) ; Vector3.INF pour les autres familles.
+static func turret_pivot(id: String) -> Vector3:
+	var p: Dictionary = STYLES.get(id, {})
+	if String(p.get("k", "")) != "tank":
+		return Vector3.INF
+	var th := 4.0 if p.get("w", false) else float(p.get("th", 7))
+	return Vector3(float(p.get("tx", -1)), th + float(p.get("hh", 6)) + float(p.get("tsy", 6)) * 0.5, 0.0)
+
+
 static func _tank(r: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary) -> void:
 	var l := float(p.get("l", 32))
 	var sp := float(p.get("sp", 9))
@@ -234,10 +243,12 @@ static func _tank(r: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary) 
 	Models._box(r, Vector3(hl, hh, hw), Vector3(0, th + hh * 0.5, 0), body)
 	Models._box(r, Vector3(hl * 0.3, hh * 0.6, hw), Vector3(hl * 0.5, th + hh * 0.4, 0), body.lightened(0.1), Vector3(0, 0, -0.5))
 	var ty := th + hh + tsy * 0.5
+	# Tourelle : groupe à part, pièces données relativement au pivot (elle tourne indépendamment de la coque)
+	var tr := Models._tur(r, Vector3(tx, ty, 0))
 	if p.get("cyl", false):
-		Models._cyl(r, tsx * 0.5, tsx * 0.6, tsy, Vector3(tx, ty, 0), hi, 8)
+		Models._cyl(tr, tsx * 0.5, tsx * 0.6, tsy, Vector3.ZERO, hi, 20, Vector3.ZERO, 0.0, true)
 	else:
-		Models._box(r, Vector3(tsx, tsy, tsz), Vector3(tx, ty, 0), hi)
+		Models._box(tr, Vector3(tsx, tsy, tsz), Vector3.ZERO, hi)
 	Models._box(r, Vector3(1, 1.5, hw * 0.6), Vector3(hl * 0.5 + 1.0, th + hh * 0.5, 0), gc, Vector3.ZERO, 1.4)
 	var ex: Array = p.get("x", [])
 	var n := int(p.get("bn", 1))
@@ -245,27 +256,27 @@ static func _tank(r: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary) 
 	var br := float(p.get("br", 1.5))
 	var bz := float(p.get("bz", 4.0))
 	for i in n:
-		Models._barrel(r, tx + tsx * 0.5 - 2.0, ty + 1.0, (i - (n - 1) * 0.5) * bz, bl, br)
+		Models._barrel(tr, tsx * 0.5 - 2.0, 1.0, (i - (n - 1) * 0.5) * bz, bl, br)
 	if "mortar" in ex:
-		Models._cyl(r, 2.6, 3.4, 16, Vector3(tx + tsx * 0.5 + 2.0, ty + 8.0, 0), DARK, 8, Vector3(0, 0, -0.9))
-		Models._cyl(r, 3.8, 3.8, 2.0, Vector3(tx + tsx * 0.5 + 9.0, ty + 14.0, 0), METAL, 8, Vector3(0, 0, -0.9))
+		Models._cyl(tr, 2.6, 3.4, 16, Vector3(tsx * 0.5 + 2.0, 8.0, 0), DARK, 20, Vector3(0, 0, -0.9), 0.0, true)
+		Models._cyl(tr, 3.8, 3.8, 2.0, Vector3(tsx * 0.5 + 9.0, 14.0, 0), METAL, 20, Vector3(0, 0, -0.9), 0.0, true)
 	if "skirts" in ex:
 		for s in [-1.0, 1.0]:
 			Models._box(r, Vector3(hl * 0.8, hh * 0.9, 1.4), Vector3(-1, th + hh * 0.5, s * (hw * 0.5 + 1.2)), METAL)
 	if "armor" in ex:
-		Models._box(r, Vector3(tsx + 4, 2.2, tsz + 3), Vector3(tx, ty + tsy * 0.5 + 1.0, 0), METAL)
-		Models._box(r, Vector3(4, tsy * 0.9, tsz + 3), Vector3(tx + tsx * 0.5 + 1.5, ty, 0), body.lightened(0.15), Vector3(0, 0, -0.4))
+		Models._box(tr, Vector3(tsx + 4, 2.2, tsz + 3), Vector3(0, tsy * 0.5 + 1.0, 0), METAL)
+		Models._box(tr, Vector3(4, tsy * 0.9, tsz + 3), Vector3(tsx * 0.5 + 1.5, 0, 0), body.lightened(0.15), Vector3(0, 0, -0.4))
 	if "stacks" in ex:
 		for s in [-1.0, 1.0]:
-			Models._cyl(r, 1.6, 1.6, 7, Vector3(-hl * 0.4, th + hh + 3.0, s * hw * 0.3), DARK, 6)
+			Models._cyl(r, 1.6, 1.6, 7, Vector3(-hl * 0.4, th + hh + 3.0, s * hw * 0.3), DARK, 14, Vector3.ZERO, 0.0, true)
 	if "dish" in ex:
-		Models._cyl(r, 5.5, 1.0, 2.0, Vector3(tx - tsx * 0.4, ty + tsy * 0.5 + 6.0, 4), LIGHT, 8, Vector3(0.9, 0, 0))
-		Models._box(r, Vector3(1.2, 6, 1.2), Vector3(tx - tsx * 0.4, ty + tsy * 0.5 + 2.5, 4), DARK)
+		Models._cyl(tr, 5.5, 1.0, 2.0, Vector3(-tsx * 0.4, tsy * 0.5 + 6.0, 4), LIGHT, 24, Vector3(0.9, 0, 0), 0.0, true)
+		Models._box(tr, Vector3(1.2, 6, 1.2), Vector3(-tsx * 0.4, tsy * 0.5 + 2.5, 4), DARK)
 	if "bigdish" in ex:
-		Models._cyl(r, 9, 2.0, 3.0, Vector3(tx + tsx * 0.5 + 1.0, ty + 3.0, 0), LIGHT, 10, Vector3(0, 0, -1.1))
-		Models._ball(r, 2.4, Vector3(tx + tsx * 0.5 + 5.0, ty + 4.0, 0), gc, 2.0)
+		Models._cyl(tr, 9, 2.0, 3.0, Vector3(tsx * 0.5 + 1.0, 3.0, 0), LIGHT, 28, Vector3(0, 0, -1.1), 0.0, true)
+		Models._ball(tr, 2.4, Vector3(tsx * 0.5 + 5.0, 4.0, 0), gc, 2.0)
 	if "dome" in ex:
-		Models._ball(r, tsx * 0.35, Vector3(tx, ty + tsy * 0.5 + 2.0, 0), gc, 1.0)
+		Models._ball(tr, tsx * 0.35, Vector3(0, tsy * 0.5 + 2.0, 0), gc, 1.0)
 	if "cross" in ex:
 		Models._box(r, Vector3(9, 1.2, 3), Vector3(-hl * 0.15, th + hh + 0.9, 0), GLOWS["green"], Vector3.ZERO, 1.6)
 		Models._box(r, Vector3(3, 1.2, 9), Vector3(-hl * 0.15, th + hh + 0.9, 0), GLOWS["green"], Vector3.ZERO, 1.6)
@@ -274,18 +285,18 @@ static func _tank(r: Node3D, body: Color, hi: Color, acc: Color, p: Dictionary) 
 		Models._ball(r, 1.5, Vector3(-hl * 0.45, th + hh + 12.5, -hw * 0.3), gc, 2.0)
 	if "rack" in ex:
 		for s in [-1.0, 1.0]:
-			Models._box(r, Vector3(14, 4, 4.5), Vector3(tx + 2, ty + tsy * 0.5 + 3.0, s * 4.5), DARK, Vector3(0, 0, -0.55))
+			Models._box(tr, Vector3(14, 4, 4.5), Vector3(2, tsy * 0.5 + 3.0, s * 4.5), DARK, Vector3(0, 0, -0.55))
 			for k in 3:
-				Models._cyl(r, 1.0, 1.0, 4, Vector3(tx + 7 + k * 0.0, ty + tsy * 0.5 + 6.5 + k * 1.2, s * 4.5), GLOWS["orange"], 6, Vector3(0, 0, PI / 2.0 - 0.55), 1.2)
+				Models._cyl(tr, 1.0, 1.0, 4, Vector3(7 + k * 0.0, tsy * 0.5 + 6.5 + k * 1.2, s * 4.5), GLOWS["orange"], 12, Vector3(0, 0, PI / 2.0 - 0.55), 1.2, true)
 	if "pods" in ex:
 		for s in [-1.0, 1.0]:
-			Models._box(r, Vector3(9, 4, 4), Vector3(tx, ty, s * (tsz * 0.5 + 2.5)), DARK)
+			Models._box(tr, Vector3(9, 4, 4), Vector3(0, 0, s * (tsz * 0.5 + 2.5)), DARK)
 	if "ram" in ex:
 		Models._box(r, Vector3(6, hh * 1.1, hw + 4), Vector3(hl * 0.5 + 3.0, th + hh * 0.5, 0), METAL, Vector3(0, 0, -0.25))
 		for s in [-1.0, 0.0, 1.0]:
 			Models._cyl(r, 0.2, 1.6, 6, Vector3(hl * 0.5 + 8.0, th + hh * 0.5, s * hw * 0.3), LIGHT, 5, Vector3(0, 0, -PI / 2.0))
 	if "tank" in ex:
-		Models._cyl(r, 4, 4, 14, Vector3(-hl * 0.3, th + hh + 4.0, 0), METAL, 8, Vector3(PI / 2.0, 0, 0))
+		Models._cyl(r, 4, 4, 14, Vector3(-hl * 0.3, th + hh + 4.0, 0), METAL, 24, Vector3(PI / 2.0, 0, 0), 0.0, true)
 		Models._ball(r, 2.0, Vector3(-hl * 0.3, th + hh + 9.0, 0), GLOWS["orange"], 1.6)
 	if "crystals" in ex:
 		for k in 3:

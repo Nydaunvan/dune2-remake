@@ -47,7 +47,69 @@ static func move_kind(id: String, faction := "") -> String:
 	return _kinds[key]
 
 
+## Pivot de tourelle (x, y, z du modèle) des unités à tourelle indépendante. Vector3.INF si l'unité n'en a pas.
+const TURRET_PIVOTS := {
+	"sentinelle": Vector3(0, 11, 0), "egide": Vector3(-1, 16, 0), "resonateur": Vector3(4, 16, 0), "brute": Vector3(-2, 21, 0),
+	"ombre": Vector3(-4, 12, 0), "prisme": Vector3(-2, 15.5, 0), "obelisque": Vector3(-3, 17, 0),
+}
+
+
+static func turret_pivot(id: String) -> Vector3:
+	if TURRET_PIVOTS.has(id):
+		return TURRET_PIVOTS[id]
+	return ModelsExt.turret_pivot(id)
+
+
+static func has_turret(id: String) -> bool:
+	return turret_pivot(id) != Vector3.INF
+
+
+## Groupe « tourelle » d'un modèle : ses pièces sont données relativement au pivot. Cuit à part (voir build).
+static func _tur(r: Node3D, pivot: Vector3) -> Node3D:
+	var t := Node3D.new()
+	t.name = "TUR"
+	t.position = pivot
+	r.add_child(t)
+	return t
+
+
+## Bouche de tir d'une unité à tourelle : le pivot suit la coque (cap `hull_rot`), la bouche suit la tourelle (`tur_rot`).
+static func muzzle_offset_t(id: String, hull_rot: float, tur_rot: float, idx := 0) -> Vector2:
+	var piv := turret_pivot(id)
+	var arr: Array = _muzzles(id)
+	var m: Vector3 = arr[idx % arr.size()]
+	var base := Vector2(piv.x, piv.z).rotated(hull_rot)
+	var rel := Vector2(m.x - piv.x, m.z - piv.z).rotated(tur_rot)
+	return base + rel + Vector2(0.0, -m.y * tan(deg_to_rad(30.0)))
+
+
+## Décalage 2D du pivot de tourelle pour un cap de coque donné (sert à poser le sprite de tourelle sur la coque).
+static func turret_offset(id: String, hull_rot: float) -> Vector2:
+	var piv := turret_pivot(id)
+	return Vector2(piv.x, piv.z).rotated(hull_rot) + Vector2(0.0, -piv.y * tan(deg_to_rad(30.0)))
+
+
+## Modèle de l'unité `id`, ou de sa tourelle seule (`<id>_tete`) : la coque est cuite sans tourelle, la tourelle à part,
+## centrée sur son pivot, pour qu'elle puisse tourner indépendamment de la coque.
 static func build(id: String, accent: Color, faction := "") -> Node3D:
+	var head := id.ends_with("_tete")
+	var base := id.trim_suffix("_tete")
+	if has_turret(base):
+		var m := _build_model(base, accent, faction)
+		var tur := m.get_node_or_null("TUR")
+		if tur != null:
+			if head:
+				for c in m.get_children():
+					if c != tur:
+						c.visible = false
+				(tur as Node3D).position = Vector3.ZERO
+			else:
+				(tur as Node3D).visible = false
+		return m
+	return _build_model(id, accent, faction)
+
+
+static func _build_model(id: String, accent: Color, faction := "") -> Node3D:
 	var r := Node3D.new()
 	# Bâtiments et engins communs : chaque faction a sa propre silhouette (Solis garde le modèle de base)
 	if faction != "" and ModelsFac.build(r, id, faction, accent):
@@ -251,9 +313,9 @@ static func _faceted(mesh: Mesh) -> ArrayMesh:
 	return am
 
 
-static func _place(parent: Node3D, mesh: Mesh, pos: Vector3, col: Color, rot: Vector3, emit: float) -> MeshInstance3D:
+static func _place(parent: Node3D, mesh: Mesh, pos: Vector3, col: Color, rot: Vector3, emit: float, smooth := false) -> MeshInstance3D:
 	var mi := MeshInstance3D.new()
-	mi.mesh = _faceted(mesh)
+	mi.mesh = mesh if smooth else _faceted(mesh)
 	mi.material_override = _mat(col, emit)
 	if hd and mi.material_override is ShaderMaterial:
 		var sm := mi.material_override as ShaderMaterial
@@ -317,41 +379,67 @@ static func _cyl_mesh(rt: float, rb: float, h: float, sides: int) -> CylinderMes
 
 ## Cylindre / cône (r_top = 0). Axe Y par défaut ; tourner de (PI/2,0,0) pour l'axe Z, (0,0,PI/2) pour l'axe X.
 static func _cyl(parent: Node3D, r_top: float, r_bot: float, h: float, pos: Vector3, col: Color,
-		sides := 8, rot := Vector3.ZERO, emit := 0.0) -> MeshInstance3D:
+		sides := 8, rot := Vector3.ZERO, emit := 0.0, smooth := false) -> MeshInstance3D:
 	var m := CylinderMesh.new()
 	m.top_radius = r_top
 	m.bottom_radius = r_bot
 	m.height = h
 	m.radial_segments = sides
 	m.rings = 1
-	return _place(parent, m, pos, col, rot, emit)
+	return _place(parent, m, pos, col, rot, emit, smooth)
+
+
+## Cylindre rond : 28 côtés, ombrage lisse (roues, galets, tambours). Axe Y par défaut, comme _cyl.
+static func _round(parent: Node3D, r: float, h: float, pos: Vector3, col: Color, rot := Vector3.ZERO, emit := 0.0) -> MeshInstance3D:
+	return _cyl(parent, r, r, h, pos, col, 28, rot, emit, true)
 
 
 static func _ball(parent: Node3D, r: float, pos: Vector3, col: Color, emit := 0.0) -> MeshInstance3D:
 	var m := SphereMesh.new()
 	m.radius = r
 	m.height = r * 2.0
-	m.radial_segments = 8
-	m.rings = 4
-	return _place(parent, m, pos, col, Vector3.ZERO, emit)
+	m.radial_segments = 20
+	m.rings = 10
+	return _place(parent, m, pos, col, Vector3.ZERO, emit, true)
 
 
-## Chenilles : deux blocs + galets aux extrémités.
+## Chenilles : deux blocs + galets ronds aux extrémités ; en HD, maillons de chenille et galets de roulement.
 static func _tracks(parent: Node3D, length: float, spread: float, width: float, h: float) -> void:
 	_seen["tracks"] = true
 	for s in [-1.0, 1.0]:
 		_box(parent, Vector3(length, h, width), Vector3(0, h / 2.0, spread * s), DARK)
 		for e in [-1.0, 1.0]:
-			_cyl(parent, h / 2.0, h / 2.0, width, Vector3(length / 2.0 * e, h / 2.0, spread * s), METAL, 8, Vector3(PI / 2.0, 0, 0))
+			_round(parent, h / 2.0, width, Vector3(length / 2.0 * e, h / 2.0, spread * s), METAL, Vector3(PI / 2.0, 0, 0))
 		_box(parent, Vector3(length * 0.8, 1.0, width + 0.8), Vector3(0, h + 0.5, spread * s), METAL)
+		if hd:
+			# maillons de chenille sur le dessus et le dessous, galets de roulement visibles sur le flanc extérieur
+			var n := int(length / 2.6)
+			for i in n:
+				var x := -length * 0.5 + (i + 0.5) * length / float(n)
+				_box(parent, Vector3(1.5, 0.5, width + 0.5), Vector3(x, h + 0.25, spread * s), DARK.lightened(0.06))
+			var roll := maxi(3, int(length / 9.0))
+			for i in roll:
+				var x2 := -length * 0.5 + h * 0.5 + (i + 0.5) * (length - h) / float(roll)
+				_round(parent, h * 0.32, 0.5, Vector3(x2, h * 0.5, spread * s + (width * 0.5 + 0.2) * s), METAL.lightened(0.08), Vector3(PI / 2.0, 0, 0))
 
 
+## Roues rondes (28 côtés, ombrage lisse) : pneu sombre, jante claire ; en HD, crampons de pneu et boulons de moyeu.
 static func _wheels(parent: Node3D, xs: Array, spread: float, r: float, width: float) -> void:
 	_seen["wheels"] = true
 	for x in xs:
 		for s in [-1.0, 1.0]:
-			_cyl(parent, r, r, width, Vector3(float(x), r, spread * s), DARK, 8, Vector3(PI / 2.0, 0, 0))
-			_cyl(parent, r * 0.45, r * 0.45, width + 0.6, Vector3(float(x), r, spread * s), METAL, 6, Vector3(PI / 2.0, 0, 0))
+			var c := Vector3(float(x), r, spread * s)
+			_round(parent, r, width, c, DARK, Vector3(PI / 2.0, 0, 0))
+			_round(parent, r * 0.62, width + 0.4, c, METAL, Vector3(PI / 2.0, 0, 0))
+			_round(parent, r * 0.28, width + 0.9, c, DARK.lightened(0.1), Vector3(PI / 2.0, 0, 0))
+			if hd:
+				var lugs := 14
+				for i in lugs:
+					var a := TAU * i / float(lugs)
+					_box(parent, Vector3(r * 0.34, r * 0.3, width * 0.92), c + Vector3(cos(a), sin(a), 0) * r * 0.98, DARK.lightened(0.05), Vector3(0, 0, a))
+				for i in 6:
+					var a2 := TAU * i / 6.0
+					_round(parent, 0.35, 0.5, c + Vector3(cos(a2) * r * 0.45, sin(a2) * r * 0.45, s * (width * 0.5 + 0.35)), LIGHT, Vector3(PI / 2.0, 0, 0))
 
 
 static func _barrel(parent: Node3D, x: float, y: float, z: float, length: float, r: float, col := DARK) -> void:
@@ -412,33 +500,36 @@ static func _miner(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
 static func _sentinelle(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_wheels(r, [-9, 9], 8.0, 4.5, 4.0)
 	_box(r, Vector3(26, 4, 11), Vector3(0, 7.5, 0), body)
-	_box(r, Vector3(10, 4, 9), Vector3(-4, 11, 0), hi)
-	_box(r, Vector3(7, 3, 7), Vector3(5, 10, 0), METAL, Vector3(0, 0, -0.35))
-	_barrel(r, 4, 14, 0, 12, 1.0)
-	_ball(r, 2.5, Vector3(2, 13, 0), hi)
 	_box(r, Vector3(1, 1.5, 6), Vector3(13.2, 8, 0), GLOW_BLUE, Vector3.ZERO, 1.5)
+	var t := _tur(r, TURRET_PIVOTS["sentinelle"])
+	_box(t, Vector3(10, 4, 9), Vector3(-4, 0, 0), hi)
+	_box(t, Vector3(7, 3, 7), Vector3(5, -1, 0), METAL, Vector3(0, 0, -0.35))
+	_barrel(t, 4, 3, 0, 12, 1.0)
+	_ball(t, 2.5, Vector3(2, 2, 0), hi)
 
 
 static func _egide(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_tracks(r, 32.0, 9.0, 6.0, 7.0)
 	_box(r, Vector3(30, 6, 15), Vector3(0, 10, 0), body)
 	_box(r, Vector3(9, 3.5, 15), Vector3(14, 9, 0), body.lightened(0.1), Vector3(0, 0, -0.5))
-	_box(r, Vector3(15, 6, 13), Vector3(-1, 16, 0), hi)
-	_cyl(r, 3.5, 4.5, 3, Vector3(-3, 20.5, 0), METAL, 8)
-	_barrel(r, 6, 16.5, 0, 17, 1.7)
 	_box(r, Vector3(1, 1.5, 4), Vector3(15, 11, 4), GLOW_BLUE, Vector3.ZERO, 1.4)
 	_box(r, Vector3(1, 1.5, 4), Vector3(15, 11, -4), GLOW_BLUE, Vector3.ZERO, 1.4)
+	var t := _tur(r, TURRET_PIVOTS["egide"])
+	_box(t, Vector3(15, 6, 13), Vector3.ZERO, hi)
+	_cyl(t, 3.5, 4.5, 3, Vector3(-2, 4.5, 0), METAL, 24, Vector3.ZERO, 0.0, true)
+	_barrel(t, 7, 0.5, 0, 17, 1.7)
 
 
 static func _resonateur(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_tracks(r, 30.0, 8.5, 6.0, 6.0)
 	_box(r, Vector3(28, 6, 13), Vector3(-1, 9, 0), body)
 	_box(r, Vector3(8, 5, 11), Vector3(-8, 14, 0), METAL)
-	# antenne parabolique inclinée vers l'avant
-	_cyl(r, 11, 3, 5, Vector3(6, 20, 0), hi, 10, Vector3(0, 0, PI / 2.0 - 0.45))
-	_cyl(r, 8, 8, 0.8, Vector3(9.2, 21.8, 0), GLOW_BLUE, 10, Vector3(0, 0, PI / 2.0 - 0.45), 1.8)
-	_ball(r, 2.2, Vector3(12, 23.5, 0), GLOW_BLUE, 2.5)
-	_cyl(r, 2, 3, 8, Vector3(2, 15, 0), METAL, 6)
+	# antenne parabolique inclinée vers l'avant : elle pivote vers la cible
+	var t := _tur(r, TURRET_PIVOTS["resonateur"])
+	_cyl(t, 11, 3, 5, Vector3(2, 4, 0), hi, 24, Vector3(0, 0, PI / 2.0 - 0.45), 0.0, true)
+	_cyl(t, 8, 8, 0.8, Vector3(5.2, 5.8, 0), GLOW_BLUE, 24, Vector3(0, 0, PI / 2.0 - 0.45), 1.8, true)
+	_ball(t, 2.2, Vector3(8, 7.5, 0), GLOW_BLUE, 2.5)
+	_cyl(t, 2, 3, 8, Vector3(-2, -1, 0), METAL, 12, Vector3.ZERO, 0.0, true)
 
 
 static func _belier(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
@@ -459,12 +550,13 @@ static func _brute(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_tracks(r, 38.0, 12.0, 9.0, 9.0)
 	_box(r, Vector3(36, 8, 22), Vector3(0, 13, 0), body)
 	_box(r, Vector3(12, 4, 22), Vector3(19, 11, 0), body.lightened(0.1), Vector3(0, 0, -0.55))
-	_box(r, Vector3(20, 8, 17), Vector3(-2, 21, 0), hi)
-	_box(r, Vector3(6, 3, 19), Vector3(-9, 26, 0), METAL)
-	_cyl(r, 4.5, 5.5, 3, Vector3(-4, 26.5, 0), METAL, 8)
-	_barrel(r, 8, 22, 0, 22, 2.6)
+	var t := _tur(r, TURRET_PIVOTS["brute"])
+	_box(t, Vector3(20, 8, 17), Vector3.ZERO, hi)
+	_box(t, Vector3(6, 3, 19), Vector3(-7, 5, 0), METAL)
+	_cyl(t, 4.5, 5.5, 3, Vector3(-2, 5.5, 0), METAL, 24, Vector3.ZERO, 0.0, true)
+	_barrel(t, 10, 1, 0, 22, 2.6)
 	for z in [-9.0, 9.0]:
-		_box(r, Vector3(16, 6, 1.5), Vector3(-2, 21, z * 1.0), METAL)
+		_box(t, Vector3(16, 6, 1.5), Vector3(0, 0, z), METAL)
 
 
 static func _salve(r: Node3D, body: Color, hi: Color, acc: Color) -> void:
@@ -696,36 +788,39 @@ static func _crystal(parent: Node3D, h: float, w: float, pos: Vector3, col: Colo
 static func _ombre(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_wheels(r, [-9, 9], 8.0, 4.5, 4.0)
 	_box(r, Vector3(26, 4, 11), Vector3(0, 7.5, 0), OBSIDIAN)
-	_box(r, Vector3(10, 3, 9), Vector3(-4, 10.5, 0), body)
 	_box(r, Vector3(9, 2.5, 7), Vector3(6, 9.5, 0), hi, Vector3(0, 0, -0.35))
-	_crystal(r, 11, 3.2, Vector3(-6, 17, 0), GLOW_VIOLET, 0.0, 0.0, 1.6)
-	_crystal(r, 7, 2.2, Vector3(-9, 15, 3), GLOW_VIOLET, 0.35, 0.0, 1.2)
-	_barrel(r, 4, 14, 0, 12, 1.0)
 	_box(r, Vector3(1, 1.5, 6), Vector3(13.2, 8, 0), GLOW_VIOLET, Vector3.ZERO, 1.5)
+	var t := _tur(r, TURRET_PIVOTS["ombre"])
+	_box(t, Vector3(10, 3, 9), Vector3(0, -1.5, 0), body)
+	_crystal(t, 11, 3.2, Vector3(-2, 5, 0), GLOW_VIOLET, 0.0, 0.0, 1.6)
+	_crystal(t, 7, 2.2, Vector3(-5, 3, 3), GLOW_VIOLET, 0.35, 0.0, 1.2)
+	_barrel(t, 8, 2, 0, 12, 1.0)
 
 
 static func _prisme(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_tracks(r, 32.0, 9.0, 6.0, 7.0)
 	_box(r, Vector3(30, 6, 15), Vector3(0, 10, 0), OBSIDIAN)
 	_box(r, Vector3(9, 3.5, 15), Vector3(14, 9, 0), body, Vector3(0, 0, -0.5))
-	_cyl(r, 7, 9, 5, Vector3(-2, 15.5, 0), body, 6)
-	_cyl(r, 2.0, 5.5, 13, Vector3(-2, 24.5, 0), GLOW_VIOLET, 6, Vector3.ZERO, 1.3)   # prisme central
-	_crystal(r, 8, 2.4, Vector3(-9, 20, 5), hi, 0.3, 0.0, 0.8)
-	_crystal(r, 8, 2.4, Vector3(-9, 20, -5), hi, -0.3, 0.0, 0.8)
-	_barrel(r, 6, 17, 0, 18, 2.0)
 	_box(r, Vector3(1, 1.5, 4), Vector3(15, 11, 4), GLOW_VIOLET, Vector3.ZERO, 1.4)
 	_box(r, Vector3(1, 1.5, 4), Vector3(15, 11, -4), GLOW_VIOLET, Vector3.ZERO, 1.4)
+	var t := _tur(r, TURRET_PIVOTS["prisme"])
+	_cyl(t, 7, 9, 5, Vector3.ZERO, body, 6)
+	_cyl(t, 2.0, 5.5, 13, Vector3(0, 9, 0), GLOW_VIOLET, 6, Vector3.ZERO, 1.3)   # prisme central
+	_crystal(t, 8, 2.4, Vector3(-7, 4.5, 5), hi, 0.3, 0.0, 0.8)
+	_crystal(t, 8, 2.4, Vector3(-7, 4.5, -5), hi, -0.3, 0.0, 0.8)
+	_barrel(t, 8, 1.5, 0, 18, 2.0)
 
 
 static func _obelisque(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_tracks(r, 36.0, 9.5, 6.5, 7.0)
 	_box(r, Vector3(34, 6, 17), Vector3(0, 10, 0), OBSIDIAN)
-	_box(r, Vector3(24, 5, 15), Vector3(-3, 15.5, 0), body)
-	_cyl(r, 5, 8, 4, Vector3(-4, 20, 0), METAL, 6)
-	_barrel(r, 4, 22, 0, 30, 2.4)
-	_crystal(r, 22, 4.5, Vector3(10, 29, 0), GLOW_VIOLET, PI / 2.0 + 0.0, 0.0, 1.4)   # obélisque couché sur le canon
-	_crystal(r, 12, 3.0, Vector3(-12, 26, 6), hi, 0.2, 0.0, 0.9)
-	_crystal(r, 12, 3.0, Vector3(-12, 26, -6), hi, -0.2, 0.0, 0.9)
+	var t := _tur(r, TURRET_PIVOTS["obelisque"])
+	_box(t, Vector3(24, 5, 15), Vector3(0, -1.5, 0), body)
+	_cyl(t, 5, 8, 4, Vector3(-1, 3, 0), METAL, 6)
+	_barrel(t, 7, 5, 0, 30, 2.4)
+	_crystal(t, 22, 4.5, Vector3(13, 12, 0), GLOW_VIOLET, PI / 2.0 + 0.0, 0.0, 1.4)   # obélisque couché sur le canon
+	_crystal(t, 12, 3.0, Vector3(-9, 9, 6), hi, 0.2, 0.0, 0.9)
+	_crystal(t, 12, 3.0, Vector3(-9, 9, -6), hi, -0.2, 0.0, 0.9)
 
 
 static func _eclipse(r: Node3D, body: Color, hi: Color, acc: Color) -> void:

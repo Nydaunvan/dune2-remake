@@ -73,3 +73,24 @@ static func terrain_label() -> String:
 
 static func terrain_shader() -> Shader:
 	return load("res://shaders/terrain.gdshader" if terrain_hd() else "res://shaders/terrain_classic.gdshader")
+
+
+## Véhicules ultra HD : sprites cuits en haute résolution avec détails de coque (appliqué à la prochaine partie, car cuit au chargement).
+static func vehicles_hd() -> bool:
+	var c := ConfigFile.new()
+	if c.load(PATH) != OK:
+		return true
+	return bool(c.get_value("display", "vehicles_hd", true))
+
+
+static func toggle_vehicles() -> bool:
+	var c := ConfigFile.new()
+	c.load(PATH)
+	var v := not vehicles_hd()
+	c.set_value("display", "vehicles_hd", v)
+	c.save(PATH)
+	return v
+
+
+static func vehicles_label() -> String:
+	return "VÉHICULES : HD (prochaine partie)" if vehicles_hd() else "VÉHICULES : STANDARD (prochaine partie)"

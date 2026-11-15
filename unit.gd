@@ -92,6 +92,12 @@ var _hurt_t := 0.0 # >0 : vient d'être attaqué, reste à l'abri près de la ba
 var _dust: CPUParticles2D
 var _track_last := Vector2.INF # dernière position où une trace a été laissée
 var mech := false             # marcheur (mecha) : balancement et empreintes
+var turret := false           # tourelle indépendante de la coque (sprite de tourelle cuit à part)
+var turret_rot := 0.0         # cap (monde) de la tourelle
+var _aim_pos := Vector2.INF   # cible visée en roulant (tir en mouvement)
+var _aim_t := 0.0
+var _last_trot := 0.0
+const TURRET_SPEED := 4.5     # vitesse de rotation de la tourelle (rad/s)
 var _walk := 0.0              # phase de marche (radians), avance avec la distance parcourue (π par pas)
 var _z_t := 0.0               # prochain recalcul de la profondeur (devant / derrière un bâtiment)
 var _walk_idx := -1           # image de marche affichée (-1 : à l'arrêt)
@@ -115,6 +121,7 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	air = d.get("air", false)
 	var mstyle: Dictionary = ModelsExt.STYLES.get(id, {})
 	mech = mstyle.get("k", "") == "mech"
+	turret = Models.has_turret(id)
 	if mech:
 		# Foulée : un cycle complet de marche = 2 × S / facteur d'appui, pour que les pieds posés ne glissent pas
 		_stride = ModelsMech.cycle_length(mstyle) * float(mstyle.get("s", 1.0))
@@ -656,6 +663,9 @@ func _process(_delta: float) -> void:
 		if absf(angle_difference(rotation, _last_rot)) > 0.02:
 			_last_rot = rotation
 			queue_redraw() # écart résiduel du modèle par rapport à l'image cuite
+		if turret and absf(angle_difference(turret_rot, _last_trot)) > 0.02:
+			_last_trot = turret_rot
+			queue_redraw() # la tourelle tourne indépendamment de la coque
 		if idx != _frame_idx or (not _sprite_ready and bank.has(_sprite_key())):
 			_frame_idx = idx
 			_sprite_ready = bank.has(_sprite_key())
@@ -677,6 +687,8 @@ func _physics_process(delta: float) -> void:
 	if emerging:
 		_emerge(delta)
 		return
+	if turret:
+		_turret_update(delta)
 	_work(delta)
 	_combat(delta)
 	_transport(delta)
@@ -720,6 +732,25 @@ func _legged() -> bool:
 	return mech
 
 
+## Tourelle : vise la cible (en position de tir, en approche ou en roulant) à vitesse limitée, sinon se remet dans l'axe.
+func _turret_update(delta: float) -> void:
+	var want := rotation
+	var aiming := false
+	if role == "combat" and not carried:
+		_aim_t = maxf(0.0, _aim_t - delta)
+		if state == "attack" and _valid(target):
+			want = (target.world_center() - position).angle()
+			aiming = true
+		elif _aim_t > 0.0 and _aim_pos != Vector2.INF:
+			want = (_aim_pos - position).angle()
+			aiming = true
+	if aiming:
+		var d := angle_difference(turret_rot, want)
+		turret_rot = wrapf(turret_rot + clampf(d, -TURRET_SPEED * delta, TURRET_SPEED * delta), -PI, PI)
+	else:
+		turret_rot = lerp_angle(turret_rot, rotation, clampf(9.0 * delta, 0.0, 1.0))
+
+
 func _combat(delta: float) -> void:
 	if role != "combat":
 		return
@@ -738,7 +769,15 @@ func _combat(delta: float) -> void:
 			if _scan_t <= 0.0:
 				_scan_t = 0.3
 				var t = game.find_enemy(team, position, w_range, false, id)
-				if t != null and cooldown <= 0.0:
+				if t != null and turret:
+					_aim_pos = t.world_center()
+					_aim_t = 0.9
+					if cooldown <= 0.0:
+						if absf(angle_difference(turret_rot, (_aim_pos - position).angle())) < 0.2:
+							_shoot(t)
+						else:
+							_scan_t = 0.05 # tourelle pas encore alignée : on retente tout de suite
+				elif t != null and cooldown <= 0.0:
 					_shoot(t)
 		"idle", "amove":
 			_scan_t -= delta
@@ -790,6 +829,11 @@ func _attack(delta: float) -> void:
 		return
 	path = PackedVector2Array()
 	var want := (tp - position).angle()
+	if turret:
+		# la coque garde son cap : seule la tourelle (voir _turret_update) se tourne vers la cible
+		if cooldown <= 0.0 and absf(angle_difference(turret_rot, want)) < 0.12:
+			_shoot(target)
+		return
 	rotation = lerp_angle(rotation, want, clampf(turn_speed * delta, 0.0, 1.0))
 	if cooldown <= 0.0 and absf(angle_difference(rotation, want)) < 0.25:
 		_shoot(target)
@@ -802,9 +846,9 @@ func _shoot(t) -> void:
 	if weapon == "control" and special_t <= 0.0 and t is Unit and t.role == "combat" and t.control_timer <= 0.0:
 		ctrl = true
 		special_t = 20.0
-	var from := position + Vector2.from_angle(rotation) * 16.0
+	var from := position + Vector2.from_angle(turret_rot if turret else rotation) * 16.0
 	# Le projectile part du bout du canon dessiné (alterné entre les canons s'il y en a plusieurs)
-	var mo := Models.muzzle_offset(id, rotation, _muzzle_i)
+	var mo := Models.muzzle_offset_t(id, rotation, turret_rot, _muzzle_i) if turret else Models.muzzle_offset(id, rotation, _muzzle_i)
 	if mo != Vector2.INF and game.bank != null and game.bank.has(_sprite_key()):
 		from = position + mo + (Vector2(0, -lift_px()) if air else Vector2.ZERO)
 		_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(id)
@@ -1067,7 +1111,10 @@ func _draw_sprite() -> bool:
 		var wt = bank.frame(wk, rotation)
 		if wt != null:
 			tex = wt
-	var sz := bank.draw_size(key)
+	var dkey := key
+	if mech and _walk_idx >= 0 and bank.has("%s|w%d" % [key, _walk_idx]):
+		dkey = "%s|w%d" % [key, _walk_idx]
+	var dr := bank.draw_rect(dkey, rotation)
 	# Les décalages sont donnés à l'écran : on les contre-tourne car le nœud est tourné.
 	var unrot := -rotation
 	# L'image cuite la plus proche est tournée de l'écart résiduel : le modèle suit exactement le cap
@@ -1080,13 +1127,21 @@ func _draw_sprite() -> bool:
 		draw_set_transform(Vector2.ZERO, unrot, Vector2.ONE)
 		draw_dashed_line(Vector2(0, 0).rotated(unrot), Vector2(0, -lift_px() + 8.0).rotated(unrot), Color(1, 1, 1, 0.12), 1.0, 3.0)
 		draw_set_transform(Vector2(0, -lift_px()).rotated(unrot), model_rot, Vector2.ONE)
-		draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
+		draw_texture_rect(tex, dr, false)
 		_draw_rotors(unrot)
 		return true
 	draw_set_transform(Vector2(-5, 6).rotated(unrot), unrot, Vector2(1.0, 0.55))
 	draw_circle(Vector2.ZERO, radius * 1.25, Color(0.1, 0.03, 0.12, 0.28))
 	draw_set_transform(Vector2.ZERO, model_rot, Vector2.ONE)
-	draw_texture_rect(tex, Rect2(-sz / 2.0, sz), false)
+	draw_texture_rect(tex, dr, false)
+	if turret:
+		# Tourelle : sprite cuit à part, posé sur le pivot de la coque, orienté sur son propre cap
+		var tk := "%s_tete|%s" % [id, game.faction_id_of(team)]
+		var tt = bank.frame(tk, turret_rot)
+		if tt != null:
+			var tsnap := bank.snap_angle(tk, turret_rot)
+			draw_set_transform(Models.turret_offset(id, rotation).rotated(unrot), (turret_rot - tsnap) + unrot, Vector2.ONE)
+			draw_texture_rect(tt, bank.draw_rect(tk, turret_rot), false)
 	return true
 
 
@@ -1206,6 +1261,7 @@ func export_state(idx: Dictionary) -> Dictionary:
 func restore_state(s: Dictionary) -> void:
 	position = s["pos"]
 	rotation = float(s["rot"])
+	turret_rot = rotation
 	base_max_hp = float(s["base_max_hp"])
 	max_hp = float(s["max_hp"])
 	hp = minf(float(s["hp"]), max_hp)

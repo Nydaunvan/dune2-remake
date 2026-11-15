@@ -74,6 +74,14 @@ func setup(p_game) -> void:
 		tq.text = DisplayCfg.terrain_label()
 		tq.queue_redraw())
 	gb.add_child(tq)
+	var vq := GameUI.NeonButton.new(DisplayCfg.vehicles_label())
+	vq.accent = GameData.GREEN
+	vq.custom_minimum_size = Vector2(380, 36)
+	vq.pressed.connect(func() -> void:
+		DisplayCfg.toggle_vehicles()
+		vq.text = DisplayCfg.vehicles_label()
+		vq.queue_redraw())
+	gb.add_child(vq)
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 20)
