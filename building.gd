@@ -49,6 +49,7 @@ var selected := false:
 		selected = value
 		queue_redraw()
 var _target
+var dock_user = null # véhicule actuellement sur la rampe (déchargement / réparation)
 var door_t := 0.0   # porte de production ouverte (secondes restantes)
 var door_dur := 1.7
 var fx_t := 0.0     # éclat de tir (tour sonique)
@@ -112,6 +113,52 @@ func _process(delta: float) -> void:
 func _animated() -> bool:
 	return id in ["radar", "tour_sonique", "tour_prisme", "serre", "mur_cristal", "centrale", "reacteur", "relais_solaire", "fonderie", "raffinerie",
 			"chantier", "marche", "reparation", "aerodrome", "usine"]
+
+
+## Véhicule en cours de déchargement : flot de particules de la benne vers la trémie, lueur du bec de déversement.
+func _draw_unload_fx(c: Vector2, t: float) -> void:
+	var u = dock_user
+	if u == null or not is_instance_valid(u) or u._dk != "work" or u._dk_kind != "unload":
+		return
+	var q: Dictionary = Models.ramp_of(id)
+	if q.is_empty():
+		return
+	var from: Vector2 = c + (u.position - world_center()) + Vector2(0, -u.ramp_lift - 8.0)
+	var hop: Vector2 = c + Models.project(Vector3(float(q["x"]), 16.0, -2.0), 0.0)
+	var col := Color(1.0, 0.62, 0.2) if id == "raffinerie" else Color(0.55, 0.8, 1.0)
+	var pulse := 0.5 + 0.5 * sin(t * 14.0)
+	draw_circle(hop, 9.0 + 3.0 * pulse, Color(col.r, col.g, col.b, 0.16 + 0.16 * pulse))
+	for i in 9:
+		var k := fmod(t * 1.3 + i / 9.0, 1.0)
+		var p := from.lerp(hop, k) + Vector2(0, -sin(k * PI) * 14.0) + Vector2(sin(i * 7.3 + t * 4.0) * 3.0, 0)
+		draw_circle(p, 2.4 - k * 0.8, Color(col.r, col.g, col.b, 0.85 * (1.0 - k * 0.4)))
+
+
+## Véhicule sur la plateforme de réparation : deux bras articulés du portique, étincelles de soudure et faisceau.
+func _draw_repair_fx(c: Vector2, t: float) -> void:
+	var u = dock_user
+	if u == null or not is_instance_valid(u) or u._dk != "work" or u._dk_kind != "repair":
+		# au repos : le chariot du portique balaie lentement la plateforme
+		var sw := sin(t * 1.6)
+		var p := c + Models.project(Vector3(sw * 28.0, 33.5, -6.0), 0.0)
+		draw_rect(Rect2(p - Vector2(5, 3), Vector2(10, 6)), Color(0.5, 1.0, 0.7, 0.55))
+		return
+	var up: Vector2 = c + (u.position - world_center()) + Vector2(0, -u.ramp_lift)
+	for side in [-1.0, 1.0]:
+		var base := c + Models.project(Vector3(side * 30.0, 31.0, -6.0), 0.0)
+		var wob := sin(t * 3.0 + side * 1.7)
+		var tip := up + Vector2(side * (7.0 + 5.0 * wob), -4.0 + 3.0 * sin(t * 2.3 + side))
+		var elbow := base.lerp(tip, 0.5) + Vector2(0, -14.0)
+		draw_line(base, elbow, Color(0.75, 0.78, 0.85), 3.0, true)
+		draw_line(elbow, tip, Color(0.6, 0.64, 0.72), 2.4, true)
+		draw_circle(elbow, 2.6, Color(0.9, 0.92, 1.0))
+		var fl := 0.5 + 0.5 * sin(t * 40.0 + side * 9.0)
+		draw_circle(tip, 3.5 + 2.0 * fl, Color(0.7, 1.0, 0.85, 0.5 + 0.4 * fl))
+		for i in 3:
+			var a: float = t * 23.0 + i * 2.1 + side
+			draw_line(tip, tip + Vector2(cos(a), sin(a) - 0.4) * (4.0 + 5.0 * fl), Color(1.0, 0.95, 0.6, 0.9), 1.2)
+	var bp := 0.5 + 0.5 * sin(t * 5.0)
+	draw_rect(Rect2(up + Vector2(-13, -20), Vector2(26, 26)), Color(0.4, 1.0, 0.6, 0.06 + 0.07 * bp))
 
 
 func _on_screen() -> bool:
@@ -355,18 +402,16 @@ func _draw_anim(s: Vector2, fid: String, bank) -> void:
 				draw_rect(Rect2(c + Models.project(Vector3(-29, 11, 19.5), 0.0) - Vector2(0, 2), Vector2(30, 4)), Color(1.0, 0.55, 0.2, 0.18 + 0.22 * gl))
 			else:
 				var ph := 0.5 + 0.5 * sin(t * 2.6)
-				var p := c + Models.project(Vector3(18, 19.0, -4), 0.0)
+				var p := c + Models.project(Vector3(22, 19.0, -8), 0.0)
 				draw_rect(Rect2(p - Vector2(13, 11), Vector2(26, 22)), Color(1.0, 0.6, 0.2, 0.08 + 0.14 * ph))
+			_draw_unload_fx(c, t)
 		"marche":
 			for x in [-24.0, 0.0, 24.0]:
 				var ph := 0.5 + 0.5 * sin(t * 4.0 + x * 0.2)
 				var p := c + Models.project(Vector3(x, 14.0, 17.5), 0.0)
 				draw_rect(Rect2(p - Vector2(8, 2), Vector2(16, 4)), Color(1.0, 0.3, 0.9, 0.18 + 0.3 * ph))
 		"reparation":
-			var sw := sin(t * 1.6)
-			var p := c + Models.project(Vector3(sw * 28.0, 33.5, 0), 0.0)
-			draw_rect(Rect2(p - Vector2(5, 3), Vector2(10, 6)), Color(0.5, 1.0, 0.7, 0.55))
-			draw_rect(Rect2(c + Models.project(Vector3(sw * 28.0 - 4.0, 2.0, 4.0), 0.0) - Vector2(0, 0), Vector2(8, 26)), Color(0.4, 1.0, 0.6, 0.06))
+			_draw_repair_fx(c, t)
 	# Porte de production : s'ouvre quand une unité sort
 	if door_t > 0.0 and Models.DOORS.has(id):
 		var d: Dictionary = Models.DOORS[id]

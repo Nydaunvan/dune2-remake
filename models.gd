@@ -644,6 +644,24 @@ static func _centrale(r: Node3D, acc: Color) -> void:
 	_cyl(r, 1.8, 1.8, 30, Vector3(0, 12, -2), DARK, 6, Vector3(0, 0, PI / 2.0))
 
 
+## Rampes d'accostage (mêmes pour toutes les factions) : x = axe de la rampe, z0 = pied (sol), zf = jonction rampe/plaque,
+## pz = centre de la plaque où le véhicule s'immobilise, d = profondeur de la plaque, h = hauteur de la plaque, w = largeur.
+const RAMPS := {
+	"raffinerie": {"x": -20.0, "z0": 33.0, "pz": 14.0, "d": 16.0, "h": 6.0, "w": 28.0},
+	"fonderie": {"x": 28.0, "z0": 33.0, "pz": 12.0, "d": 20.0, "h": 6.0, "w": 26.0},
+	"reparation": {"x": 0.0, "z0": 33.0, "pz": 8.0, "d": 28.0, "h": 4.0, "w": 44.0},
+}
+
+
+static func ramp_of(id: String) -> Dictionary:
+	return RAMPS.get(id, {})
+
+
+static func _ramp_for(r: Node3D, id: String, acc: Color) -> void:
+	var q: Dictionary = RAMPS[id]
+	_ramp(r, q["x"], q["z0"], q["pz"], q["d"], q["h"], q["w"], acc)
+
+
 ## Rampe de déchargement : plan incliné + plateforme plane (le véhicule monte, s'arrête sur la plaque, décharge dans la trémie).
 ## x : centre, z0 : bord bas de la rampe (côté sol), plate_z : centre de la plaque, y_top : hauteur de la plaque.
 static func _ramp(r: Node3D, x: float, z0: float, plate_z: float, plate_d: float, y_top: float, w: float, acc: Color) -> void:
@@ -673,7 +691,7 @@ static func _raffinerie(r: Node3D, acc: Color) -> void:
 	_cyl(r, 2.2, 2.2, 8, Vector3(30, 26, -14), DARK, 12)
 	_cyl(r, 2.2, 2.2, 8, Vector3(22, 26, -14), DARK, 12)
 	# Quai de déchargement : rampe + plaque sous la trémie
-	_ramp(r, -20.0, 33.0, 12.0, 20.0, 6.0, 28.0, acc)
+	_ramp_for(r, "raffinerie", acc)
 	_box(r, Vector3(24, 14, 10), Vector3(-20, 13.0, -2), Color(0.24, 0.26, 0.32))       # trémie
 	_box(r, Vector3(24, 1.2, 12), Vector3(-20, 20.0, -2), METAL, Vector3(0.0, 0.0, 0.0)) # auvent
 	_box(r, Vector3(18, 5, 1.5), Vector3(-20, 11.0, 3.3), DARK)                          # bec de déversement
@@ -692,7 +710,7 @@ static func _fonderie(r: Node3D, acc: Color) -> void:
 		_cyl(r, 5.2, 5.2, 2.0, Vector3(x, 37, -20), GLOW_ORANGE, 12, Vector3.ZERO, 1.8)
 	_box(r, Vector3(30, 5, 3), Vector3(-18, 11, 11.5), GLOW_ORANGE, Vector3.ZERO, 2.2) # gueulard
 	# Quai de déchargement (à droite) : rampe + plaque + trémie
-	_ramp(r, 28.0, 33.0, 10.0, 20.0, 6.0, 26.0, acc)
+	_ramp_for(r, "fonderie", acc)
 	_box(r, Vector3(22, 12, 10), Vector3(28, 12.0, -6), DARK)
 	_box(r, Vector3(22, 1.2, 12), Vector3(28, 18.6, -6), METAL)
 	_box(r, Vector3(16, 4, 1.5), Vector3(28, 10.0, -0.6), Color(0.12, 0.13, 0.16))
@@ -780,7 +798,7 @@ static func _reparation(r: Node3D, acc: Color) -> void:
 	_box(r, Vector3(78, 6, 10), Vector3(0, 33, -6), LIGHT)
 	_box(r, Vector3(70, 1.2, 3), Vector3(0, 36.4, -6), GLOW_GREEN, Vector3.ZERO, 1.6)
 	# Plateforme où le véhicule s'immobilise, avec rampe d'accès par l'avant
-	_ramp(r, 0.0, 33.0, 8.0, 28.0, 4.0, 44.0, acc)
+	_ramp_for(r, "reparation", acc)
 	for sx in [-1.0, 1.0]: # rails de guidage des bras
 		_box(r, Vector3(2, 1.4, 26), Vector3(sx * 28.0, 5.0, 8.0), METAL)
 	_box(r, Vector3(14, 10, 6), Vector3(0, 11, -22), acc.darkened(0.2))   # poste de contrôle au fond

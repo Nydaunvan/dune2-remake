@@ -171,6 +171,8 @@ static func _raffinerie(r: Node3D, f: String, acc: Color) -> void:
 			Models._cyl(r, 12, 18, 12, Vector3(24, 9, -6), OBS_L, 6)
 			Models._cyl(r, 8, 8, 1.4, Vector3(24, 15.5, -6), Models.GLOW_VIOLET, 6, Vector3.ZERO, 1.4)
 			_door(r, -20, 23, 5, 24, 8, Color(0.1, 0.08, 0.16), Models.GLOW_VIOLET)
+	Models._ramp_for(r, "raffinerie", acc)
+	Models._box(r, Vector3(22, 6, 6), Vector3(-20, 14, -2), Models.DARK) # trémie
 
 
 static func GLOW_ORANGE_() -> Color:
@@ -187,21 +189,20 @@ static func _fonderie(r: Node3D, f: String, acc: Color) -> void:
 				Models._cyl(r, 4, 6, 40 - (x - 18.0) * 0.5, Vector3(x, 22, -16), STEEL_L, 6)
 				Models._cyl(r, 4.5, 4.5, 1.8, Vector3(x, 42 - (x - 18.0) * 0.5, -16), GLOW_RED, 6, Vector3.ZERO, 2.0)
 			Models._box(r, Vector3(30, 6, 3), Vector3(-14, 11, 19), GLOW_RED, Vector3.ZERO, 2.2)
-			Models._box(r, Vector3(20, 3, 12), Vector3(30, 5, 14), Color(0.14, 0.14, 0.17))
 		"vael":
 			Models._cyl(r, 24, 26, 14, Vector3(-14, 9, -4), SAND, 10)
 			Models._cyl(r, 0.5, 24, 12, Vector3(-14, 22, -4), CANVAS, 10)
 			Models._cyl(r, 5, 6, 30, Vector3(24, 17, -14), SAND.darkened(0.2), 8)
 			Models._cyl(r, 6.5, 6.5, 2, Vector3(24, 32.5, -14), GLOW_GOLD, 8, Vector3.ZERO, 1.8)
 			Models._box(r, Vector3(30, 5, 3), Vector3(-14, 11, 19), GLOW_GOLD, Vector3.ZERO, 2.0)
-			Models._box(r, Vector3(24, 1.2, 10), Vector3(30, 9, 14), CLOTH, Vector3(0.3, 0, 0))
 		_:
 			Models._cyl(r, 16, 24, 20, Vector3(-14, 13, -3), OBS, 6)
 			Models._crystal(r, 26, 9, Vector3(-14, 36, -3), Models.GLOW_VIOLET, 0.0, 0.0, 1.6)
 			for x in [22.0, 34.0]:
 				Models._crystal(r, 26, 7, Vector3(x, 15, -14), Models.GLOW_VIOLET, 0.1, 0.0, 1.2)
 			Models._box(r, Vector3(30, 5, 3), Vector3(-14, 11, 19), Models.GLOW_VIOLET, Vector3.ZERO, 2.2)
-			Models._cyl(r, 8, 10, 4, Vector3(30, 4, 14), OBS_L, 6)
+	Models._ramp_for(r, "fonderie", acc)
+	Models._box(r, Vector3(20, 8, 6), Vector3(28, 12, -4), Models.DARK) # trémie
 
 
 static func _usine(r: Node3D, f: String, acc: Color) -> void:
@@ -364,21 +365,19 @@ static func _reparation(r: Node3D, f: String, acc: Color) -> void:
 				Models._box(r, Vector3(10, 28, 10), Vector3(x, 16, 0), STEEL)
 			Models._box(r, Vector3(82, 8, 12), Vector3(0, 31, 0), RUST)
 			Models._box(r, Vector3(76, 1.4, 5), Vector3(0, 35.4, 0), GLOW_RED, Vector3.ZERO, 1.6)
-			Models._box(r, Vector3(60, 2, 36), Vector3(0, 4.5, 4), Color(0.14, 0.14, 0.17))
 			Models._box(r, Vector3(16, 8, 6), Vector3(0, 22, -3), STEEL_L)
 		"vael":
 			for x in [-36.0, 36.0]:
 				Models._cyl(r, 1.8, 1.8, 30, Vector3(x, 15, 0), SAND.darkened(0.3), 6)
 			Models._box(r, Vector3(84, 1.8, 40), Vector3(0, 30, 2), CLOTH, Vector3(0.12, 0, 0))
 			Models._box(r, Vector3(70, 1.2, 4), Vector3(0, 28.5, 18), GLOW_GOLD, Vector3.ZERO, 1.4)
-			Models._box(r, Vector3(60, 2, 34), Vector3(0, 4, 4), Color(0.45, 0.36, 0.24))
 			Models._ball(r, 5, Vector3(0, 16, -8), Models.GLOW_GREEN, 1.4)
 		_:
 			for x in [-34.0, 34.0]:
 				Models._crystal(r, 34, 8, Vector3(x, 18, 0), Models.GLOW_VIOLET, 0.0, 0.0, 1.3)
 			Models._box(r, Vector3(70, 3, 8), Vector3(0, 32, 0), OBS_L)
 			Models._box(r, Vector3(66, 1.2, 4), Vector3(0, 34, 0), Models.GLOW_VIOLET, Vector3.ZERO, 1.6)
-			Models._cyl(r, 24, 28, 2, Vector3(0, 4, 4), OBS, 6)
+	Models._ramp_for(r, "reparation", acc)
 
 
 static func _reacteur(r: Node3D, f: String, acc: Color) -> void:

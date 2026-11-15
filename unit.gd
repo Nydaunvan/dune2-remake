@@ -92,6 +92,13 @@ var _hurt_t := 0.0 # >0 : vient d'être attaqué, reste à l'abri près de la ba
 var _dust: CPUParticles2D
 var _track_last := Vector2.INF # dernière position où une trace a été laissée
 var mech := false             # marcheur (mecha) : balancement et empreintes
+var _dk := ""                 # accostage sur rampe : "" | in | up | work | down
+var _dk_b = null              # bâtiment (raffinerie, fonderie, centre de réparation) dont on utilise la rampe
+var _dk_kind := ""            # unload | repair
+var _dk_t := 0.0
+var _dk_dur := 1.0
+var _dk_total := 0.0
+var ramp_lift := 0.0          # hauteur due à la rampe (px écran)
 var turret := false           # tourelle indépendante de la coque (sprite de tourelle cuit à part)
 var turret_rot := 0.0         # cap (monde) de la tourelle
 var _aim_pos := Vector2.INF   # cible visée en roulant (tir en mouvement)
@@ -337,6 +344,8 @@ func begin_emerge(from: Vector2, to: Vector2, dur: float, goal := Vector2.INF) -
 
 ## Un ordre reçu pendant la sortie la termine aussitôt.
 func _end_emerge() -> void:
+	if _dk != "":
+		_dock_abort()
 	if not emerging:
 		return
 	emerging = false
@@ -550,7 +559,7 @@ func order_repair(site) -> void:
 	if air:
 		follow(PackedVector2Array([position, site.world_center()]))
 	else:
-		follow(game.path_to(position, game.dock_cell(site, game.world_to_cell(position))))
+		follow(game.path_to(position, _ramp_cell(site)))
 	state = "repair"
 	if _work_fx != null:
 		_set_work_fx(false)
@@ -562,6 +571,16 @@ func _repair(delta: float) -> void:
 	if not _valid(repair_site):
 		state = "seek" if is_worker() else "idle"
 		return
+	if not air and not Models.ramp_of(repair_site.id).is_empty():
+		var near := path.is_empty() or position.distance_to(_ramp_pts(repair_site)["A"]) < 48.0
+		if not near:
+			return
+		var r := _dock_begin(repair_site, "repair")
+		if r == 1:
+			return
+		if r == 2:
+			path = PackedVector2Array()
+			return
 	if not path.is_empty() and position.distance_to(repair_site.world_center()) > 90.0:
 		return
 	path = PackedVector2Array()
@@ -686,6 +705,11 @@ func _physics_process(delta: float) -> void:
 		_heal_tick(delta)
 	if emerging:
 		_emerge(delta)
+		return
+	if _dk != "":
+		_dock_update(delta)
+		if turret:
+			_turret_update(delta)
 		return
 	if turret:
 		_turret_update(delta)
@@ -1060,11 +1084,21 @@ func _start_return() -> void:
 	if dock == null:
 		state = "idle"
 		return
-	var cell: Vector2i = game.dock_cell(dock, from)
+	var cell: Vector2i = _ramp_cell(dock)
 	follow(game.path_to(position, cell))
 	if path.is_empty():
 		path = PackedVector2Array([position])
 	state = "return"
+
+
+## Case d'attente : le pied de la rampe si le bâtiment en a une, sinon la case libre la plus proche autour de lui.
+func _ramp_cell(b) -> Vector2i:
+	var from: Vector2i = game.world_to_cell(position)
+	if not air and not Models.ramp_of(b.id).is_empty():
+		var ac: Vector2i = game.world_to_cell(_ramp_pts(b)["A"])
+		if game._is_walkable(ac):
+			return ac
+	return game.dock_cell(b, from)
 
 
 ## Le véhicule touche (ou presque) sa raffinerie / fonderie : il peut y décharger.
@@ -1072,6 +1106,8 @@ func _at_dock() -> bool:
 	var dock = game.find_dock(cargo_kind, game.world_to_cell(position), team)
 	if dock == null:
 		return false
+	if not Models.ramp_of(dock.id).is_empty() and not air:
+		return position.distance_to(_ramp_pts(dock)["A"]) < 48.0
 	var r := Rect2(Vector2(dock.cell) * 32.0, Vector2(dock.cell_size) * 32.0).grow(radius + 10.0)
 	return r.has_point(position)
 
@@ -1087,12 +1123,148 @@ func _unload() -> void:
 			game._full_warn = game.game_time
 			game.popup(position, "Hors tension", GameData.RED)
 		return
+	if cargo > 0.0 and dock != null:
+		var r := _dock_begin(dock, "unload")
+		if r == 1:
+			_dk_total = cargo
+			_dk_dur = 0.9 + 2.4 * clampf(cargo / maxf(cargo_cap, 1.0), 0.0, 1.0)
+			return
+		if r == 2: # rampe occupée : on attend au pied
+			state = "return"
+			path = PackedVector2Array()
+			return
 	if cargo > 0.0:
 		game.deposit(cargo_kind, cargo, position, team)
 	cargo = 0.0
 	queue_redraw()
 	state = "seek"
 	_seek_started = false
+
+
+# --- Rampes d'accostage (raffinerie, fonderie, centre de réparation) ----------------
+
+## Points de la rampe en coordonnées monde : A (pied), B (jonction rampe/plaque), P (centre de la plaque) ; h en px écran.
+func _ramp_pts(b) -> Dictionary:
+	var q: Dictionary = Models.ramp_of(b.id)
+	var c: Vector2 = b.world_center()
+	return {"A": c + Vector2(q["x"], q["z0"] + 4.0), "B": c + Vector2(q["x"], q["pz"] + q["d"] / 2.0),
+			"P": c + Vector2(q["x"], q["pz"]), "h": absf(Models.project(Vector3(0, q["h"], 0), 0.0).y), "z0": c.y + q["z0"], "zb": c.y + q["pz"] + q["d"] / 2.0}
+
+
+## 0 : pas de rampe / trop loin (on garde l'ancien comportement) ; 1 : accostage commencé ; 2 : rampe occupée, il faut attendre.
+func _dock_begin(b, kind: String) -> int:
+	if air or Models.ramp_of(b.id).is_empty():
+		return 0
+	var du = b.dock_user
+	if du != null and du != self and is_instance_valid(du) and du.alive and du._dk != "":
+		return 2
+	var pts := _ramp_pts(b)
+	if position.distance_to(pts["A"]) > 150.0:
+		return 0
+	b.dock_user = self
+	_dk_b = b
+	_dk_kind = kind
+	_dk = "in"
+	_dk_t = 0.0
+	path = PackedVector2Array()
+	z_index = 5
+	return 1
+
+
+func _dock_abort() -> void:
+	if _dk_b != null and is_instance_valid(_dk_b):
+		if _dk_b.dock_user == self:
+			_dk_b.dock_user = null
+		var pts := _ramp_pts(_dk_b)
+		position = pts["A"]
+	_dk = ""
+	_dk_b = null
+	ramp_lift = 0.0
+	z_index = 3
+	queue_redraw()
+
+
+func _dock_move(to: Vector2, speed: float, delta: float) -> bool:
+	var d := to - position
+	var st := speed * delta
+	if d.length() <= st:
+		position = to
+		return true
+	position += d.normalized() * st
+	return false
+
+
+func _dock_lift(pts: Dictionary) -> void:
+	var span: float = maxf(float(pts["z0"]) - float(pts["zb"]), 1.0)
+	ramp_lift = float(pts["h"]) * clampf((float(pts["z0"]) - position.y) / span, 0.0, 1.0)
+
+
+func _dock_finish() -> void:
+	var b = _dk_b
+	if b != null and is_instance_valid(b) and b.dock_user == self:
+		b.dock_user = null
+	var kind := _dk_kind
+	_dk = ""
+	_dk_b = null
+	ramp_lift = 0.0
+	z_index = 3
+	if kind == "repair":
+		state = "seek" if is_worker() else "idle"
+		_seek_started = false
+		repair_site = null
+	else:
+		state = "seek"
+		_seek_started = false
+	queue_redraw()
+
+
+func _dock_update(delta: float) -> void:
+	var b = _dk_b
+	if b == null or not is_instance_valid(b) or not b.alive:
+		_dock_abort()
+		state = "seek" if is_worker() else "idle"
+		_seek_started = false
+		return
+	var pts := _ramp_pts(b)
+	rotation = lerp_angle(rotation, -PI / 2.0, clampf(8.0 * delta, 0.0, 1.0))
+	match _dk:
+		"in":
+			if _dock_move(pts["A"], 60.0, delta) and absf(angle_difference(rotation, -PI / 2.0)) < 0.2:
+				_dk = "up"
+		"up":
+			if position.y > pts["zb"] + 0.1:
+				_dock_move(pts["B"], 34.0, delta)
+			elif _dock_move(pts["P"], 30.0, delta):
+				_dk = "work"
+				_dk_t = 0.0
+			_dock_lift(pts)
+		"work":
+			ramp_lift = pts["h"]
+			if _dk_kind == "unload":
+				_dk_t += delta
+				cargo = _dk_total * (1.0 - clampf(_dk_t / _dk_dur, 0.0, 1.0))
+				if _dk_t >= _dk_dur:
+					game.deposit(cargo_kind, _dk_total, position, team)
+					cargo = 0.0
+					_dk = "down"
+			else:
+				if not _valid(repair_site) or not game.repair_unit_tick(self, delta):
+					if hp >= max_hp - 0.5:
+						hp = max_hp
+						if team == 0:
+							game.popup(position, "Réparé", GameData.GREEN)
+					_dk = "down"
+		"down":
+			var done := false
+			if position.y < pts["zb"] - 0.1:
+				_dock_move(pts["B"], 30.0, delta)
+			else:
+				done = _dock_move(pts["A"], 34.0, delta)
+			_dock_lift(pts)
+			if done:
+				_dock_finish()
+				return
+	queue_redraw()
 
 
 # --- Dessin -------------------------------------------------------------------
@@ -1132,7 +1304,8 @@ func _draw_sprite() -> bool:
 		return true
 	draw_set_transform(Vector2(-5, 6).rotated(unrot), unrot, Vector2(1.0, 0.55))
 	draw_circle(Vector2.ZERO, radius * 1.25, Color(0.1, 0.03, 0.12, 0.28))
-	draw_set_transform(Vector2.ZERO, model_rot, Vector2.ONE)
+	var rl := Vector2(0, -ramp_lift).rotated(unrot)
+	draw_set_transform(rl, model_rot, Vector2.ONE)
 	draw_texture_rect(tex, dr, false)
 	if turret:
 		# Tourelle : sprite cuit à part, posé sur le pivot de la coque, orienté sur son propre cap
@@ -1140,7 +1313,7 @@ func _draw_sprite() -> bool:
 		var tt = bank.frame(tk, turret_rot)
 		if tt != null:
 			var tsnap := bank.snap_angle(tk, turret_rot)
-			draw_set_transform(Models.turret_offset(id, rotation).rotated(unrot), (turret_rot - tsnap) + unrot, Vector2.ONE)
+			draw_set_transform(Models.turret_offset(id, rotation).rotated(unrot) + rl, (turret_rot - tsnap) + unrot, Vector2.ONE)
 			draw_texture_rect(tt, bank.draw_rect(tk, turret_rot), false)
 	return true
 
