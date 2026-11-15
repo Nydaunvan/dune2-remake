@@ -6,7 +6,7 @@ extends Node
 ## pour que l'emprise au sol reste alignée sur la grille tout en montrant les flancs.
 
 const TILT := deg_to_rad(30.0)
-const SS := 2.0           # pixels de texture par pixel du monde
+var ss := 2.0             # pixels de texture par pixel du monde (2 = standard ; 4 = ultra HD pour les véhicules)
 const ANGLES := 16
 const UNIT_FRAME := Vector2(104, 104)
 const UNIT_EXTRA := 44.0
@@ -175,7 +175,7 @@ func _bake_all() -> void:
 func _bake(job: Dictionary) -> void:
 	var frame_px: Vector2 = job["frame"]
 	var view_h: float = frame_px.y * cos(TILT) + float(job["extra"])
-	_vp.size = Vector2i(int(ceil(frame_px.x * SS)), int(ceil(view_h * SS)))
+	_vp.size = Vector2i(int(ceil(frame_px.x * ss)), int(ceil(view_h * ss)))
 	_cam.size = view_h
 	Models.walk_phase = float(job.get("phase", -1.0))
 	var model := Models.build(job["id"], job["accent"], job.get("faction", ""))

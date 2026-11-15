@@ -21,6 +21,10 @@ static var walk_phase := -1.0
 ## Images de marche cuites par mécha et par angle (un cycle complet = deux pas).
 const WALK_FRAMES := 8
 static var _kinds := {}
+## Rendu « ultra HD » des coques (shader de tôle, rivets, crasse + détails de surface générés). Désactivé par défaut.
+static var hd := false
+static var _hull: Shader
+static var _seed := 0
 
 
 ## Chenilles, roues ou coussins de sustentation : le modèle 3D lui-même l'indique (cache par unité et faction).
@@ -193,7 +197,17 @@ static func muzzle_count(id: String) -> int:
 
 # --- Primitives ---------------------------------------------------------------
 
-static func _mat(col: Color, emit := 0.0) -> StandardMaterial3D:
+static func _mat(col: Color, emit := 0.0) -> Material:
+	if hd:
+		if _hull == null:
+			_hull = load("res://shaders/hull.gdshader")
+		var sm := ShaderMaterial.new()
+		sm.shader = _hull
+		sm.set_shader_parameter("albedo", col)
+		sm.set_shader_parameter("emit_energy", emit * 0.5)
+		_seed += 1
+		sm.set_shader_parameter("seed", float(_seed % 37))
+		return sm
 	var m := StandardMaterial3D.new()
 	m.albedo_color = col
 	m.roughness = 0.5
@@ -241,6 +255,11 @@ static func _place(parent: Node3D, mesh: Mesh, pos: Vector3, col: Color, rot: Ve
 	var mi := MeshInstance3D.new()
 	mi.mesh = _faceted(mesh)
 	mi.material_override = _mat(col, emit)
+	if hd and mi.material_override is ShaderMaterial:
+		var sm := mi.material_override as ShaderMaterial
+		sm.set_shader_parameter("base_y", pos.y)
+		if mesh is BoxMesh:
+			sm.set_shader_parameter("half_ext", (mesh as BoxMesh).size / 2.0)
 	mi.position = pos
 	mi.rotation = rot
 	parent.add_child(mi)
@@ -250,7 +269,50 @@ static func _place(parent: Node3D, mesh: Mesh, pos: Vector3, col: Color, rot: Ve
 static func _box(parent: Node3D, size: Vector3, pos: Vector3, col: Color, rot := Vector3.ZERO, emit := 0.0) -> MeshInstance3D:
 	var m := BoxMesh.new()
 	m.size = size
-	return _place(parent, m, pos, col, rot, emit)
+	var mi := _place(parent, m, pos, col, rot, emit)
+	if hd and emit == 0.0 and rot == Vector3.ZERO:
+		_greeble(parent, size, pos, col)
+	return mi
+
+
+## Détails de surface (mode HD) : trappes, évents et panneaux d'accès sur les grandes pièces, choisis de façon
+## déterministe d'après la position (pas de hasard : les 16 angles d'un même modèle restent cohérents).
+static func _greeble(parent: Node3D, size: Vector3, pos: Vector3, col: Color) -> void:
+	var hsh := fposmod(sin(pos.x * 12.9898 + pos.y * 78.233 + pos.z * 37.719 + size.x * 3.1) * 43758.5453, 1.0)
+	var top := pos.y + size.y / 2.0
+	if size.x >= 9.0 and size.z >= 8.0:
+		# trappe ronde ou carrée sur le dessus
+		var hx := (hsh - 0.5) * (size.x - 6.0) * 0.5
+		if hsh > 0.45:
+			_place(parent, _cyl_mesh(2.1, 2.1, 0.7, 8), Vector3(pos.x + hx, top + 0.35, pos.z + (hsh - 0.5) * (size.z - 5.0) * 0.4), col.lightened(0.12), Vector3.ZERO, 0.0)
+		else:
+			_place(parent, _box_mesh(Vector3(4.2, 0.6, 3.6)), Vector3(pos.x + hx, top + 0.3, pos.z), col.lightened(0.1), Vector3.ZERO, 0.0)
+		# évents : trois fentes sombres
+		if size.x >= 14.0:
+			for i in 3:
+				_place(parent, _box_mesh(Vector3(0.7, 0.25, size.z * 0.28)), Vector3(pos.x - size.x * 0.32 + i * 1.5, top + 0.12, pos.z), DARK, Vector3.ZERO, 0.0)
+	if size.x >= 14.0 and size.y >= 4.0:
+		# panneau d'accès sur chaque flanc, avec deux boulons
+		for s in [-1.0, 1.0]:
+			_place(parent, _box_mesh(Vector3(size.x * 0.34, size.y * 0.5, 0.35)), Vector3(pos.x + (hsh - 0.5) * size.x * 0.3, pos.y, pos.z + s * (size.z / 2.0 + 0.1)), col.darkened(0.12), Vector3.ZERO, 0.0)
+			for bx in [-1.0, 1.0]:
+				_place(parent, _box_mesh(Vector3(0.7, 0.7, 0.5)), Vector3(pos.x + (hsh - 0.5) * size.x * 0.3 + bx * size.x * 0.13, pos.y + size.y * 0.15, pos.z + s * (size.z / 2.0 + 0.3)), METAL, Vector3.ZERO, 0.0)
+
+
+static func _box_mesh(size: Vector3) -> BoxMesh:
+	var m := BoxMesh.new()
+	m.size = size
+	return m
+
+
+static func _cyl_mesh(rt: float, rb: float, h: float, sides: int) -> CylinderMesh:
+	var m := CylinderMesh.new()
+	m.top_radius = rt
+	m.bottom_radius = rb
+	m.height = h
+	m.radial_segments = sides
+	m.rings = 1
+	return m
 
 
 ## Cylindre / cône (r_top = 0). Axe Y par défaut ; tourner de (PI/2,0,0) pour l'axe Z, (0,0,PI/2) pour l'axe X.
