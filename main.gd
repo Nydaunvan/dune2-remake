@@ -62,6 +62,7 @@ var dirty := {}    # cases dont la texture doit être rafraîchie
 var grid := AStarGrid2D.new()
 var camera := Camera2D.new()
 var map_texture: ImageTexture # mini-carte du radar
+var terrain_mat: ShaderMaterial # matériau du terrain (changement de qualité en cours de partie)
 var field_img: Image
 var field_tex: ImageTexture
 var ui: GameUI
@@ -667,7 +668,8 @@ func _build_terrain() -> void:
 			await _load_step(0.3 + 0.6 * float(y) / fh, "Génération du terrain…")
 	field_tex = ImageTexture.create_from_image(field_img)
 	var mat := ShaderMaterial.new()
-	mat.shader = load("res://shaders/terrain.gdshader")
+	mat.shader = DisplayCfg.terrain_shader()
+	terrain_mat = mat
 	mat.set_shader_parameter("field", field_tex)
 	mat.set_shader_parameter("world_size", world_size)
 	mat.set_shader_parameter("tile", float(TILE))
@@ -684,6 +686,12 @@ func _build_terrain() -> void:
 	add_child(rect)
 	tracks = TrackLayer.new()
 	add_child(tracks)
+
+
+## Change le rendu du terrain en cours de partie (HD ou standard) : mêmes paramètres, autre shader.
+func apply_terrain_quality() -> void:
+	if terrain_mat != null:
+		terrain_mat.shader = DisplayCfg.terrain_shader()
 
 
 func _build_minimap() -> void:

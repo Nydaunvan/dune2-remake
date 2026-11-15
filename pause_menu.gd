@@ -65,6 +65,15 @@ func setup(p_game) -> void:
 	gr.custom_minimum_size = Vector2(80, 36)
 	gr.pressed.connect(func() -> void: gs.value = 0.5)
 	gb.add_child(gr)
+	var tq := GameUI.NeonButton.new(DisplayCfg.terrain_label())
+	tq.accent = GameData.GREEN
+	tq.custom_minimum_size = Vector2(210, 36)
+	tq.pressed.connect(func() -> void:
+		DisplayCfg.toggle_terrain()
+		game.apply_terrain_quality()
+		tq.text = DisplayCfg.terrain_label()
+		tq.queue_redraw())
+	gb.add_child(tq)
 	var hb := HBoxContainer.new()
 	hb.alignment = BoxContainer.ALIGNMENT_CENTER
 	hb.add_theme_constant_override("separation", 20)

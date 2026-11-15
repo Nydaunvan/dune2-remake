@@ -48,3 +48,28 @@ static func set_gamma(v: float) -> void:
 	c.load(PATH)
 	c.set_value("display", "game_gamma", clampf(v, 0.5, 1.5))
 	c.save(PATH)
+
+
+## Qualité du terrain : HD (détails procéduraux fins, relief éclairé) ou Standard (ancien rendu, plus léger).
+static func terrain_hd() -> bool:
+	var c := ConfigFile.new()
+	if c.load(PATH) != OK:
+		return true
+	return bool(c.get_value("display", "terrain_hd", true))
+
+
+static func toggle_terrain() -> bool:
+	var c := ConfigFile.new()
+	c.load(PATH)
+	var v := not terrain_hd()
+	c.set_value("display", "terrain_hd", v)
+	c.save(PATH)
+	return v
+
+
+static func terrain_label() -> String:
+	return "TERRAIN : HD" if terrain_hd() else "TERRAIN : STANDARD"
+
+
+static func terrain_shader() -> Shader:
+	return load("res://shaders/terrain.gdshader" if terrain_hd() else "res://shaders/terrain_classic.gdshader")
