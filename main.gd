@@ -824,51 +824,66 @@ func producer_busy(cat: String, unit_id: String, team := 0) -> bool:
 
 
 ## Case libre contre le bâtiment, la plus proche de `from`.
-## Point (monde) où un véhicule qui descend d'une rampe peut s'arrêter pour repartir : case libre proche du pied de rampe
-## et reliée à un espace ouvert (pas une poche fermée par des bâtiments). Repli : le pied de rampe lui-même.
+## Direction de sortie d'un véhicule qui redescend d'une rampe : centre de la case voisine du pied de rampe qui donne sur le
+## plus grand espace ouvert (pas une poche fermée par des bâtiments). Repli : le pied de rampe lui-même.
 func clear_exit_spot(foot: Vector2) -> Vector2:
 	var start := _world_to_cell(foot)
-	var want := foot + Vector2(0.0, 32.0)
-	var seen := {start: 0}
-	var queue: Array[Vector2i] = [start]
-	var head := 0
-	while head < queue.size() and queue.size() < 80:
-		var c: Vector2i = queue[head]
-		head += 1
-		for d in [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1)]:
-			var n: Vector2i = c + d
-			if seen.has(n) or not _is_walkable(n):
-				continue
-			seen[n] = int(seen[c]) + 1
-			queue.append(n)
-	if queue.size() < 30:
-		return foot # poche fermée : rien de mieux à faire
 	var best := foot
-	var best_d := INF
-	for c in queue:
-		if int(seen[c]) > 3 or (c != start and not _is_walkable(c)):
+	var best_n := -1
+	for d in [Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1)]:
+		var c: Vector2i = start + d
+		if not _is_walkable(c):
 			continue
-		var w := _cell_to_world(c)
-		var dd := w.distance_to(want)
-		if dd < best_d:
-			best_d = dd
-			best = w
+		var n := _open_area(c, start, 40)
+		if n > best_n:
+			best_n = n
+			best = _cell_to_world(c)
 	return best
 
 
-## Cases à garder libres devant la rampe d'un bâtiment à rampe (couloir de 3 cases de large, 3 de profondeur).
-func ramp_clear_cells(id: String, cell: Vector2i) -> Array[Vector2i]:
-	var out: Array[Vector2i] = []
+## Nombre de cases libres atteignables depuis c sans passer par `avoid` (plafonné à cap).
+func _open_area(c: Vector2i, avoid: Vector2i, cap: int) -> int:
+	var seen := {c: true, avoid: true}
+	var queue: Array[Vector2i] = [c]
+	var head := 0
+	while head < queue.size() and queue.size() < cap:
+		var q: Vector2i = queue[head]
+		head += 1
+		for d in [Vector2i(0, 1), Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, -1)]:
+			var n: Vector2i = q + d
+			if not seen.has(n) and _is_walkable(n):
+				seen[n] = true
+				queue.append(n)
+	return queue.size()
+
+
+## Case au pied de la rampe d'un bâtiment à rampe (une seule case suffit pour se présenter, décharger et repartir).
+func ramp_foot_cell(id: String, cell: Vector2i) -> Vector2i:
 	var q: Dictionary = Models.ramp_of(id)
-	if q.is_empty():
-		return out
 	var size: Vector2i = GameData.BUILDINGS[id]["size"]
 	var foot := Vector2(cell) * TILE + Vector2(size) * TILE / 2.0 + Vector2(float(q["x"]), float(q["z0"]) + 4.0)
-	var fc := _world_to_cell(foot)
-	for dx in range(-1, 2):
-		for dy in range(0, 3):
-			out.append(fc + Vector2i(dx, dy))
-	return out
+	return _world_to_cell(foot)
+
+
+## Le pied de rampe doit rester libre et garder au moins une case voisine libre (entrée / sortie).
+func ramp_foot_ok(id: String, cell: Vector2i, extra: Dictionary) -> bool:
+	var fc := ramp_foot_cell(id, cell)
+	if occupied.has(fc) or extra.has(fc):
+		return false
+	# espace ouvert autour du pied : une impasse de quelques cases ne suffit pas pour ressortir
+	var seen := {fc: true}
+	var queue: Array[Vector2i] = [fc]
+	var head := 0
+	while head < queue.size() and queue.size() < 14:
+		var q: Vector2i = queue[head]
+		head += 1
+		for d in [Vector2i(0, 1), Vector2i(-1, 0), Vector2i(1, 0), Vector2i(0, -1)]:
+			var n: Vector2i = q + d
+			if seen.has(n) or not grid.is_in_boundsv(n) or occupied.has(n) or extra.has(n) or terrain[n.x][n.y] == T.MOUNTAIN:
+				continue
+			seen[n] = true
+			queue.append(n)
+	return queue.size() >= 14
 
 
 func dock_cell(b: Building, from: Vector2i) -> Vector2i:
@@ -3058,19 +3073,16 @@ func _can_place(id: String, cell: Vector2i, team := 0) -> bool:
 				return false
 	if _unit_in_rect(Rect2(Vector2(cell) * TILE, Vector2(size) * TILE)):
 		return false # impossible de construire sur une unité
-	# Les rampes (raffinerie, fonderie, réparation) gardent un couloir libre : on n'en bouche jamais l'accès ni la sortie
+	# Les rampes (raffinerie, fonderie, réparation) gardent leur case de pied libre, avec une voisine libre pour entrer / sortir
 	var mine := {}
 	for dx in size.x:
 		for dy in size.y:
 			mine[cell + Vector2i(dx, dy)] = true
 	for b in buildings:
-		if b.alive and not Models.ramp_of(b.id).is_empty():
-			for rc in ramp_clear_cells(b.id, b.cell):
-				if mine.has(rc):
-					return false
-	for rc in ramp_clear_cells(id, cell):
-		if occupied.has(rc):
+		if b.alive and not Models.ramp_of(b.id).is_empty() and not ramp_foot_ok(b.id, b.cell, mine):
 			return false
+	if not Models.ramp_of(id).is_empty() and not ramp_foot_ok(id, cell, {}):
+		return false
 	# Zone de construction : autour d'un Chantier. Une seconde base exige un nouvel engin de chantier.
 	var center := Vector2(cell) + Vector2(size) / 2.0
 	for b in buildings:

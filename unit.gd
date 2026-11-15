@@ -1237,25 +1237,21 @@ func _dock_update(delta: float) -> void:
 	var pts := _ramp_pts(b)
 	var up := -PI / 2.0
 	match _dk:
-		"stage":
-			# on se présente face à la rampe : point d'approche 40 px en avant du pied, cap sur ce point
-			var s: Vector2 = pts["A"] + Vector2(0.0, 40.0)
-			if not game._is_walkable(game.world_to_cell(s)):
-				s = pts["A"]
-			var d: Vector2 = s - position
-			if d.length() > 3.0:
-				rotation = lerp_angle(rotation, d.angle(), clampf(10.0 * delta, 0.0, 1.0))
-			if absf(angle_difference(rotation, d.angle())) < 0.5 or d.length() <= 3.0:
-				if _dock_move(s, 70.0, delta):
-					_dk = "align"
+		"stage", "in":
+			# rejoint le pied de la rampe en roulant vers lui (cap sur le point), puis pivote sur place face à la rampe
+			var d: Vector2 = pts["A"] - position
+			if d.length() > 2.0:
+				var want := d.angle()
+				rotation = lerp_angle(rotation, want, clampf(10.0 * delta, 0.0, 1.0))
+				if absf(angle_difference(rotation, want)) < 0.45:
+					_dock_move(pts["A"], 60.0, delta)
+			else:
+				position = pts["A"]
+				_dk = "align"
 		"align":
-			rotation = lerp_angle(rotation, up, clampf(9.0 * delta, 0.0, 1.0))
-			if absf(angle_difference(rotation, up)) < 0.08:
+			rotation = rotate_toward(rotation, up, 5.5 * delta)
+			if absf(angle_difference(rotation, up)) < 0.02:
 				rotation = up
-				_dk = "in"
-		"in":
-			rotation = up
-			if _dock_move(pts["A"], 50.0, delta): # marche avant, dans l'axe de la rampe
 				_dk = "up"
 		"up":
 			rotation = up
@@ -1302,13 +1298,14 @@ func _dock_update(delta: float) -> void:
 				done = _dock_move(pts["A"], 34.0, delta)
 			_dock_lift(pts)
 			if done:
-				_dk = "out"
+				_dk = "turn"
 				_dk_out = game.clear_exit_spot(pts["A"])
-		"out":
-			# on recule jusqu'à une case réellement libre et reliée au reste de la carte, puis on repart
-			rotation = up
-			_dock_move(_dk_out, 40.0, delta)
-			if position.distance_to(_dk_out) < 1.0:
+		"turn":
+			# redescendu au pied de la rampe : demi-tour sur place vers la sortie dégagée, puis on repart
+			var dir: Vector2 = _dk_out - position
+			var head: float = dir.angle() if dir.length() > 2.0 else PI / 2.0
+			rotation = rotate_toward(rotation, head, 5.5 * delta)
+			if absf(angle_difference(rotation, head)) < 0.05:
 				_dock_finish()
 				return
 	queue_redraw()

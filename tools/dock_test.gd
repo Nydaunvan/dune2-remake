@@ -4,6 +4,8 @@ extends SceneTree
 var main
 var frame := 0
 var h
+var phases := {}
+var rot_end := 0.0
 var progressive := false
 var foot_cell := Vector2i(-1, -1)
 var left_foot := false
@@ -49,6 +51,9 @@ func _process(_d: float) -> bool:
 		if h._dk == "work":
 			saw_work = true
 			work_frames += 1
+		phases[h._dk] = true
+		if h._dk == "turn":
+			rot_end = h.rotation
 		if h._dk == "work":
 			var cr := float(main.credits)
 			if not progressive and cr > ore0 and h.cargo > 0.0:
@@ -62,6 +67,8 @@ func _process(_d: float) -> bool:
 		_check(maxlift > 3.0, "hauteur de rampe atteinte (%.1f px)" % maxlift)
 		_check(work_frames > 60, "déchargement progressif (%d images, pas instantané)" % work_frames)
 		_check(progressive, "le compteur de Solaris monte pendant le déchargement")
+		_check(phases.has("align") and phases.has("turn"), "pivote face à la rampe puis fait demi-tour pour repartir (%s)" % str(phases.keys()))
+		_check(absf(angle_difference(rot_end, -PI / 2.0)) > 1.0, "cap de sortie différent du cap de la rampe (%.0f°)" % rad_to_deg(rot_end))
 		_check(emptied, "cargaison vidée avant la descente")
 		_check(h._dk == "" and h.ramp_lift == 0.0, "redescendue (état %s, lift %.1f)" % [h._dk, h.ramp_lift])
 		_check(left_foot, "la moissonneuse a pu repartir malgré les murs collés à la rampe (pos %s)" % str(h.position))
