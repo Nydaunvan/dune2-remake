@@ -98,6 +98,10 @@ var _dk_kind := ""            # unload | repair
 var _dk_t := 0.0
 var _dk_dur := 1.0
 var _dk_total := 0.0
+var _dk_gain := 0     # gain total de la cargaison en cours de déchargement
+var _dk_paid := 0     # part déjà versée au compteur
+var _dk_applied := 0  # part réellement encaissée (stockage plein : le reste est perdu)
+var _dk_coin_t := 0.0
 var _dk_out := Vector2.ZERO   # point de sortie dégagé après la rampe
 var ramp_lift := 0.0          # hauteur due à la rampe (px écran)
 var turret := false           # tourelle indépendante de la coque (sprite de tourelle cuit à part)
@@ -1128,6 +1132,10 @@ func _unload() -> void:
 		var r := _dock_begin(dock, "unload")
 		if r == 1:
 			_dk_total = cargo
+			_dk_gain = game.deposit_gain(cargo_kind, cargo, team)
+			_dk_paid = 0
+			_dk_applied = 0
+			_dk_coin_t = 0.0
 			_dk_dur = 0.9 + 2.4 * clampf(cargo / maxf(cargo_cap, 1.0), 0.0, 1.0)
 			return
 		if r == 2: # rampe occupée : on attend au pied
@@ -1262,9 +1270,20 @@ func _dock_update(delta: float) -> void:
 			ramp_lift = pts["h"]
 			if _dk_kind == "unload":
 				_dk_t += delta
-				cargo = _dk_total * (1.0 - clampf(_dk_t / _dk_dur, 0.0, 1.0))
+				var prog := clampf(_dk_t / _dk_dur, 0.0, 1.0)
+				cargo = _dk_total * (1.0 - prog)
+				# le compteur monte en direct, au rythme de la benne qui se vide
+				var due := roundi(float(_dk_gain) * prog)
+				if due > _dk_paid:
+					_dk_applied += game.apply_income(cargo_kind, due - _dk_paid, team)
+					_dk_paid = due
+				if team == 0 and _dk_t - _dk_coin_t > 0.35 and _dk_paid > 0:
+					_dk_coin_t = _dk_t
+					game.sfx.play("coin", position, -14.0)
 				if _dk_t >= _dk_dur:
-					game.deposit(cargo_kind, _dk_total, position, team)
+					if team == 0 and not game.ais.has(0) and _dk_applied > 0:
+						game.popup(position, ("+%d $" if cargo_kind == "spice" else "+%d min.") % _dk_applied,
+								GameData.GOLD if cargo_kind == "spice" else GameData.ORE_BLUE)
 					cargo = 0.0
 					_dk = "down"
 			else:

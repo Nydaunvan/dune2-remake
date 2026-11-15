@@ -4,6 +4,7 @@ extends SceneTree
 var main
 var frame := 0
 var h
+var progressive := false
 var foot_cell := Vector2i(-1, -1)
 var left_foot := false
 var tank
@@ -48,6 +49,10 @@ func _process(_d: float) -> bool:
 		if h._dk == "work":
 			saw_work = true
 			work_frames += 1
+		if h._dk == "work":
+			var cr := float(main.credits)
+			if not progressive and cr > ore0 and h.cargo > 0.0:
+				progressive = true # le compteur a monté alors que la benne n'est pas encore vide
 		if h._dk == "down" and h.cargo == 0.0:
 			emptied = true
 		if h._dk == "" and saw_work and h.position.distance_to(Vector2(foot_cell) * 32.0 + Vector2(16, 16)) > 48.0:
@@ -56,6 +61,7 @@ func _process(_d: float) -> bool:
 		_check(saw_work, "la moissonneuse est montée sur la plaque et a déchargé")
 		_check(maxlift > 3.0, "hauteur de rampe atteinte (%.1f px)" % maxlift)
 		_check(work_frames > 60, "déchargement progressif (%d images, pas instantané)" % work_frames)
+		_check(progressive, "le compteur de Solaris monte pendant le déchargement")
 		_check(emptied, "cargaison vidée avant la descente")
 		_check(h._dk == "" and h.ramp_lift == 0.0, "redescendue (état %s, lift %.1f)" % [h._dk, h.ramp_lift])
 		_check(left_foot, "la moissonneuse a pu repartir malgré les murs collés à la rampe (pos %s)" % str(h.position))

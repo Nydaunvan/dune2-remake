@@ -897,8 +897,21 @@ func storage_cap(kind: String, team := 0) -> int:
 
 
 func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void:
+	var gain := apply_income(kind, deposit_gain(kind, amount, team), team)
+	if team == 0 and not ais.has(0):
+		sfx.play("coin", world_pos, -8.0)
+		popup(world_pos, ("+%d $" if kind == "spice" else "+%d min.") % gain,
+				GameData.GOLD if kind == "spice" else GameData.ORE_BLUE)
+
+
+## Gain réel (bonus de faction et de bâtiments compris) d'une cargaison, avant plafond de stockage.
+func deposit_gain(kind: String, amount: float, team := 0) -> int:
 	var fd := fdata_of(team)
-	var gain := roundi(amount * float(fd["spice_mult" if kind == "spice" else "ore_mult"]) * income_bonus(kind, team))
+	return roundi(amount * float(fd["spice_mult" if kind == "spice" else "ore_mult"]) * income_bonus(kind, team))
+
+
+## Encaisse un gain (jamais au-delà du stockage) ; renvoie ce qui a été réellement ajouté. Permet un déchargement progressif.
+func apply_income(kind: String, gain: int, team := 0) -> int:
 	if team == 0:
 		var room := storage_cap(kind) - (credits if kind == "spice" else ore)
 		if gain > room:
@@ -913,11 +926,9 @@ func deposit(kind: String, amount: float, world_pos: Vector2, team := 0) -> void
 		else:
 			ore += gain
 			ore_earned += gain
-		sfx.play("coin", world_pos, -8.0)
-		popup(world_pos, ("+%d $" if kind == "spice" else "+%d min.") % gain,
-				GameData.GOLD if kind == "spice" else GameData.ORE_BLUE)
 	else:
 		ais[team].add_income(kind, gain)
+	return gain
 
 
 ## Texte flottant dans le monde.
