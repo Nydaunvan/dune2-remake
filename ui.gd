@@ -3,10 +3,12 @@ extends CanvasLayer
 ## Interface moderne : barre de ressources, panneau latéral en verre dépoli
 ## (radar, commandes, construction), notifications animées.
 
-const SIDEBAR_W := 460.0
-const RADAR_SIZE := 300.0
+const SIDEBAR_W := 540.0
+const RADAR_W := 340.0
 const MARGIN := 12.0
-const TOPBAR_H := 64.0
+const TOPBAR_H := 96.0
+const CARD_W := 190.0
+const CARD_H := 168.0
 const COMMANDS := [
 	["stop", "ARRÊT", true],
 	["move", "DÉPLACER", true],
@@ -18,7 +20,8 @@ var game # le nœud principal (main.gd)
 var category := "building"
 var root: Control
 var sidebar: GlassPanel
-var radar_panel: GlassPanel
+var radar_panel: Control
+var sel_frame: Control
 var log_panel: GlassPanel
 var topbar: HudBar
 var radar: Radar
@@ -44,8 +47,7 @@ func setup(p_game) -> void:
 	_build_objective()
 	_build_sidebar()
 	_rebuild_icons()
-	info_panel = InfoPanel.new(game)
-	root.add_child(info_panel)
+	_build_selection()
 
 
 func is_mouse_over_ui() -> bool:
@@ -53,8 +55,7 @@ func is_mouse_over_ui() -> bool:
 	return sidebar.get_global_rect().has_point(m) or topbar.get_global_rect().has_point(m) \
 			or radar_panel.get_global_rect().has_point(m) \
 			or (log_panel != null and log_panel.get_global_rect().has_point(m)) \
-			or (info_panel != null and info_panel.visible
-			and (info_panel.get_global_transform() * Rect2(Vector2.ZERO, info_panel.size)).has_point(m))
+			or (sel_frame != null and sel_frame.visible and sel_frame.get_global_rect().has_point(m))
 
 
 ## Notification qui monte et s'efface.
@@ -72,39 +73,25 @@ func toast(text: String, color := GameData.CREAM) -> void:
 	l.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
 	l.add_theme_constant_override("outline_size", 6)
 	var sb: StyleBox
-	if color.r > 0.8 and color.g < 0.55 and UiSkin.tex("alerte_militaire") != null:
-		var st := UiSkin.box("alerte_militaire").duplicate() as StyleBoxTexture
-		st.texture_margin_left = 30
-		st.texture_margin_right = 30
-		st.texture_margin_top = 24
-		st.texture_margin_bottom = 24
-		st.content_margin_left = 34
-		st.content_margin_right = 34
-		st.content_margin_top = 12
-		st.content_margin_bottom = 12
-		sb = st
+	if color.r > 0.8 and color.g < 0.55:
+		sb = UiSkin.flat_box(GameData.RED, Color(0.14, 0.02, 0.02, 0.8))
 	else:
-		var sf := StyleBoxFlat.new()
-		sf.bg_color = Color(0.04, 0.02, 0.09, 0.5)
-		sf.border_width_left = 4
-		sf.border_width_right = 4
-		sf.border_color = UiStyle.GOLD
-		sf.content_margin_top = 8
-		sf.content_margin_bottom = 8
-		sb = sf
+		sb = UiSkin.flat_box(UiSkin.accent, Color(0.04, 0.035, 0.05, 0.7))
+	(sb as StyleBoxFlat).content_margin_left = 24
+	(sb as StyleBoxFlat).content_margin_right = 24
 	l.add_theme_stylebox_override("normal", sb)
 	l.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	l.anchor_left = 0.5
 	l.anchor_right = 0.5
 	l.offset_left = -330.0
 	l.offset_right = 330.0
-	l.offset_top = 110.0
-	l.offset_bottom = 150.0 + extra
+	l.offset_top = 130.0
+	l.offset_bottom = 170.0 + extra
 	root.add_child(l)
 	var tw := create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(l, "offset_top", 80.0, 2.2).from(110.0).set_ease(Tween.EASE_OUT)
-	tw.tween_property(l, "offset_bottom", 120.0 + extra, 2.2).from(150.0 + extra).set_ease(Tween.EASE_OUT)
+	tw.tween_property(l, "offset_top", 100.0, 2.2).from(130.0).set_ease(Tween.EASE_OUT)
+	tw.tween_property(l, "offset_bottom", 140.0 + extra, 2.2).from(170.0 + extra).set_ease(Tween.EASE_OUT)
 	tw.tween_property(l, "modulate:a", 0.0, 0.6).set_delay(1.8)
 	tw.chain().tween_callback(l.queue_free)
 
@@ -117,8 +104,7 @@ var event_log: EventLog
 
 func _build_objective() -> void:
 	objective_panel = ObjectivePanel.new(game)
-	objective_panel.position = Vector2(MARGIN, TOPBAR_H + 12.0)
-	objective_panel.size = Vector2(440, 100)
+	objective_panel.position = Vector2(MARGIN, TOPBAR_H + 6.0)
 	root.add_child(objective_panel)
 
 
@@ -131,17 +117,17 @@ func toggle_objectives() -> void:
 func _build_topbar() -> void:
 	topbar = HudBar.new()
 	topbar.game = game
-	topbar.position = Vector2.ZERO
-	topbar.size = Vector2(1920.0 - SIDEBAR_W - 4.0, TOPBAR_H)
+	topbar.position = Vector2(MARGIN, 2.0)
+	topbar.size = Vector2(1400.0, TOPBAR_H)
 	root.add_child(topbar)
-	var x := 1048.0
+	var x := HudBar.BAR_W + 16.0
 	for def in [["Guide", func() -> void: Guide.open(game, game.faction_id)], ["Objectifs", toggle_objectives], ["Menu", game.open_pause_menu]]:
 		var fb := FlatButton.new(def[0])
-		fb.position = Vector2(x, 10)
-		fb.size = Vector2(122, 44)
+		fb.position = Vector2(x, 22)
+		fb.size = Vector2(150, 56)
 		fb.pressed.connect(def[1])
 		topbar.add_child(fb)
-		x += 128.0
+		x += 156.0
 
 
 func _build_sidebar() -> void:
@@ -153,98 +139,126 @@ func _build_sidebar() -> void:
 	sidebar.anchor_bottom = 1.0
 	sidebar.offset_left = -SIDEBAR_W
 	sidebar.offset_right = 0.0
-	sidebar.offset_top = 0.0
-	sidebar.offset_bottom = 0.0
 	root.add_child(sidebar)
+	var vh := maxf(root.get_viewport_rect().size.y, 1080.0)
+	var inn := UiSkin.inner("panneau_construction", Rect2(0, 0, SIDEBAR_W, vh))
 
+	# En-tête de faction : dans la partie haute ornée du panneau
+	var hh := minf(inn.position.y - 18.0, 230.0)
+	var hw := minf(hh * UiSkin.aspect("entete_faction"), inn.size.x + 60.0)
+	hh = hw / UiSkin.aspect("entete_faction")
 	var header := SideHeader.new(game)
-	header.position = Vector2(34, 22)
-	header.size = Vector2(SIDEBAR_W - 68.0, 78)
+	header.position = Vector2(inn.get_center().x - hw * 0.5, 10.0 + (inn.position.y - 18.0 - hh) * 0.5)
+	header.size = Vector2(hw, hh)
 	sidebar.add_child(header)
 
-	# Radar : cadre octogonal en bas à gauche, carte ronde dessous
-	radar_panel = GlassPanel.new(0.0, 4.0)
-	radar_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	radar_panel.bg.visible = false
+	# Radar : cadre du kit en bas à gauche, carte dans sa zone intérieure
+	var rh := RADAR_W / UiSkin.aspect("radar")
+	radar_panel = ArtFrame.new("radar")
 	radar_panel.anchor_top = 1.0
 	radar_panel.anchor_bottom = 1.0
-	radar_panel.offset_left = 0.0
-	radar_panel.offset_right = RADAR_SIZE
-	radar_panel.offset_top = -RADAR_SIZE
-	radar_panel.offset_bottom = 0.0
+	radar_panel.offset_left = 6.0
+	radar_panel.offset_right = 6.0 + RADAR_W
+	radar_panel.offset_top = -rh - 6.0
+	radar_panel.offset_bottom = -6.0
 	root.add_child(radar_panel)
+	var ri := UiSkin.inner("radar", Rect2(Vector2.ZERO, Vector2(RADAR_W, rh)))
 	radar = Radar.new()
 	radar.game = game
 	radar.world_size = game.world_size
-	radar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	radar.square = UiSkin.shape("radar") == "square"
+	radar.position = ri.position
+	radar.size = ri.size
 	radar_panel.add_child(radar)
 
 	# Journal des événements : sous les objectifs, à gauche
 	log_panel = GlassPanel.new(0.0, 4.0)
 	log_panel.set_skin("panneau_journal")
 	log_panel.position = Vector2(MARGIN, 200)
-	log_panel.size = Vector2(380, 168)
+	log_panel.size = UiSkin.outer_for("panneau_journal", Vector2(330, 118))
 	root.add_child(log_panel)
+	var li := UiSkin.inner("panneau_journal", Rect2(Vector2.ZERO, log_panel.size))
 	event_log = EventLog.new()
-	event_log.position = Vector2(46, 14)
-	event_log.size = Vector2(log_panel.size.x - 84.0, log_panel.size.y - 24.0)
+	event_log.position = li.position
+	event_log.size = li.size
 	log_panel.add_child(event_log)
 
 	# Onglets
 	var tabs := [["building", "BÂTIMENTS"], ["unit", "UNITÉS"]]
-	var tw := (SIDEBAR_W - 68.0 - 8.0) / 2.0
+	var tw := (inn.size.x - 6.0) / 2.0
 	for i in tabs.size():
 		var t := NeonButton.new(tabs[i][1])
 		t.style = "tab"
 		t.active = (i == 0)
-		t.position = Vector2(34 + i * (tw + 8.0), 110)
-		t.size = Vector2(tw, 42)
+		t.position = Vector2(inn.position.x + i * (tw + 6.0), inn.position.y)
+		t.size = Vector2(tw, 50)
 		t.pressed.connect(_set_category.bind(tabs[i][0]))
 		sidebar.add_child(t)
 		tab_buttons.append(t)
 
-	# Icônes de production
+	# Cartes de production : deux colonnes, réduites pour tenir dans la colonne
+	var cw := (inn.size.x - 8.0) / 2.0
+	card_scale = cw / CARD_W
 	icon_box = GridContainer.new()
 	icon_box.columns = 2
 	icon_box.add_theme_constant_override("h_separation", 8)
-	icon_box.add_theme_constant_override("v_separation", 8)
+	icon_box.add_theme_constant_override("v_separation", 6)
 	icon_scroll = ScrollContainer.new()
 	icon_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	icon_scroll.anchor_right = 1.0
-	icon_scroll.anchor_bottom = 1.0
-	icon_scroll.offset_left = 32.0
-	icon_scroll.offset_top = 164.0
-	icon_scroll.offset_right = -22.0
-	icon_scroll.offset_bottom = -176.0
+	icon_scroll.position = Vector2(inn.position.x, inn.position.y + 56.0)
+	icon_scroll.size = Vector2(inn.size.x, inn.size.y - 56.0 - 136.0)
 	icon_scroll.clip_contents = true
 	sidebar.add_child(icon_scroll)
 	icon_scroll.add_child(icon_box)
 
-	# Infos en bas du panneau
+	# Infos en bas de la colonne
 	info_label = Label.new()
 	info_label.add_theme_font_override("font", UiStyle.body_font())
 	info_label.add_theme_font_size_override("font_size", 12)
 	info_label.add_theme_color_override("font_color", UiStyle.TEXT)
 	info_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	info_label.anchor_top = 1.0
-	info_label.anchor_bottom = 1.0
-	info_label.anchor_left = 0.0
-	info_label.anchor_right = 1.0
-	info_label.offset_left = 36
-	info_label.offset_right = -36
-	info_label.offset_top = -50
-	info_label.offset_bottom = -26
+	info_label.position = Vector2(inn.position.x, inn.end.y - 28.0)
+	info_label.size = Vector2(inn.size.x, 28.0)
 	info_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
 	sidebar.add_child(info_label)
 	queue_panel = QueuePanel.new(game)
-	queue_panel.anchor_top = 1.0
-	queue_panel.anchor_bottom = 1.0
-	queue_panel.anchor_right = 1.0
-	queue_panel.offset_left = 30.0
-	queue_panel.offset_right = -30.0
-	queue_panel.offset_top = -170.0
-	queue_panel.offset_bottom = -54.0
+	queue_panel.position = Vector2(inn.position.x, inn.end.y - 132.0)
+	queue_panel.size = Vector2(inn.size.x, 102.0)
 	sidebar.add_child(queue_panel)
+
+
+var card_scale := 0.85
+
+
+## Cadre de sélection : bandeau du kit en bas, avec emplacement de portrait intégré.
+func _build_selection() -> void:
+	var x0 := RADAR_W + 14.0
+	var fw := 1920.0 - SIDEBAR_W - 8.0 - x0
+	var fh := minf(fw / UiSkin.aspect("panneau_selection") * 1.3, 420.0)
+	sel_frame = ArtFrame.new("panneau_selection")
+	sel_frame.anchor_top = 1.0
+	sel_frame.anchor_bottom = 1.0
+	sel_frame.offset_left = x0
+	sel_frame.offset_right = x0 + fw
+	sel_frame.offset_top = -fh - 4.0
+	sel_frame.offset_bottom = -4.0
+	root.add_child(sel_frame)
+	var ph := UiSkin.inner("selection_portrait", Rect2(Vector2.ZERO, Vector2(fw, fh)))
+	var ps := minf(ph.size.x, ph.size.y) * 1.2
+	var portrait := Portrait.new(game)
+	portrait.size = Vector2(ps, ps)
+	portrait.position = ph.get_center() - Vector2(ps, ps) * 0.5
+	portrait.fit = Vector2(ps, ps) * 0.8
+	sel_frame.add_child(portrait)
+	var inn := UiSkin.inner("panneau_selection", Rect2(Vector2.ZERO, Vector2(fw, fh))).grow_individual(fh * 0.02, fh * 0.05, fh * 0.02, fh * 0.03)
+	info_panel = InfoPanel.new(game)
+	info_panel.portrait = portrait
+	info_panel.frame = sel_frame
+	var k := minf(inn.size.x / info_panel.size.x, inn.size.y / info_panel.size.y)
+	info_panel.scale = Vector2(k, k)
+	info_panel.position = inn.position + (inn.size - info_panel.size * k) * 0.5
+	sel_frame.add_child(info_panel)
+	sel_frame.visible = false
 
 
 func _set_category(cat: String) -> void:
@@ -264,14 +278,19 @@ func _rebuild_icons() -> void:
 	for id in ids:
 		var icon := BuildIcon.new(id, game)
 		icon.clicked.connect(game.on_item_clicked)
-		icon_box.add_child(icon)
+		icon.scale = Vector2(card_scale, card_scale)
+		var slot := Control.new()
+		slot.custom_minimum_size = Vector2(CARD_W, CARD_H) * card_scale
+		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		slot.add_child(icon)
+		icon_box.add_child(slot)
 		icons.append(icon)
 
 
 func _process(_delta: float) -> void:
 	if game == null:
 		return
-	var ly := objective_panel.position.y + (objective_panel.size.y + 10.0 if objective_panel.visible else 0.0)
+	var ly := objective_panel.position.y + (objective_panel.size.y + 6.0 if objective_panel.visible else 0.0)
 	log_panel.position.y = ly
 	if game.placing_id != "":
 		info_label.text = "Clic gauche : poser le bâtiment\nClic droit ou Échap : annuler"
@@ -443,9 +462,22 @@ func _recap_col(title: String, rows: Array, col: Color, w: int) -> Control:
 
 # --- Objectif de mission ------------------------------------------------------
 
+class ArtFrame extends Control:
+	## Cadre illustré du kit de faction, étiré sur tout le contrôle ; le contenu s'ajoute en enfants.
+	var art := ""
+
+	func _init(p_art: String) -> void:
+		art = p_art
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+
+	func _draw() -> void:
+		UiSkin.panel(self, art, Rect2(Vector2.ZERO, size))
+
+
 class EventLog extends Control:
 	## Derniers messages du jeu (les notifications à l'écran disparaissent vite).
-	const MAX := 4
+	const MAX := 5
 	var lines: Array = [] # [texte, couleur, instant]
 
 	func _init() -> void:
@@ -463,11 +495,11 @@ class EventLog extends Control:
 		queue_redraw()
 
 	func _draw() -> void:
-		var dm := Vector2(8, 20)
-		_diamond(dm, 6.0, UiSkin.accent)
-		UiStyle.text(self, Vector2(24, 26), "JOURNAL", 18, UiSkin.accent, true)
+		var dm := Vector2(8, 11)
+		_diamond(dm, 5.0, UiSkin.accent)
+		UiStyle.text(self, Vector2(22, 17), "JOURNAL", 15, UiSkin.accent, true)
 		var now := Time.get_ticks_msec() / 1000.0
-		var y := 56.0
+		var y := 40.0
 		var left := 5 # lignes disponibles
 		for l in lines:
 			if left <= 0:
@@ -475,23 +507,26 @@ class EventLog extends Control:
 			var age := now - float(l[2])
 			var c: Color = l[1]
 			c.a = clampf(1.0 - age / 90.0, 0.4, 1.0)
-			var wl := UiStyle.wrap_lines(String(l[0]), 13, size.x - 12.0)
+			var wl := UiStyle.wrap_lines(String(l[0]), 12, size.x - 12.0)
 			for i in mini(wl.size(), mini(2, left)):
-				UiStyle.text(self, Vector2(0 if i == 0 else 10, y), String(wl[i]), 13, c)
-				y += 16.0
+				UiStyle.text(self, Vector2(0 if i == 0 else 10, y), String(wl[i]), 12, c)
+				y += 14.0
 				left -= 1
-			y += 2.0
+			y += 1.0
 		if lines.is_empty():
-			UiStyle.text(self, Vector2(0, y), "Aucun événement", 13, UiStyle.TEXT_DIM)
+			UiStyle.text(self, Vector2(0, y), "Aucun événement", 12, UiStyle.TEXT_DIM)
 
 	func _diamond(c: Vector2, r: float, col: Color) -> void:
 		var pts := PackedVector2Array([c + Vector2(0, -r), c + Vector2(r, 0), c + Vector2(0, r), c + Vector2(-r, 0)])
 		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]), col, 2.0, true)
 
 
-class ObjectivePanel extends GlassPanel:
+class ObjectivePanel extends Control:
+	const ART := "panneau_objectifs"
+	const CW := 300.0 # largeur de contenu
 	var game
 	var pulse := 0.0
+	var _off := Vector2.ZERO
 
 	## Objectifs affichés : ceux de la mission, ou la victoire par destruction en escarmouche.
 	func _items() -> Array:
@@ -513,19 +548,19 @@ class ObjectivePanel extends GlassPanel:
 		return out
 
 	func _init(p_game) -> void:
-		super(0.0, 4.0)
-		set_skin("panneau_objectifs")
 		game = p_game
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
 	func _text_lines(o: Dictionary) -> Array:
-		return UiStyle.wrap_lines(String(o["text"]), 15, 440.0 - 100.0)
+		return UiStyle.wrap_lines(String(o["text"]), 14, CW - 30.0)
 
 	func _process(_delta: float) -> void:
-		var h := 66.0
+		var h := 30.0
 		for o in _items():
-			h += 44.0 + 18.0 * (_text_lines(o).size() - 1)
-		size = Vector2(440, h)
+			h += 38.0 + 17.0 * (_text_lines(o).size() - 1)
+		size = UiSkin.outer_for(ART, Vector2(CW, maxf(h, 70.0)))
+		_off = UiSkin.inner(ART, Rect2(Vector2.ZERO, size)).position
 		pulse = move_toward(pulse, 0.0, _delta * 1.5)
 		queue_redraw()
 
@@ -539,26 +574,31 @@ class ObjectivePanel extends GlassPanel:
 		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]), col, 2.0, true)
 
 	func _draw() -> void:
+		UiSkin.panel(self, ART, Rect2(Vector2.ZERO, size))
+		draw_set_transform(_off, 0.0, Vector2.ONE)
 		var m: Dictionary = game.mission
 		var head := "OBJECTIFS"
 		if not m.is_empty():
 			head = "MISSION %d — %s" % [GameSession.mission + 1, String(m["title"]).to_upper()]
 		if pulse > 0.0:
-			draw_rect(Rect2(Vector2(8, 8), size - Vector2(16, 16)), Color(1.0, 0.8, 0.3, 0.14 * pulse))
-		_diamond(Vector2(48, 38), 8.0, UiSkin.accent, false)
-		UiStyle.text(self, Vector2(66, 46), head, 20, UiSkin.accent, true)
-		var y := 82.0
+			draw_rect(Rect2(Vector2(-4, -4), size - _off * 2.0 + Vector2(8, 8)), Color(1.0, 0.8, 0.3, 0.14 * pulse))
+		var hs := 16
+		while hs > 11 and UiStyle.text_width(head, hs, true) > CW - 26.0:
+			hs -= 1
+		_diamond(Vector2(8, 11), 5.0, UiSkin.accent, false)
+		UiStyle.text(self, Vector2(24, 17), head, hs, UiSkin.accent, true)
+		var y := 40.0
 		for o in _items():
 			var done: bool = o["done"]
 			var col := GameData.GREEN if done else UiStyle.GOLD
-			_diamond(Vector2(48, y - 5.0), 6.0, col, done)
+			_diamond(Vector2(8, y - 4.0), 4.0, col, done)
 			var yt := y
 			for ln in _text_lines(o):
-				UiStyle.text(self, Vector2(64, yt), String(ln), 15, UiStyle.TEXT if not done else GameData.GREEN)
-				yt += 18.0
-			yt -= 18.0
-			UiSkin.bar(self, Rect2(64, yt + 9.0, size.x - 110.0, 8), float(o["frac"]))
-			y = yt + 44.0
+				UiStyle.text(self, Vector2(24, yt), String(ln), 14, UiStyle.TEXT if not done else GameData.GREEN)
+				yt += 17.0
+			yt -= 17.0
+			UiSkin.bar(self, Rect2(24, yt + 5.0, CW - 30.0, 10), float(o["frac"]))
+			y = yt + 38.0
 
 
 # --- File de production ---------------------------------------------------------
@@ -577,17 +617,16 @@ class QueuePanel extends Control:
 		var cat: String = game.ui.category
 		var q: Array = game.production[cat]
 		var cap: int = game.queue_max(cat)
-		UiSkin.panel(self, "panneau_file_production", Rect2(Vector2.ZERO, size))
-		UiStyle.text(self, Vector2(32, 30), "FILE DE PRODUCTION", 16, UiSkin.accent, true)
+		UiStyle.text(self, Vector2(4, 16), "FILE DE PRODUCTION", 14, UiSkin.accent, true)
 		var cnt := "%d/%d" % [q.size(), cap]
-		UiStyle.text(self, Vector2(size.x - 32.0 - UiStyle.text_width(cnt, 14, true), 30), cnt, 14, UiStyle.TEXT_DIM, true)
+		UiStyle.text(self, Vector2(size.x - 4.0 - UiStyle.text_width(cnt, 13, true), 16), cnt, 13, UiStyle.TEXT_DIM, true)
 		var n := clampi(cap, 1, 8)
-		var gap := 6.0
-		var w := minf(64.0, (size.x - 64.0 - gap * (n - 1)) / n)
-		var x0 := 32.0
+		var gap := 4.0
+		var w := minf(66.0, (size.x - gap * (n - 1)) / n)
+		var x0 := (size.x - (w * n + gap * (n - 1))) * 0.5
 		for i in n:
-			var r := Rect2(x0 + i * (w + gap), 44, w, minf(w, size.y - 58.0))
-			UiSkin.panel(self, "slot_file_production", r)
+			var r := Rect2(x0 + i * (w + gap), 28, w, minf(w * 1.05, size.y - 30.0))
+			UiSkin.panel(self, "slot_production", r)
 			if i < q.size():
 				var it: Dictionary = q[i]
 				var key := "%s|%s" % [it["id"], game.faction_id]
@@ -597,15 +636,15 @@ class QueuePanel extends Control:
 						var src: Rect2 = game.bank.used_rect(key, 0.45 if GameData.UNITS.has(it["id"]) else 0.0)
 						if src.size.x < 2.0:
 							src = Rect2(Vector2.ZERO, tex.get_size())
-						var k := minf((r.size.x - 14.0) / src.size.x, (r.size.y - 14.0) / src.size.y)
+						var k := minf((r.size.x * 0.56) / src.size.x, (r.size.y * 0.5) / src.size.y)
 						var dsz := src.size * k
-						draw_texture_rect_region(tex, Rect2(r.get_center() - dsz / 2.0, dsz), src)
+						draw_texture_rect_region(tex, Rect2(r.get_center() + Vector2(0, r.size.y * 0.06) - dsz / 2.0, dsz), src)
 				if i == 0:
 					if bool(it["ready"]):
-						UiStyle.text(self, Vector2(r.position.x, r.end.y - 6.0), "PRÊT", 11, Color("6fe0a0"), true,
+						UiStyle.text(self, Vector2(r.position.x, r.end.y - 9.0), "PRÊT", 11, Color("6fe0a0"), true,
 								HORIZONTAL_ALIGNMENT_CENTER, r.size.x)
 					else:
-						UiSkin.bar(self, Rect2(r.position.x + 6, r.end.y - 11.0, r.size.x - 12.0, 6), float(it["progress"]))
+						UiSkin.bar(self, Rect2(r.position.x + r.size.x * 0.18, r.end.y - r.size.y * 0.27, r.size.x * 0.64, 9.0), float(it["progress"]))
 
 
 # --- Barre de ressources ------------------------------------------------------
@@ -660,43 +699,56 @@ class HudBar extends Control:
 	func _slash(x: float) -> void:
 		draw_line(Vector2(x + 8, 50), Vector2(x - 8, 14), Color(0.85, 0.66, 0.42, 0.55), 2.0, true)
 
+	const BAR_W := 880.0
+
+	## Cellule : icône, valeur, plafond et jauge fine, dans la bande intérieure du bandeau.
+	func _cell(x: float, w: float, value: String, vcol: Color, icon: String, cap: int, amount: int, gcol: Color) -> void:
+		var ty := 70.0
+		UiSkin.image(self, icon, Rect2(x, ty - 24.0, 28, 28))
+		_tx(Vector2(x + 34, ty), value, 22, vcol, true)
+		var vw := UiStyle.text_width(value, 22, true)
+		_tx(Vector2(x + 34 + vw + 6, ty), "/ %d" % cap, 13, UiStyle.TEXT_DIM)
+		var fill := clampf(float(amount) / float(maxi(cap, 1)), 0.0, 1.0)
+		var bc := GameData.RED if fill > 0.95 else (GameData.AMBER if fill > 0.8 else gcol)
+		UiStyle.seg_bar(self, Rect2(x + 34, ty + 5, w - 44.0, 3), fill, bc)
+
 	func _draw() -> void:
 		if game == null:
 			return
-		UiSkin.panel(self, "barre_ressources", Rect2(0, 0, size.x, size.y))
+		UiSkin.band(self, "barre_ressources", Rect2(0, 0, BAR_W, TOPBAR_H))
+		var inn := UiSkin.inner("barre_ressources", Rect2(0, 0, BAR_W, TOPBAR_H))
+		var x0 := inn.position.x + 14.0
 		# Solaris : le compteur glisse vers la valeur réelle et clignote vert/rouge
 		var diff: float = float(game.credits) - shown_credits
 		var col := Color.WHITE
 		if absf(diff) > 1.0:
 			var k := clampf(absf(diff) / 200.0, 0.0, 1.0)
 			col = Color.WHITE.lerp(Color("5dff9a") if diff > 0.0 else Color("ff5a4a"), k)
-		_resource(8, 236, str(int(round(shown_credits))), col, "icone_epice",
+		_cell(x0, 180, str(int(round(shown_credits))), col, "icone_epice",
 				game.storage_cap("spice"), game.credits, UiStyle.GOLD)
-		_slash(250)
-		_resource(262, 236, str(int(round(shown_ore))), Color.WHITE, "icone_minerai",
+		_cell(x0 + 185, 180, str(int(round(shown_ore))), Color.WHITE, "icone_minerai",
 				game.storage_cap("ore"), game.ore, Color("8fb2e8"))
-		_slash(504)
 		# Énergie : consommation / production, vert = large marge, rouge = seuil critique
 		var prod: int = game.power_produced()
 		var used: int = game.power_used()
 		var ok := prod >= used
 		var load_col := Color("6fd69a").lerp(GameData.RED, clampf((shown_load - 0.7) / 0.3, 0.0, 1.0))
-		UiSkin.image(self, "icone_energie", Rect2(526, 14, 34, 34))
-		_tx(Vector2(572, 38), "%d" % used, 26, Color.WHITE if ok else GameData.RED, true)
-		_tx(Vector2(572 + UiStyle.text_width("%d" % used, 26, true) + 8, 38), "/ %d" % prod, 15, UiStyle.TEXT_DIM)
-		UiStyle.seg_bar(self, Rect2(572, 47, 200, 4), shown_load, load_col)
-
+		var ex := x0 + 370.0
+		UiSkin.image(self, "icone_energie", Rect2(ex, 46, 28, 28))
+		_tx(Vector2(ex + 34, 70), "%d" % used, 22, Color.WHITE if ok else GameData.RED, true)
+		_tx(Vector2(ex + 34 + UiStyle.text_width("%d" % used, 22, true) + 6, 70), "/ %d" % prod, 13, UiStyle.TEXT_DIM)
+		UiStyle.seg_bar(self, Rect2(ex + 34, 75, 130, 3), shown_load, load_col)
 		# Temps
 		var t: float = game.game_time
-		UiSkin.panel(self, "compteur_temps", Rect2(742, 8, 196, 48))
-		UiSkin.image(self, "icone_horloge", Rect2(756, 16, 30, 30))
-		_tx(Vector2(796, 40), "%02d:%02d:%02d" % [int(t / 3600.0), int(t / 60.0) % 60, int(t) % 60], 22, Color.WHITE, true)
+		var tx := x0 + 560.0
+		UiSkin.image(self, "icone_horloge", Rect2(tx, 46, 26, 26))
+		_tx(Vector2(tx + 32, 70), "%02d:%02d:%02d" % [int(t / 3600.0), int(t / 60.0) % 60, int(t) % 60], 20, Color.WHITE, true)
 		# Images par seconde
 		var fps := int(Engine.get_frames_per_second())
 		var fcol := Color("6fd69a") if fps >= 45 else (GameData.AMBER if fps >= 25 else GameData.RED)
-		UiSkin.panel(self, "compteur_fps", Rect2(944, 8, 90, 48))
-		_tx(Vector2(960, 40), "%d" % fps, 22, fcol, true)
-		_tx(Vector2(960 + UiStyle.text_width("%d" % fps, 22, true) + 5, 40), "fps", 13, UiStyle.TEXT_DIM)
+		var fx := x0 + 700.0
+		_tx(Vector2(fx, 70), "%d" % fps, 20, fcol, true)
+		_tx(Vector2(fx + UiStyle.text_width("%d" % fps, 20, true) + 4, 70), "fps", 12, UiStyle.TEXT_DIM)
 
 
 ## Bouton de la barre du haut (textures du skin : normal, survol, pressé).
@@ -722,9 +774,9 @@ class FlatButton extends Control:
 			accept_event()
 
 	func _draw() -> void:
-		var n := "bouton_menu_presse" if _down else ("bouton_menu_survol" if _hover else "bouton_menu_normal")
+		var n := "bouton_presse" if _down else ("bouton_actif" if _hover else "bouton_normal")
 		UiSkin.panel(self, n, Rect2(Vector2.ZERO, size))
-		UiStyle.text_center(self, Rect2(Vector2.ZERO, size), text.to_upper(), 16, Color.WHITE, true)
+		UiStyle.text_center(self, UiSkin.inner("bouton_normal", Rect2(Vector2.ZERO, size)), text.to_upper(), 16, Color.WHITE, true)
 
 
 class SideHeader extends Control:
@@ -740,25 +792,25 @@ class SideHeader extends Control:
 	func _draw() -> void:
 		var name_s: String = String(game.fdata["name"]).to_upper()
 		UiSkin.panel(self, "entete_faction", Rect2(Vector2.ZERO, size))
-		UiSkin.image(self, "embleme_faction", Rect2(18, 12, 54, 54))
-		UiStyle.text(self, Vector2(88, 38 if UiSkin.direction != "" else 46), name_s, 24, UiSkin.accent, true)
-		if UiSkin.direction != "":
-			UiStyle.text(self, Vector2(88, 62), UiSkin.direction, 14, UiStyle.TEXT, true)
+		var inn := UiSkin.inner("entete_faction", Rect2(Vector2.ZERO, size))
+		var fs := 22
+		while fs > 11 and UiStyle.text_width(name_s, fs, true) > inn.size.x:
+			fs -= 1
+		UiStyle.text_center(self, inn, name_s, fs, UiSkin.accent, true)
 
 
 # --- Panneau d'informations ---------------------------------------------------
 
-class InfoPanel extends GlassPanel:
+class InfoPanel extends Control:
 	const ARMOR := {"light": "Léger", "medium": "Moyen", "heavy": "Lourd", "building": "Structure"}
 	const WEAPON := {"autocannon": "Autocanon", "cannon": "Canon", "rocket": "Roquettes",
 			"sonic": "Onde sonique", "acid": "Acide", "control": "Contrôle mental", "shard": "Éclats de cristal",
 			"mortar": "Mortier", "flame": "Lance-flammes", "plasma": "Plasma", "laser": "Laser"}
-	const PW := 196.0 # largeur de la zone portrait
-	const LX := 34.0 + PW
-	const COL2 := 430.0 + PW
+	const LX := 14.0
+	const COL2 := 410.0
 	const CMD := COL2 - 32.0
-	const PANEL_SCALE := 0.9
 	var portrait: Portrait
+	var frame: Control # cadre illustré qui contient le portrait et ce panneau
 
 	var game
 	var btn: GameUI.NeonButton
@@ -769,22 +821,10 @@ class InfoPanel extends GlassPanel:
 	var _focus = null
 
 	func _init(p_game) -> void:
-		super(0.0, 4.0)
-		set_skin("panneau_selection")
 		game = p_game
-		anchor_top = 1.0
-		anchor_bottom = 1.0
-		offset_left = RADAR_SIZE - 34.0
-		offset_right = RADAR_SIZE - 34.0 + 800.0 + PW
-		offset_top = -296.0
-		offset_bottom = -6.0
-		# Cartouche compact : réduit vers son coin bas-gauche pour dégager la zone de jeu
-		pivot_offset = Vector2(0, 290)
-		scale = Vector2(PANEL_SCALE, PANEL_SCALE)
-		portrait = Portrait.new(p_game)
-		portrait.position = Vector2(22, 54)
-		portrait.size = Vector2(PW - 26.0, PW - 26.0)
-		add_child(portrait)
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		size = Vector2(770.0, 262.0) # taille logique : la mise à l'échelle l'ajuste à la zone du cadre
 		btn = GameUI.NeonButton.new("AMÉLIORER")
 		btn.accent = GameData.GOLD
 		btn.glyph = "credit"
@@ -860,6 +900,8 @@ class InfoPanel extends GlassPanel:
 			return
 		_focus = _find_focus()
 		visible = _focus != null
+		if frame != null:
+			frame.visible = _focus != null
 		portrait.set_focus(_focus)
 		var is_b: bool = _focus is Building and _focus.team == 0 and GameData.can_upgrade(_focus.id)
 		var is_u: bool = _focus is Unit and _focus.team == 0 and GameData.UNIT_TECH.has(_focus.id)
@@ -1000,7 +1042,7 @@ class InfoPanel extends GlassPanel:
 	func _hp_block(name_s: String, sub: String, hp: float, hp_max: float, mine: bool, tag := "") -> void:
 		var col: Color = UiSkin.accent if mine else GameData.RED
 		# Le titre ne doit jamais déborder sur les boutons (AMÉLIORER, RÉPARER…) : corps réduit si besoin
-		var max_w := 700.0 + PW
+		var max_w := 740.0
 		if btn.visible:
 			max_w = (COL2 if _focus is Building else CMD) - LX - 22.0
 		var title := name_s.to_upper()
@@ -1015,7 +1057,7 @@ class InfoPanel extends GlassPanel:
 			if tag_in_title:
 				UiStyle.text(self, Vector2(LX + w + 14, 58), tag, 14, UiStyle.GOLD, true)
 		if sub != "":
-			var sl := UiStyle.wrap_lines(sub, 13, minf(max_w + 20.0, 730.0 + PW))
+			var sl := UiStyle.wrap_lines(sub, 13, minf(max_w + 20.0, 740.0))
 			for i in mini(sl.size(), 2):
 				var ln: String = sl[i]
 				if i == 1 and sl.size() > 2:
@@ -1024,7 +1066,7 @@ class InfoPanel extends GlassPanel:
 		if tag != "" and not tag_in_title:
 			var sw := UiStyle.text_width(sub, 13) if sub != "" else 0.0
 			UiStyle.text(self, Vector2(LX + minf(sw, 200.0) + (14.0 if sub != "" else 0.0), 76), tag, 13, UiStyle.GOLD, true)
-		UiSkin.bar(self, Rect2(LX, 96, 340, 14), hp / maxf(hp_max, 1.0), Color.WHITE if mine else Color(1.0, 0.45, 0.4), "barre_vie_remplissage")
+		UiSkin.bar(self, Rect2(LX, 94, 340, 18), hp / maxf(hp_max, 1.0), Color("6fe0a0") if mine else Color(1.0, 0.45, 0.4))
 		UiStyle.text(self, Vector2(LX + 352.0, 106), "%d / %d" % [int(hp), int(hp_max)], 13, UiStyle.TEXT)
 
 	func _draw() -> void:
@@ -1271,18 +1313,24 @@ class NeonButton extends Control:
 		var lit := 1.0 if active else maxf(hover_t, press_t)
 		var n := ""
 		if style == "tab":
-			n = "onglet_actif" if (active or lit > 0.5) else "onglet_normal"
-		elif accent.r > 0.6 and accent.g < 0.45 and accent.b < 0.45:
-			n = "bouton_action_danger"
+			n = "onglet_actif" if (active or lit > 0.5) else "onglet_inactif"
 		else:
-			n = "bouton_action_survol" if lit > 0.3 else "bouton_action"
-		UiSkin.panel(self, n, Rect2(Vector2.ZERO, size))
+			n = "bouton_presse" if press_t > 0.5 else ("bouton_actif" if lit > 0.3 else "bouton_normal")
+		var tint := Color.WHITE
+		if style != "tab" and accent.r > 0.6 and accent.g < 0.45 and accent.b < 0.45:
+			tint = Color(1.35, 0.55, 0.5)
+		if not enabled:
+			tint = Color(0.55, 0.55, 0.6)
+		UiSkin.panel(self, n, Rect2(Vector2.ZERO, size), tint)
+		var ctr := UiSkin.inner(n, Rect2(Vector2.ZERO, size)).get_center() - size * 0.5
 		var tc := Color.WHITE if enabled else Color(0.5, 0.52, 0.56)
+		if style == "tab" and UiSkin.tab_text != Color.WHITE:
+			tc = UiSkin.tab_text if (active or lit > 0.5) else UiSkin.tab_text_off
 		var ic := Color.WHITE if enabled else Color(1, 1, 1, 0.4)
 		var fs := 16 if style == "tab" else 14
 		var tw := UiStyle.text_width(text, fs, true)
 		var gw := 26.0 if glyph != "" else 0.0
-		var avail_w := size.x - 28.0 - gw
+		var avail_w := size.x * 0.76 - gw
 		while fs > 11 and tw > avail_w:
 			fs -= 1
 			tw = UiStyle.text_width(text, fs, true)
@@ -1298,11 +1346,11 @@ class NeonButton extends Control:
 		var wmax := 0.0
 		for l in lines:
 			wmax = maxf(wmax, UiStyle.text_width(String(l), fs, true))
-		var x0 := (size.x - wmax - gw) * 0.5
+		var x0 := (size.x - wmax - gw) * 0.5 + ctr.x
 		if glyph != "":
-			_icon(Vector2(x0 + 11, size.y * 0.5), 20.0, ic)
+			_icon(Vector2(x0 + 11, size.y * 0.5 + ctr.y), 20.0, ic)
 		for i in lines.size():
-			var ly := size.y * 0.5 + 5.0 + (i - (lines.size() - 1) * 0.5) * (fs + 3.0)
+			var ly := size.y * 0.5 + ctr.y + 5.0 + (i - (lines.size() - 1) * 0.5) * (fs + 3.0)
 			var lw := UiStyle.text_width(String(lines[i]), fs, true)
 			UiStyle.text(self, Vector2(x0 + gw + (wmax - lw) * 0.5, ly), String(lines[i]), fs, tc, true)
 
@@ -1314,8 +1362,9 @@ class Portrait extends BuildIcon:
 
 	func _init(p_game) -> void:
 		super("", p_game)
+		custom_minimum_size = Vector2.ZERO
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
-		fit = Vector2(130, 104)
+		fit = Vector2(110, 90)
 
 	func set_focus(f) -> void:
 		focus = f
@@ -1326,7 +1375,6 @@ class Portrait extends BuildIcon:
 			id = ""
 
 	func _draw() -> void:
-		UiSkin.image(self, "cadre_portrait", Rect2(Vector2.ZERO, size))
 		if id == "" or game.bank == null:
 			if focus is String:
 				UiStyle.text(self, Vector2(0, size.y * 0.5 + 8), "%d" % game.selected.size(), 34, UiStyle.TEXT, true,
@@ -1344,7 +1392,7 @@ class BuildIcon extends Control:
 	var game
 	var hover_t := 0.0
 	var _hover := false
-	var fit := Vector2(120, 62) # zone occupée par le modèle
+	var fit := Vector2(112, 52) # zone occupée par le modèle
 	var fac := ""
 
 	func _fid() -> String:
@@ -1353,7 +1401,7 @@ class BuildIcon extends Control:
 	func _init(p_id: String, p_game) -> void:
 		id = p_id
 		game = p_game
-		custom_minimum_size = Vector2(190, 141)
+		custom_minimum_size = Vector2(190, 168)
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		if p_id == "":
 			return
@@ -1386,10 +1434,10 @@ class BuildIcon extends Control:
 
 	## Mention orange en haut de la carte : à la ligne (2 lignes max.) dans la largeur de la carte.
 	func _card_note(s: String, fs: int) -> void:
-		var wl := UiStyle.wrap_lines(s, fs, size.x - 28.0, true)
+		var wl := UiStyle.wrap_lines(s, fs, size.x - 56.0, true)
 		var n := mini(wl.size(), 2)
 		for i in n:
-			UiStyle.text(self, Vector2(0, 36.0 + i * 15.0), String(wl[i]), fs, GameData.AMBER, true,
+			UiStyle.text(self, Vector2(0, 62.0 + i * 14.0), String(wl[i]), fs, GameData.AMBER, true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 
 	func _draw() -> void:
@@ -1405,15 +1453,18 @@ class BuildIcon extends Control:
 		if not avail:
 			tn = "vignette_verrouillee"
 		elif busy:
-			tn = "vignette_production"
+			tn = "vignette_normal"
+		var vtint := Color.WHITE
+		if busy:
+			vtint = Color(0.8, 1.0, 1.25)
 		elif ready or hover_t > 0.5:
-			tn = "vignette_survol" if not ready else "vignette_selection"
-		UiSkin.panel(self, tn, Rect2(Vector2.ZERO, size))
+			vtint = Color(1.25, 1.2, 1.0)
+		UiSkin.panel(self, tn, Rect2(Vector2.ZERO, size), vtint)
 
-		var c := Vector2(size.x * 0.5, 50.0 - hover_t * 2.0)
+		var c := Vector2(size.x * 0.5, 76.0 - hover_t * 2.0)
 		_draw_icon(c, avail)
 		if avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
-			UiStyle.text(self, Vector2(22, 38), "ÉNERGIE", 11, GameData.RED, true)
+			UiStyle.text(self, Vector2(34, 62), "ÉNERGIE", 10, GameData.RED, true)
 		if game.unit_level_block(id) != "" and (GameData.UNITS.has(id) or game.is_unlocked(id)):
 			_card_note(String(game.unit_level_block(id)), 12)
 		elif GameData.UNITS.has(id) and not avail:
@@ -1423,33 +1474,33 @@ class BuildIcon extends Control:
 					else "Mission %d" % Campaign.mission_for_unlock(game.faction_id, int(d.get("unlock", 0)))
 			_card_note(lock_s, 13)
 		elif d.has("faction") and not GameData.UNITS.has(id):
-			UiStyle.text(self, Vector2(22, 38), "FACTION", 10, game.fdata["color"] * 1.5, true)
+			UiStyle.text(self, Vector2(34, 62), "FACTION", 9, game.fdata["color"] * 1.5, true)
 		if not GameData.UNITS.has(id) and game.is_unlocked(id) and not d.get("wall", false):
 			var pw: int = int(d.get("power", 0))
 			var pc := Color("6fe0a0") if pw > 0 else (GameData.AMBER if pw < 0 else UiStyle.TEXT_DIM)
 			if not avail:
 				pc = Color(0.4, 0.4, 0.4)
 			var pt := ("+%d" % pw) if pw > 0 else str(pw)
-			var py := 56.0 if game.queued_count(id) > 0 else 38.0
+			var py := 78.0 if game.queued_count(id) > 0 else 62.0
 			var pwid := UiStyle.text_width(pt, 14, true)
-			UiStyle.text(self, Vector2(size.x - 24.0 - pwid, py), pt, 14, pc, true)
+			UiStyle.text(self, Vector2(size.x - 34.0 - pwid, py), pt, 13, pc, true)
 		var queued: int = game.queued_count(id)
 		if queued > 0:
-			var tag := Rect2(size.x - 62.0, 14.0, 40.0, 24.0)
+			var tag := Rect2(size.x - 62.0, 30.0, 44.0, 30.0)
 			UiSkin.panel(self, "badge_quantite", tag)
-			UiStyle.text(self, Vector2(tag.position.x, tag.position.y + 17.0), "x%d" % queued, 14, Color("2a1a08"),
+			UiStyle.text(self, Vector2(tag.position.x, tag.position.y + 20.0), "x%d" % queued, 13, Color("f5e9c8"),
 					true, HORIZONTAL_ALIGNMENT_CENTER, tag.size.x)
 		if busy:
-			UiSkin.bar(self, Rect2(16, size.y - 22.0, size.x - 32.0, 8), float(p["progress"]))
+			UiSkin.bar(self, Rect2(30, 120.0, size.x - 60.0, 12), float(p["progress"]))
 
 		var tc := UiStyle.TEXT if avail else Color(0.5, 0.52, 0.56)
 		var nm := GameData.name_of(id, game.faction_id)
 		var nsz := 14
-		while nsz > 9 and UiStyle.text_width(nm, nsz, true) > size.x - 22.0:
+		while nsz > 9 and UiStyle.text_width(nm, nsz, true) > size.x - 50.0:
 			nsz -= 1 # les noms longs rétrécissent pour tenir dans la carte
-		UiStyle.text(self, Vector2(0, 100), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
+		UiStyle.text(self, Vector2(0, 111), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		if ready:
-			UiStyle.text(self, Vector2(0, 122), "Prêt : cliquer", 13, Color(0.5, 1.0, 0.7, 0.7 + 0.3 * pulse), true,
+			UiStyle.text(self, Vector2(0, 130), "Prêt : cliquer", 12, Color(0.5, 1.0, 0.7, 0.7 + 0.3 * pulse), true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		elif not busy:
 			var rich: bool = game.can_afford(id)
@@ -1474,15 +1525,15 @@ class BuildIcon extends Control:
 				else:
 					c1 = cc if game.ore >= game.item_cost(id) else GameData.RED
 					c2 = Color.WHITE if game.credits >= second else GameData.RED
-			var w1 := UiStyle.text_width(label, 14)
-			var w2 := UiStyle.text_width(l2, 14)
-			var x1 := (size.x - (w1 + w2 + 66.0)) * 0.5
+			var w1 := UiStyle.text_width(label, 13)
+			var w2 := UiStyle.text_width(l2, 13)
+			var x1 := (size.x - (w1 + w2 + 52.0)) * 0.5
 			var ia := Color.WHITE if avail else Color(1, 1, 1, 0.4)
-			UiSkin.image(self, i1, Rect2(x1, 105, 18, 18), ia)
-			UiStyle.text(self, Vector2(x1 + 24, 120), label, 14, c1)
-			var x2 := x1 + 24.0 + w1 + 14.0
-			UiSkin.image(self, i2, Rect2(x2, 105, 18, 18), ia)
-			UiStyle.text(self, Vector2(x2 + 24, 120), l2, 14, c2)
+			UiSkin.image(self, i1, Rect2(x1, 117, 16, 16), ia)
+			UiStyle.text(self, Vector2(x1 + 20, 130), label, 13, c1)
+			var x2 := x1 + 20.0 + w1 + 12.0
+			UiSkin.image(self, i2, Rect2(x2, 117, 16, 16), ia)
+			UiStyle.text(self, Vector2(x2 + 20, 130), l2, 13, c2)
 
 	## Bâtiments débloqués : on affiche le modèle 3D cuit (ou un bloc simple sans affichage).
 	func _draw_baked_icon(c: Vector2, avail: bool) -> void:

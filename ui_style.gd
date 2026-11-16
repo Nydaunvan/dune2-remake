@@ -22,19 +22,8 @@ static func theme() -> Theme:
 	_theme = Theme.new()
 	_theme.default_font = body_font()
 	_theme.default_font_size = 15
-	var tip: StyleBox
-	if UiSkin.tex("panneau_infobulle") != null:
-		var tb := (UiSkin.box("panneau_infobulle")).duplicate() as StyleBoxTexture
-		tb.content_margin_left = 22
-		tb.content_margin_right = 22
-		tb.content_margin_top = 16
-		tb.content_margin_bottom = 16
-		tip = tb
-	else:
-		var tf := StyleBoxFlat.new()
-		tf.bg_color = Color(0.04, 0.02, 0.09, 0.96)
-		tf.set_content_margin_all(10)
-		tip = tf
+	var tip: StyleBox = UiSkin.flat_box(UiSkin.accent)
+	(tip as StyleBoxFlat).set_content_margin_all(12)
 	_theme.set_stylebox("panel", "TooltipPanel", tip)
 	_theme.set_color("font_color", "TooltipLabel", TEXT)
 	_theme.set_color("font_outline_color", "TooltipLabel", Color(0, 0, 0, 0.8))

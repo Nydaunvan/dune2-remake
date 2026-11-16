@@ -16,13 +16,13 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 
-const RADIUS := 0.395 # rayon de la carte (fraction de la taille), à l'intérieur du cadre octogonal
+const RADIUS := 0.5 # la zone intérieure du cadre de kit est déjà mesurée au plus juste
+var square := false # cadre carré (sinon disque)
 
 
 func _draw() -> void:
 	if game == null:
 		return
-	UiSkin.image(self, "fond_radar", Rect2(Vector2.ZERO, size).grow(-size.x * 0.07))
 	var c := size / 2.0
 	var r := minf(size.x, size.y) * RADIUS
 	map_rect = Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)
@@ -30,15 +30,23 @@ func _draw() -> void:
 	var acc: Color = UiSkin.accent
 
 	# Halo diffus et fond « verre » sombre
-	draw_circle(c, r + 4.0, Color(0.05, 0.04, 0.03, 0.96))
+	if square:
+		draw_rect(Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0), Color(0.04, 0.035, 0.03, 0.96))
+	else:
+		draw_circle(c, r + 4.0, Color(0.05, 0.04, 0.03, 0.96))
 
 	# Carte découpée en disque + brouillard
 	var pts := PackedVector2Array()
 	var uvs := PackedVector2Array()
-	for i in 96:
-		var pt := c + Vector2.from_angle(TAU * i / 96.0) * r
-		pts.append(pt)
-		uvs.append((pt - map_rect.position) / map_rect.size)
+	if square:
+		for pt in [map_rect.position, map_rect.position + Vector2(r * 2.0, 0), map_rect.end, map_rect.position + Vector2(0, r * 2.0)]:
+			pts.append(pt)
+			uvs.append((pt - map_rect.position) / map_rect.size)
+	else:
+		for i in 96:
+			var pt := c + Vector2.from_angle(TAU * i / 96.0) * r
+			pts.append(pt)
+			uvs.append((pt - map_rect.position) / map_rect.size)
 	draw_colored_polygon(pts, Color(1, 1, 1, 0.95), uvs, game.map_texture)
 	if game.fog_radar_tex != null:
 		draw_colored_polygon(pts, Color.WHITE, uvs, game.fog_radar_tex)
@@ -46,7 +54,8 @@ func _draw() -> void:
 	# Grille discrète : anneaux de portée et axes
 	var grid := Color(acc.r, acc.g, acc.b, 0.13)
 	for f in [0.33, 0.66]:
-		draw_arc(c, r * f, 0.0, TAU, 64, grid, 1.0, true)
+		if not square:
+			draw_arc(c, r * f, 0.0, TAU, 64, grid, 1.0, true)
 	draw_line(c - Vector2(r, 0), c + Vector2(r, 0), grid, 1.0)
 	draw_line(c - Vector2(0, r), c + Vector2(0, r), grid, 1.0)
 
@@ -60,7 +69,7 @@ func _draw() -> void:
 		var rs := Vector2(b.cell_size * b.tile) / world_size * map_rect.size
 		var col := _team_color(b.team)
 		var rc := Rect2(rp, rs)
-		if (rc.get_center() - c).length() > r:
+		if not _inside(rc.get_center(), c, r):
 			continue
 		draw_rect(rc, Color(col.r, col.g, col.b, 0.85))
 		draw_rect(rc, Color(1, 1, 1, 0.55), false, 1.0)
@@ -72,7 +81,7 @@ func _draw() -> void:
 		if u.team != 0 and not u.seen:
 			continue
 		var up := _to_radar(u.position)
-		if up.distance_to(c) < r - 2.0:
+		if _inside(up, c, r - 2.0):
 			var uc := _team_color(u.team)
 			draw_circle(up, 3.4, Color(0, 0, 0, 0.55))
 			draw_circle(up, 2.3, uc)
@@ -96,11 +105,10 @@ func _draw() -> void:
 		draw_arc(wc, wr, 0.0, TAU, 32, Color(1.0, 0.35, 0.25, 0.7 + 0.3 * blink), 2.0, true)
 
 	# Balayage : secteur lumineux qui tourne autour du centre
-	var swp := UiSkin.tex("balayage_radar")
-	if swp != null:
-		draw_set_transform(c, t * 1.6, Vector2.ONE)
-		draw_texture_rect(swp, Rect2(Vector2(-r, -r), Vector2(r, r) * 2.0), false, Color(1, 1, 1, 0.9))
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	if not square:
+		for i in 10:
+			var a0 := t * 1.6 - i * 0.07
+			draw_line(c, c + Vector2.from_angle(a0) * r, Color(acc.r, acc.g, acc.b, 0.34 * (1.0 - i / 10.0)), 2.0, true)
 
 	# Cadre de caméra à coins marqués
 	var vp: Vector2 = game.get_viewport_rect().size / game.camera.zoom
@@ -116,10 +124,12 @@ func _draw() -> void:
 		draw_line(corner[0], corner[0] + corner[1] * cl, Color.WHITE, 2.0)
 		draw_line(corner[0], corner[0] + corner[2] * cl, Color.WHITE, 2.0)
 
-	# Anneau fin
-	draw_arc(c, r + 1.0, 0.0, TAU, 128, Color(0, 0, 0, 0.6), 3.0, true)
-	draw_arc(c, r + 2.0, 0.0, TAU, 128, Color(acc.r, acc.g, acc.b, 0.5), 1.0, true)
-	UiSkin.image(self, "cadre_radar", Rect2(Vector2.ZERO, size))
+
+
+func _inside(p: Vector2, c: Vector2, r: float) -> bool:
+	if square:
+		return absf(p.x - c.x) <= r and absf(p.y - c.y) <= r
+	return p.distance_to(c) < r
 
 
 func _team_color(team: int) -> Color:
