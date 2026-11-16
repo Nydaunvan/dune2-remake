@@ -956,7 +956,7 @@ class InfoPanel extends GlassPanel:
 		if tag != "" and not tag_in_title:
 			var sw := UiStyle.text_width(sub, 13) if sub != "" else 0.0
 			UiStyle.text(self, Vector2(LX + minf(sw, 200.0) + (14.0 if sub != "" else 0.0), 76), tag, 13, UiStyle.GOLD, true)
-		UiSkin.bar(self, Rect2(LX, 96, 340, 14), hp / maxf(hp_max, 1.0), Color(0.45, 1.0, 0.55) if mine else Color(1.0, 0.45, 0.4))
+		UiSkin.bar(self, Rect2(LX, 96, 340, 14), hp / maxf(hp_max, 1.0), Color.WHITE if mine else Color(1.0, 0.45, 0.4))
 		UiStyle.text(self, Vector2(LX + 352.0, 106), "%d / %d" % [int(hp), int(hp_max)], 13, UiStyle.TEXT)
 
 	func _draw() -> void:
