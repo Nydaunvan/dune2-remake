@@ -8,7 +8,7 @@ const FALLBACK := "solis"
 
 ## Marges NinePatch (pixels de texture) : gauche, haut, droite, bas.
 const MARGINS := {
-	"barre_ressources": [22, 20, 22, 20],
+	"barre_ressources": [18, 18, 18, 18],
 	"compteur_ressource": [30, 30, 30, 30],
 	"compteur_temps": [30, 30, 30, 30],
 	"compteur_fps": [30, 30, 30, 30],
@@ -22,24 +22,27 @@ const MARGINS := {
 	"entete_faction": [36, 36, 36, 36],
 	"onglet_normal": [26, 26, 26, 26],
 	"onglet_actif": [26, 26, 26, 26],
-	"vignette_normal": [30, 30, 30, 30],
-	"vignette_survol": [30, 30, 30, 30],
-	"vignette_selection": [30, 30, 30, 30],
-	"vignette_verrouillee": [30, 30, 30, 30],
-	"vignette_production": [30, 30, 30, 30],
+	"vignette_normal": [22, 22, 22, 22],
+	"vignette_survol": [22, 22, 22, 22],
+	"vignette_selection": [22, 22, 22, 22],
+	"vignette_verrouillee": [22, 22, 22, 22],
+	"vignette_production": [22, 22, 22, 22],
 	"panneau_selection": [44, 44, 44, 44],
 	"bouton_action": [26, 26, 26, 26],
 	"bouton_action_survol": [26, 26, 26, 26],
 	"bouton_action_danger": [26, 26, 26, 26],
 	"panneau_file_production": [40, 40, 40, 40],
-	"slot_file_production": [24, 24, 24, 24],
+	"slot_file_production": [14, 14, 14, 14],
 	"barre_progression_fond": [14, 14, 14, 14],
 	"barre_progression_remplissage": [14, 14, 14, 14],
 	"badge_quantite": [20, 20, 20, 20],
+	"panneau_infobulle": [34, 34, 34, 34],
+	"barre_vie_remplissage": [10, 10, 10, 10],
 }
 
 static var dir := FALLBACK
 static var accent := Color("39dfff")
+static var direction := ""
 static var _tex := {}
 static var _box := {}
 
@@ -54,6 +57,7 @@ static func use(faction_id: String) -> void:
 		var j = JSON.parse_string(f.get_as_text())
 		if j is Dictionary and j.has("accent"):
 			accent = Color(String(j["accent"]))
+		direction = String(j.get("direction", "")) if j is Dictionary else ""
 
 
 static func tex(n: String) -> Texture2D:
@@ -95,12 +99,14 @@ static func image(ci: CanvasItem, n: String, r: Rect2, modulate := Color.WHITE) 
 
 
 ## Barre de progression : fond puis remplissage jusqu'à `frac`.
-static func bar(ci: CanvasItem, r: Rect2, frac: float, tint := Color.WHITE) -> void:
+static func bar(ci: CanvasItem, r: Rect2, frac: float, tint := Color.WHITE, fill := "barre_progression_remplissage") -> void:
 	panel(ci, "barre_progression_fond", r)
 	if frac > 0.004:
 		var w := maxf(r.size.y, r.size.x * clampf(frac, 0.0, 1.0))
-		var t := tex("barre_progression_remplissage")
+		if tex(fill) == null:
+			fill = "barre_progression_remplissage"
+		var t := tex(fill)
 		if t != null:
-			var sb := box("barre_progression_remplissage").duplicate() as StyleBoxTexture
+			var sb := box(fill).duplicate() as StyleBoxTexture
 			sb.modulate_color = tint
 			ci.draw_style_box(sb, Rect2(r.position, Vector2(w, r.size.y)))

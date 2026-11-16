@@ -16,5 +16,5 @@ for n in z.namelist():
         im.save(os.path.join(out, m.group(1) + ".png"), optimize=True)
     elif n == "manifest.json":
         man = json.loads(z.read(n))
-        json.dump({"accent": man.get("accent"), "faction": man.get("faction")}, open(os.path.join(out, "skin.json"), "w"))
+        json.dump({"accent": man.get("accent"), "faction": man.get("faction"), "direction": man.get("direction", "")}, open(os.path.join(out, "skin.json"), "w"))
 print("ok", out)

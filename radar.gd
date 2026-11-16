@@ -95,13 +95,12 @@ func _draw() -> void:
 		draw_circle(wc, wr, Color(1.0, 0.15, 0.1, 0.16 + 0.12 * blink))
 		draw_arc(wc, wr, 0.0, TAU, 32, Color(1.0, 0.35, 0.25, 0.7 + 0.3 * blink), 2.0, true)
 
-	# Balayage doux
-	var a0 := t * 1.6
-	for k in 22:
-		var a := a0 - k * 0.04
-		draw_line(c, c + Vector2.from_angle(a) * r,
-				Color(acc.r, acc.g, acc.b, (1.0 - k / 22.0) * 0.12), 3.0, true)
-	draw_line(c, c + Vector2.from_angle(a0) * r, Color(acc.r, acc.g, acc.b, 0.35), 1.2, true)
+	# Balayage : secteur lumineux qui tourne autour du centre
+	var swp := UiSkin.tex("balayage_radar")
+	if swp != null:
+		draw_set_transform(c, t * 1.6, Vector2.ONE)
+		draw_texture_rect(swp, Rect2(Vector2(-r, -r), Vector2(r, r) * 2.0), false, Color(1, 1, 1, 0.9))
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	# Cadre de caméra à coins marqués
 	var vp: Vector2 = game.get_viewport_rect().size / game.camera.zoom
