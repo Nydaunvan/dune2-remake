@@ -47,11 +47,33 @@ static func tex(n: String) -> Texture2D:
 	return _tex[n]
 
 
-## Dessine l'illustration `n` étirée sur `r`.
+## Pièces à extrémités fixes : seul le milieu s'étire (fractions de coupe).
+const BANDED := {
+	"barre_ressources": [0.2, 0.36, 0.64, 0.8],
+	"bouton_normal": [0.18, 0.38, 0.62, 0.82], "bouton_actif": [0.18, 0.38, 0.62, 0.82], "bouton_presse": [0.18, 0.38, 0.62, 0.82],
+	"onglet_actif": [0.18, 0.38, 0.62, 0.82], "onglet_inactif": [0.18, 0.38, 0.62, 0.82],
+}
+
+
+## Rectangle de l'illustration `n` dans `r` : proportions d'origine conservées (centrée dans `r`).
+static func fit(n: String, r: Rect2) -> Rect2:
+	if BANDED.has(n) or not sizes.has(n):
+		return r
+	var a := aspect(n)
+	var w := minf(r.size.x, r.size.y * a)
+	var h := w / a
+	return Rect2(r.position + (r.size - Vector2(w, h)) * 0.5, Vector2(w, h))
+
+
+## Dessine l'illustration `n` dans `r` sans la déformer.
 static func panel(ci: CanvasItem, n: String, r: Rect2, modulate := Color.WHITE) -> void:
 	var t := tex(n)
-	if t != null:
-		ci.draw_texture_rect(t, r, false, modulate)
+	if t == null:
+		return
+	if BANDED.has(n):
+		band(ci, n, r, BANDED[n], modulate)
+	else:
+		ci.draw_texture_rect(t, fit(n, r), false, modulate)
 
 
 static func image(ci: CanvasItem, n: String, r: Rect2, modulate := Color.WHITE) -> void:
@@ -63,17 +85,22 @@ static func frac(n: String) -> Array:
 	return inners.get(n, [0.1, 0.1, 0.8, 0.8])
 
 
-## Zone intérieure (zone de contenu) quand `n` est dessinée sur `outer`.
+## Zone intérieure (zone de contenu) quand `n` est dessinée dans `outer`.
 static func inner(n: String, outer: Rect2) -> Rect2:
 	var f: Array = frac(n)
-	return Rect2(outer.position + Vector2(f[0] * outer.size.x, f[1] * outer.size.y),
-			Vector2(f[2] * outer.size.x, f[3] * outer.size.y))
+	var o := fit(n, outer)
+	return Rect2(o.position + Vector2(f[0] * o.size.x, f[1] * o.size.y), Vector2(f[2] * o.size.x, f[3] * o.size.y))
 
 
-## Taille de l'illustration qui laisse une zone intérieure de `content` pixels.
+## Taille (aux proportions d'origine) de l'illustration dont la zone intérieure contient `content`.
 static func outer_for(n: String, content: Vector2) -> Vector2:
 	var f: Array = frac(n)
-	return Vector2(content.x / maxf(f[2], 0.05), content.y / maxf(f[3], 0.05))
+	var w := content.x / maxf(f[2], 0.05)
+	var h := content.y / maxf(f[3], 0.05)
+	var a := aspect(n)
+	if w / h > a:
+		return Vector2(w, w / a)
+	return Vector2(h * a, h)
 
 
 ## Rapport largeur/hauteur naturel de l'illustration.
@@ -87,7 +114,7 @@ static func shape(n: String) -> String:
 
 
 ## Bandeau horizontal : extrémités et motif central gardent leurs proportions, le reste s'étire.
-static func band(ci: CanvasItem, n: String, r: Rect2, cuts := [0.2, 0.36, 0.64, 0.8]) -> void:
+static func band(ci: CanvasItem, n: String, r: Rect2, cuts := [0.2, 0.36, 0.64, 0.8], modulate := Color.WHITE) -> void:
 	var t := tex(n)
 	if t == null:
 		return
@@ -109,7 +136,7 @@ static func band(ci: CanvasItem, n: String, r: Rect2, cuts := [0.2, 0.36, 0.64, 
 	for i in 5:
 		var sw: float = (xs[i + 1] - xs[i]) * tw
 		var dw: float = sw * k if fixed[i] else free * sw / maxf(stretch_src, 1.0)
-		ci.draw_texture_rect_region(t, Rect2(x, r.position.y, dw, r.size.y), Rect2(xs[i] * tw, 0.0, sw, th))
+		ci.draw_texture_rect_region(t, Rect2(x, r.position.y, dw, r.size.y), Rect2(xs[i] * tw, 0.0, sw, th), modulate)
 		x += dw
 
 
@@ -134,3 +161,16 @@ static func flat_box(border: Color, bg := Color(0.04, 0.035, 0.05, 0.96)) -> Sty
 	sb.set_corner_radius_all(4)
 	sb.set_content_margin_all(10)
 	return sb
+
+
+## Carte de production : l'illustration garde ses proportions autour de la zone de contenu de
+## 168x84 (coordonnées de conception 190x168). Renvoie [position, taille de l'illustration, boîte englobante].
+static func card_box(dw := 190.0, dh := 168.0) -> Array:
+	var f: Array = frac("vignette_normal")
+	var sz := outer_for("vignette_normal", Vector2(dw - 22.0, 84.0))
+	var pos := Vector2(dw * 0.5 - (f[0] + f[2] * 0.5) * sz.x, 92.0 - (f[1] + f[3] * 0.5) * sz.y)
+	var l := minf(0.0, pos.x)
+	var t := minf(0.0, pos.y)
+	var r := maxf(dw, pos.x + sz.x)
+	var b := maxf(dh, pos.y + sz.y)
+	return [pos, sz, Rect2(l, t, r - l, b - t)]

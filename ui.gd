@@ -3,11 +3,8 @@ extends CanvasLayer
 ## Interface moderne : barre de ressources, panneau latéral en verre dépoli
 ## (radar, commandes, construction), notifications animées.
 
-const SIDEBAR_W := 540.0
 const MARGIN := 12.0
 const TOPBAR_H := 96.0
-const CARD_W := 190.0
-const CARD_H := 168.0
 const COMMANDS := [
 	["stop", "ARRÊT", true],
 	["move", "DÉPLACER", true],
@@ -136,11 +133,12 @@ func _build_sidebar() -> void:
 	sidebar.anchor_right = 1.0
 	sidebar.anchor_top = 0.0
 	sidebar.anchor_bottom = 1.0
-	sidebar.offset_left = -SIDEBAR_W
+	var vh := maxf(root.get_viewport_rect().size.y, 1080.0)
+	sidebar_w = minf(vh * UiSkin.aspect("panneau_construction"), 560.0)
+	sidebar.offset_left = -sidebar_w
 	sidebar.offset_right = 0.0
 	root.add_child(sidebar)
-	var vh := maxf(root.get_viewport_rect().size.y, 1080.0)
-	var inn := UiSkin.inner("panneau_construction", Rect2(0, 0, SIDEBAR_W, vh))
+	var inn := UiSkin.inner("panneau_construction", Rect2(0, 0, sidebar_w, vh))
 
 	# En-tête de faction : dans la partie haute ornée du panneau
 	var hh := minf(inn.position.y - 18.0, 230.0)
@@ -152,7 +150,7 @@ func _build_sidebar() -> void:
 	sidebar.add_child(header)
 
 	# Radar : cadre du kit en bas à gauche, carte dans sa zone intérieure
-	radar_w = 260.0 if _solis_compact() else 340.0
+	radar_w = 260.0
 	var rh := radar_w / UiSkin.aspect("radar")
 	radar_panel = ArtFrame.new("radar")
 	radar_panel.anchor_top = 1.0
@@ -182,22 +180,25 @@ func _build_sidebar() -> void:
 		t.style = "tab"
 		t.active = (i == 0)
 		t.position = Vector2(inn.position.x + i * (tw + 6.0), inn.position.y)
-		t.size = Vector2(tw, 50)
+		t.size = Vector2(tw, tw / UiSkin.aspect("onglet_actif"))
 		t.pressed.connect(_set_category.bind(tabs[i][0]))
 		sidebar.add_child(t)
 		tab_buttons.append(t)
 
 	# Cartes de production : deux colonnes, réduites pour tenir dans la colonne
-	var cw := (inn.size.x - 8.0) / 2.0
-	card_scale = cw / CARD_W
+	var cbox: Rect2 = UiSkin.card_box()[2]
+	card_cols = 2 if ((inn.size.x - 8.0) / 2.0) / cbox.size.x >= 0.62 else 1
+	card_scale = minf(1.0, (inn.size.x - 8.0 * (card_cols - 1)) / card_cols / cbox.size.x)
+	card_slot_w = (inn.size.x - 8.0 * (card_cols - 1)) / card_cols
 	icon_box = GridContainer.new()
-	icon_box.columns = 2
+	icon_box.columns = card_cols
 	icon_box.add_theme_constant_override("h_separation", 8)
 	icon_box.add_theme_constant_override("v_separation", 6)
 	icon_scroll = ScrollContainer.new()
 	icon_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	icon_scroll.position = Vector2(inn.position.x, inn.position.y + 56.0)
-	icon_scroll.size = Vector2(inn.size.x, inn.size.y - 56.0 - 136.0)
+	var tab_h := tw / UiSkin.aspect("onglet_actif")
+	icon_scroll.position = Vector2(inn.position.x, inn.position.y + tab_h + 6.0)
+	icon_scroll.size = Vector2(inn.size.x, inn.size.y - tab_h - 6.0 - 136.0)
 	icon_scroll.clip_contents = true
 	sidebar.add_child(icon_scroll)
 	icon_scroll.add_child(icon_box)
@@ -219,12 +220,15 @@ func _build_sidebar() -> void:
 
 
 var card_scale := 0.85
+var sidebar_w := 540.0
+var card_cols := 2
+var card_slot_w := 160.0
 var radar_w := 340.0
 
 
 ## Solis et Kharn : les objectifs prennent le cadre du journal, qui disparaît ; carte plus petite.
 func _solis_compact() -> bool:
-	return UiSkin.dir == "solis" or UiSkin.dir == "kharn"
+	return true
 
 
 func _build_log() -> void:
@@ -243,11 +247,9 @@ func _build_log() -> void:
 ## Cadre de sélection : bandeau du kit en bas, avec emplacement de portrait intégré.
 func _build_selection() -> void:
 	var x0 := radar_w + 14.0
-	var fw := 1920.0 - SIDEBAR_W - 8.0 - x0
-	var fh := minf(fw / UiSkin.aspect("panneau_selection") * 1.3, 420.0)
-	if _solis_compact():
-		fw *= 0.85 # cadre réduit, proportions d'origine
-		fh = fw / UiSkin.aspect("panneau_selection")
+	var fw := 1920.0 - sidebar_w - 8.0 - x0
+	fw *= 0.85 # cadre réduit, proportions d'origine
+	var fh := fw / UiSkin.aspect("panneau_selection")
 	sel_frame = ArtFrame.new("panneau_selection")
 	sel_frame.anchor_top = 1.0
 	sel_frame.anchor_bottom = 1.0
@@ -293,7 +295,8 @@ func _rebuild_icons() -> void:
 		icon.clicked.connect(game.on_item_clicked)
 		icon.scale = Vector2(card_scale, card_scale)
 		var slot := Control.new()
-		slot.custom_minimum_size = Vector2(CARD_W, CARD_H) * card_scale
+		slot.custom_minimum_size = Vector2(card_slot_w, icon.custom_minimum_size.y * card_scale)
+		icon.position.x = (card_slot_w - icon.custom_minimum_size.x * card_scale) * 0.5
 		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(icon)
 		icon_box.add_child(slot)
@@ -562,8 +565,7 @@ class ObjectivePanel extends Control:
 
 	func _init(p_game) -> void:
 		game = p_game
-		if UiSkin.dir == "solis" or UiSkin.dir == "kharn":
-			ART = "panneau_journal"
+		ART = "panneau_journal"
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
@@ -640,7 +642,7 @@ class QueuePanel extends Control:
 		var w := minf(66.0, (size.x - gap * (n - 1)) / n)
 		var x0 := (size.x - (w * n + gap * (n - 1))) * 0.5
 		for i in n:
-			var r := Rect2(x0 + i * (w + gap), 28, w, minf(w * 1.05, size.y - 30.0))
+			var r := Rect2(x0 + i * (w + gap), 28, w, w / UiSkin.aspect("slot_production"))
 			UiSkin.panel(self, "slot_production", r)
 			if i < q.size():
 				var it: Dictionary = q[i]
@@ -1407,6 +1409,11 @@ class BuildIcon extends Control:
 	var game
 	var hover_t := 0.0
 	var _hover := false
+	const DW := 190.0 # taille de conception du contenu
+	const DH := 168.0
+	var art_pos := Vector2.ZERO
+	var art_sz := Vector2(190, 168)
+	var box_off := Vector2.ZERO
 	var fit := Vector2(112, 52) # zone occupée par le modèle
 	var fac := ""
 
@@ -1416,7 +1423,11 @@ class BuildIcon extends Control:
 	func _init(p_id: String, p_game) -> void:
 		id = p_id
 		game = p_game
-		custom_minimum_size = Vector2(190, 168)
+		var cb: Array = UiSkin.card_box()
+		art_pos = cb[0]
+		art_sz = cb[1]
+		box_off = -(cb[2] as Rect2).position
+		custom_minimum_size = (cb[2] as Rect2).size
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		if p_id == "":
 			return
@@ -1449,11 +1460,11 @@ class BuildIcon extends Control:
 
 	## Mention orange en haut de la carte : à la ligne (2 lignes max.) dans la largeur de la carte.
 	func _card_note(s: String, fs: int) -> void:
-		var wl := UiStyle.wrap_lines(s, fs, size.x - 56.0, true)
+		var wl := UiStyle.wrap_lines(s, fs, DW - 56.0, true)
 		var n := mini(wl.size(), 2)
 		for i in n:
 			UiStyle.text(self, Vector2(0, 62.0 + i * 14.0), String(wl[i]), fs, GameData.AMBER, true,
-					HORIZONTAL_ALIGNMENT_CENTER, size.x)
+					HORIZONTAL_ALIGNMENT_CENTER, DW)
 
 	func _draw() -> void:
 		var d := GameData.def(id)
@@ -1474,9 +1485,10 @@ class BuildIcon extends Control:
 			vtint = Color(0.8, 1.0, 1.25)
 		elif ready or hover_t > 0.5:
 			vtint = Color(1.25, 1.2, 1.0)
-		UiSkin.panel(self, tn, Rect2(Vector2.ZERO, size), vtint)
+		UiSkin.panel(self, tn, Rect2(art_pos + box_off, art_sz), vtint)
+		draw_set_transform(box_off, 0.0, Vector2.ONE)
 
-		var c := Vector2(size.x * 0.5, 76.0 - hover_t * 2.0)
+		var c := Vector2(DW * 0.5, 76.0 - hover_t * 2.0)
 		_draw_icon(c, avail)
 		if avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
 			UiStyle.text(self, Vector2(34, 62), "ÉNERGIE", 10, GameData.RED, true)
@@ -1498,25 +1510,25 @@ class BuildIcon extends Control:
 			var pt := ("+%d" % pw) if pw > 0 else str(pw)
 			var py := 78.0 if game.queued_count(id) > 0 else 62.0
 			var pwid := UiStyle.text_width(pt, 14, true)
-			UiStyle.text(self, Vector2(size.x - 34.0 - pwid, py), pt, 13, pc, true)
+			UiStyle.text(self, Vector2(DW - 34.0 - pwid, py), pt, 13, pc, true)
 		var queued: int = game.queued_count(id)
 		if queued > 0:
-			var tag := Rect2(size.x - 62.0, 30.0, 44.0, 30.0)
+			var tag := Rect2(DW - 66.0, 30.0, 30.0 * UiSkin.aspect("badge_quantite"), 30.0)
 			UiSkin.panel(self, "badge_quantite", tag)
 			UiStyle.text(self, Vector2(tag.position.x, tag.position.y + 20.0), "x%d" % queued, 13, Color("f5e9c8"),
 					true, HORIZONTAL_ALIGNMENT_CENTER, tag.size.x)
 		if busy:
-			UiSkin.bar(self, Rect2(30, 120.0, size.x - 60.0, 12), float(p["progress"]))
+			UiSkin.bar(self, Rect2(30, 120.0, DW - 60.0, 12), float(p["progress"]))
 
 		var tc := UiStyle.TEXT if avail else Color(0.5, 0.52, 0.56)
 		var nm := GameData.name_of(id, game.faction_id)
 		var nsz := 14
-		while nsz > 9 and UiStyle.text_width(nm, nsz, true) > size.x - 50.0:
+		while nsz > 9 and UiStyle.text_width(nm, nsz, true) > DW - 50.0:
 			nsz -= 1 # les noms longs rétrécissent pour tenir dans la carte
-		UiStyle.text(self, Vector2(0, 111), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
+		UiStyle.text(self, Vector2(0, 111), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, DW)
 		if ready:
 			UiStyle.text(self, Vector2(0, 130), "Prêt : cliquer", 12, Color(0.5, 1.0, 0.7, 0.7 + 0.3 * pulse), true,
-					HORIZONTAL_ALIGNMENT_CENTER, size.x)
+					HORIZONTAL_ALIGNMENT_CENTER, DW)
 		elif not busy:
 			var rich: bool = game.can_afford(id)
 			var is_unit := GameData.UNITS.has(id)
@@ -1542,7 +1554,7 @@ class BuildIcon extends Control:
 					c2 = Color.WHITE if game.credits >= second else GameData.RED
 			var w1 := UiStyle.text_width(label, 13)
 			var w2 := UiStyle.text_width(l2, 13)
-			var x1 := (size.x - (w1 + w2 + 52.0)) * 0.5
+			var x1 := (DW - (w1 + w2 + 52.0)) * 0.5
 			var ia := Color.WHITE if avail else Color(1, 1, 1, 0.4)
 			UiSkin.image(self, i1, Rect2(x1, 117, 16, 16), ia)
 			UiStyle.text(self, Vector2(x1 + 20, 130), label, 13, c1)

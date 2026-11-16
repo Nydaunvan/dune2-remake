@@ -32,7 +32,7 @@ func set_skin(skin_name: String) -> void:
 	var tr := TextureRect.new()
 	tr.texture = UiSkin.tex(skin_name)
 	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tr.stretch_mode = TextureRect.STRETCH_SCALE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	tr.show_behind_parent = true
 	add_child(tr)
