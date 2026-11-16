@@ -1,6 +1,6 @@
 class_name GlassPanel
 extends Control
-## Panneau en verre dépoli (shader ui_glass). Le contenu dessiné par les
+## Panneau sombre aux coins arrondis (shader ui_panel). Le contenu dessiné par les
 ## classes filles apparaît au-dessus du fond.
 
 var bg := ColorRect.new()
@@ -8,14 +8,11 @@ var mat := ShaderMaterial.new()
 
 
 func _init(margin := 0.0, radius := 20.0,
-		accent_a := Color("00d9ff"), accent_b := Color("ff2fa6"), cut := 0.0) -> void:
+		_accent_a := Color("00d9ff"), _accent_b := Color("ff2fa6"), _cut := 0.0) -> void:
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	mat.shader = load("res://shaders/ui_glass.gdshader")
+	mat.shader = load("res://shaders/ui_panel.gdshader")
 	mat.set_shader_parameter("margin", margin)
-	mat.set_shader_parameter("radius", radius)
-	mat.set_shader_parameter("cut", cut)
-	mat.set_shader_parameter("accent_a", accent_a)
-	mat.set_shader_parameter("accent_b", accent_b)
+	mat.set_shader_parameter("radius", clampf(radius, 8.0, 12.0))
 	bg.color = Color.WHITE
 	bg.material = mat
 	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE

@@ -3,7 +3,8 @@ extends CanvasLayer
 ## Interface moderne : barre de ressources, panneau latéral en verre dépoli
 ## (radar, commandes, construction), notifications animées.
 
-const SIDEBAR_W := 360.0
+const SIDEBAR_W := 336.0
+const RADAR_SIZE := 236.0
 const MARGIN := 14.0
 const COMMANDS := [
 	["stop", "ARRÊT", true],
@@ -16,6 +17,8 @@ var game # le nœud principal (main.gd)
 var category := "building"
 var root: Control
 var sidebar: GlassPanel
+var radar_panel: GlassPanel
+var log_panel: GlassPanel
 var topbar: HudBar
 var radar: Radar
 var info_label: Label
@@ -44,6 +47,8 @@ func setup(p_game) -> void:
 func is_mouse_over_ui() -> bool:
 	var m := get_viewport().get_mouse_position()
 	return sidebar.get_global_rect().has_point(m) or topbar.get_global_rect().has_point(m) \
+			or radar_panel.get_global_rect().has_point(m) \
+			or (log_panel != null and log_panel.get_global_rect().has_point(m)) \
 			or (info_panel != null and info_panel.visible
 			and (info_panel.get_global_transform() * Rect2(Vector2.ZERO, info_panel.size)).has_point(m))
 
@@ -94,7 +99,7 @@ var event_log: EventLog
 
 func _build_objective() -> void:
 	objective_panel = ObjectivePanel.new(game)
-	objective_panel.position = Vector2(6, 100)
+	objective_panel.position = Vector2(MARGIN, 70)
 	objective_panel.size = Vector2(430, 76)
 	root.add_child(objective_panel)
 
@@ -108,27 +113,17 @@ func toggle_objectives() -> void:
 func _build_topbar() -> void:
 	topbar = HudBar.new()
 	topbar.game = game
-	topbar.position = Vector2(6, 6)
-	topbar.size = Vector2(1480, 80)
+	topbar.position = Vector2(MARGIN, 6)
+	topbar.size = Vector2(1260, 56)
 	root.add_child(topbar)
-	var guide_btn := PlateButton.new("GUIDE", 3)
-	guide_btn.font_size = 16
-	guide_btn.position = Vector2(1076, 12)
-	guide_btn.size = Vector2(122, 56)
-	guide_btn.pressed.connect(func() -> void: Guide.open(game, game.faction_id))
-	topbar.add_child(guide_btn)
-	var obj_btn := PlateButton.new("OBJECTIFS", 4)
-	obj_btn.font_size = 16
-	obj_btn.position = Vector2(1204, 12)
-	obj_btn.size = Vector2(142, 56)
-	obj_btn.pressed.connect(toggle_objectives)
-	topbar.add_child(obj_btn)
-	var menu_btn := PlateButton.new("MENU", 1)
-	menu_btn.font_size = 16
-	menu_btn.position = Vector2(1352, 12)
-	menu_btn.size = Vector2(112, 56)
-	menu_btn.pressed.connect(game.open_pause_menu)
-	topbar.add_child(menu_btn)
+	var x := 922.0
+	for def in [["Guide", func() -> void: Guide.open(game, game.faction_id)], ["Objectifs", toggle_objectives], ["Menu", game.open_pause_menu]]:
+		var fb := FlatButton.new(def[0])
+		fb.position = Vector2(x, 6)
+		fb.size = Vector2(100, 44)
+		fb.pressed.connect(def[1])
+		topbar.add_child(fb)
+		x += 108.0
 
 
 func _build_sidebar() -> void:
@@ -148,27 +143,38 @@ func _build_sidebar() -> void:
 	header.size = Vector2(SIDEBAR_W - 48.0, 34)
 	sidebar.add_child(header)
 
-	# Radar
+	# Radar : panneau flottant en bas à gauche (hors du dock de construction)
+	radar_panel = GlassPanel.new(0.0, 10.0)
+	radar_panel.anchor_top = 1.0
+	radar_panel.anchor_bottom = 1.0
+	radar_panel.offset_left = MARGIN
+	radar_panel.offset_right = MARGIN + RADAR_SIZE
+	radar_panel.offset_top = -MARGIN - RADAR_SIZE
+	radar_panel.offset_bottom = -MARGIN
+	root.add_child(radar_panel)
 	radar = Radar.new()
 	radar.game = game
 	radar.world_size = game.world_size
-	radar.position = Vector2(30, 52)
-	radar.size = Vector2(300, 300)
-	sidebar.add_child(radar)
+	radar.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	radar_panel.add_child(radar)
 
-	# Journal des événements (remplace les anciens boutons de commande, désormais dans l'encart d'unité)
+	# Journal des événements : sous les objectifs, à gauche
+	log_panel = GlassPanel.new(0.0, 10.0)
+	log_panel.position = Vector2(MARGIN, 160)
+	log_panel.size = Vector2(300, 116)
+	root.add_child(log_panel)
 	event_log = EventLog.new()
-	event_log.position = Vector2(24, 362)
-	event_log.size = Vector2(SIDEBAR_W - 48.0, 88)
-	sidebar.add_child(event_log)
+	event_log.position = Vector2(14, 0)
+	event_log.size = Vector2(272, 112)
+	log_panel.add_child(event_log)
 
 	# Onglets
-	var tabs := [["building", "BÂTIMENTS", GameData.CYAN], ["unit", "UNITÉS", GameData.MAGENTA]]
+	var tabs := [["building", "BÂTIMENTS", UiStyle.GOLD], ["unit", "UNITÉS", UiStyle.GOLD]]
 	for i in tabs.size():
 		var t := NeonButton.new(tabs[i][1])
 		t.accent = tabs[i][2]
 		t.active = (i == 0)
-		t.position = Vector2(24 + i * ((SIDEBAR_W - 48.0) / 2.0 + 4.0), 462)
+		t.position = Vector2(24 + i * ((SIDEBAR_W - 48.0) / 2.0 + 4.0), 60)
 		t.size = Vector2((SIDEBAR_W - 56.0) / 2.0, 38)
 		t.pressed.connect(_set_category.bind(tabs[i][0]))
 		sidebar.add_child(t)
@@ -181,8 +187,12 @@ func _build_sidebar() -> void:
 	icon_box.add_theme_constant_override("v_separation", 8)
 	icon_scroll = ScrollContainer.new()
 	icon_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	icon_scroll.position = Vector2(18, 512)
-	icon_scroll.size = Vector2(SIDEBAR_W - 26.0, 392)
+	icon_scroll.anchor_right = 1.0
+	icon_scroll.anchor_bottom = 1.0
+	icon_scroll.offset_left = 14.0
+	icon_scroll.offset_top = 110.0
+	icon_scroll.offset_right = -10.0
+	icon_scroll.offset_bottom = -96.0
 	icon_scroll.clip_contents = true
 	sidebar.add_child(icon_scroll)
 	icon_scroll.add_child(icon_box)
@@ -649,69 +659,99 @@ class HudBar extends Control:
 		for x: float in [14.0, size.x - 14.0]:
 			draw_colored_polygon(PackedVector2Array([Vector2(x, size.y * 0.5 - 6), Vector2(x + 4, size.y * 0.5), Vector2(x, size.y * 0.5 + 6), Vector2(x - 4, size.y * 0.5)]), GOLD_LINE)
 
-	func _resource(x: float, w: float, label: String, value: String, vcol: Color, glyph: String, gcol: Color,
+	const PH := 44.0 # hauteur des pastilles
+	const PY := 6.0
+
+	## Pastille arrondie : cadre sombre, icône, valeur et jauge fine en bas.
+	func _pill(x: float, w: float, col: Color, glyph: String) -> void:
+		UiStyle.frame(self, Rect2(x, PY, w, PH), 18.0, col, UiStyle.PANEL, 0.0, 0.0)
+		if glyph == "clock":
+			var c := Vector2(x + 24, PY + PH * 0.5)
+			draw_arc(c, 8.5, 0.0, TAU, 28, col, 1.8, true)
+			draw_line(c, c + Vector2(0, -6.0), col, 1.8, true)
+			draw_line(c, c + Vector2(4.5, 2.0), col, 1.8, true)
+		elif glyph != "":
+			UiStyle.glyph(self, glyph, Vector2(x + 24, PY + PH * 0.5), 15.0, col)
+
+	func _resource(x: float, w: float, _label: String, value: String, vcol: Color, glyph: String, gcol: Color,
 			cap: int, amount: int) -> void:
-		_slot(Rect2(x, 11, w, size.y - 22), gcol)
-		_medal(Vector2(x + 31, size.y * 0.5), gcol, glyph)
-		_tx(Vector2(x + 58, 28), label, 11, UiStyle.TEXT_DIM, true)
-		_tx(Vector2(x + 58, 56), value, 28, vcol)
-		var vw := UiStyle.text_width(value, 28)
+		_pill(x, w, gcol, glyph)
+		_tx(Vector2(x + 46, PY + 28), value, 21, vcol)
+		var vw := UiStyle.text_width(value, 21)
 		var full := amount >= cap
-		_tx(Vector2(x + 58 + vw + 7, 56), "/ %d" % cap, 14, GameData.RED if full else UiStyle.TEXT_DIM)
-		var fill := clampf(float(amount) / float(cap), 0.0, 1.0)
-		var lo := gcol.darkened(0.35)
-		var hi := gcol.lightened(0.2)
-		if fill > 0.95:
-			lo = GameData.RED.darkened(0.2)
-			hi = GameData.RED
-		elif fill > 0.8:
-			hi = GameData.AMBER
-		_gauge(Rect2(x + 58, 62, w - 74, 7), fill, lo, hi)
+		_tx(Vector2(x + 46 + vw + 6, PY + 28), "/ %d" % cap, 13, GameData.RED if full else UiStyle.TEXT_DIM)
+		var fill := clampf(float(amount) / float(maxi(cap, 1)), 0.0, 1.0)
+		var bc := GameData.RED if fill > 0.95 else (GameData.AMBER if fill > 0.8 else gcol)
+		UiStyle.seg_bar(self, Rect2(x + 14, PY + PH - 8, w - 28, 3), fill, bc)
 
 	func _draw() -> void:
 		if game == null:
 			return
-		_draw_frame()
 		# Solaris : le compteur glisse vers la valeur réelle et clignote vert/rouge
 		var diff: float = float(game.credits) - shown_credits
-		var col := GameData.GOLD
+		var col := UiStyle.GOLD
 		if absf(diff) > 1.0:
 			var k := clampf(absf(diff) / 200.0, 0.0, 1.0)
-			col = GameData.GOLD.lerp(Color("5dff9a") if diff > 0.0 else Color("ff5a4a"), k)
-		_resource(26, 238, "SOLARIS", str(int(round(shown_credits))), col, "credit", GameData.AMBER_HDR,
+			col = UiStyle.GOLD.lerp(Color("5dff9a") if diff > 0.0 else Color("ff5a4a"), k)
+		_resource(0, 214, "SOLARIS", str(int(round(shown_credits))), col, "credit", UiStyle.GOLD,
 				game.storage_cap("spice"), game.credits)
-		_resource(274, 238, "MINERAI", str(int(round(shown_ore))), GameData.ORE_BLUE, "ore", GameData.CYAN,
+		_resource(222, 214, "MINERAI", str(int(round(shown_ore))), GameData.ORE_BLUE, "ore", Color("8fb2e8"),
 				game.storage_cap("ore"), game.ore)
 
-		# Énergie : jauge lisse (consommation / production), bleu = large marge, rouge = seuil critique
+		# Énergie : consommation / production, vert = large marge, rouge = seuil critique
 		var prod: int = game.power_produced()
 		var used: int = game.power_used()
 		var ok := prod >= used
-		var load_col := _power_color(shown_load)
-		var ex := 522.0
-		_slot(Rect2(ex, 11, 272, size.y - 22), load_col)
-		_medal(Vector2(ex + 31, size.y * 0.5), load_col, "power")
-		_tx(Vector2(ex + 58, 28), "ÉNERGIE", 11, UiStyle.TEXT_DIM, true)
-		_tx(Vector2(ex + 58, 56), "%d" % used, 24, Color.WHITE if ok else GameData.RED)
-		var uw := UiStyle.text_width("%d" % used, 24)
-		_tx(Vector2(ex + 58 + uw + 6, 56), "/ %d" % prod, 15, UiStyle.TEXT_DIM)
-		_gauge(Rect2(ex + 58, 62, 198, 7), shown_load, _power_color(0.0), load_col)
+		var load_col := Color("6fd69a").lerp(GameData.RED, clampf((shown_load - 0.7) / 0.3, 0.0, 1.0))
+		_pill(444, 214, load_col, "power")
+		_tx(Vector2(444 + 46, PY + 28), "%d" % used, 21, Color.WHITE if ok else GameData.RED)
+		var uw := UiStyle.text_width("%d" % used, 21)
+		_tx(Vector2(444 + 46 + uw + 6, PY + 28), "/ %d" % prod, 13, UiStyle.TEXT_DIM)
+		UiStyle.seg_bar(self, Rect2(444 + 14, PY + PH - 8, 214 - 28, 3), shown_load, load_col)
 
 		# Temps
 		var t: float = game.game_time
-		var tx := 806.0
-		_slot(Rect2(tx, 11, 164, size.y - 22), UiStyle.GOLD)
-		_medal(Vector2(tx + 31, size.y * 0.5), UiStyle.GOLD, "clock")
-		_tx(Vector2(tx + 58, 28), "TEMPS", 11, UiStyle.TEXT_DIM, true)
-		_tx(Vector2(tx + 58, 57), "%02d:%02d:%02d" % [int(t / 3600.0), int(t / 60.0) % 60, int(t) % 60], 25, Color.WHITE)
+		_pill(666, 150, UiStyle.TEXT_DIM, "clock")
+		_tx(Vector2(666 + 46, PY + 28), "%02d:%02d:%02d" % [int(t / 3600.0), int(t / 60.0) % 60, int(t) % 60], 19, Color.WHITE)
 
 		# Images par seconde
-		var fx := 982.0
 		var fps := int(Engine.get_frames_per_second())
-		var fcol := GameData.GREEN if fps >= 45 else (GameData.AMBER if fps >= 25 else GameData.RED)
-		_slot(Rect2(fx, 11, 82, size.y - 22), fcol)
-		_tx(Vector2(fx + 16, 28), "FPS", 11, UiStyle.TEXT_DIM, true)
-		_tx(Vector2(fx + 16, 57), "%d" % fps, 25, fcol)
+		var fcol := Color("6fd69a") if fps >= 45 else (GameData.AMBER if fps >= 25 else GameData.RED)
+		_pill(824, 84, fcol, "")
+		_tx(Vector2(824 + 14, PY + 28), "%d" % fps, 19, fcol)
+		_tx(Vector2(824 + 14 + UiStyle.text_width("%d" % fps, 19) + 5, PY + 28), "fps", 12, UiStyle.TEXT_DIM)
+
+
+## Bouton plat aux coins arrondis (barre du haut).
+class FlatButton extends Control:
+	signal pressed
+	var text := ""
+	var accent: Color = UiStyle.GOLD
+	var _hover := false
+	var _press := 0.0
+
+	func _init(p_text: String) -> void:
+		text = p_text
+		mouse_filter = Control.MOUSE_FILTER_STOP
+		mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		mouse_entered.connect(func() -> void: _hover = true; queue_redraw())
+		mouse_exited.connect(func() -> void: _hover = false; queue_redraw())
+
+	func _process(delta: float) -> void:
+		if _press > 0.0:
+			_press = maxf(_press - delta * 5.0, 0.0)
+			queue_redraw()
+
+	func _gui_input(event: InputEvent) -> void:
+		if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+			_press = 1.0
+			pressed.emit()
+			accept_event()
+
+	func _draw() -> void:
+		var lit := maxf(0.7 if _hover else 0.0, _press)
+		UiStyle.frame(self, Rect2(Vector2.ZERO, size), 18.0, accent, UiStyle.PANEL, 0.0, lit)
+		UiStyle.text_center(self, Rect2(Vector2.ZERO, size), text, 14, UiStyle.GOLD if lit > 0.3 else UiStyle.TEXT, true)
 
 
 class SideHeader extends Control:
@@ -756,8 +796,8 @@ class InfoPanel extends GlassPanel:
 		game = p_game
 		anchor_top = 1.0
 		anchor_bottom = 1.0
-		offset_left = 16.0
-		offset_right = 16.0 + 800.0
+		offset_left = 16.0 + RADAR_SIZE + 10.0
+		offset_right = 16.0 + RADAR_SIZE + 10.0 + 800.0
 		offset_top = -296.0
 		offset_bottom = -16.0
 		# Cartouche compact : réduit vers son coin bas-gauche pour dégager la zone de jeu
@@ -1322,11 +1362,13 @@ class BuildIcon extends Control:
 
 	## Mention orange sous l'icône : à la ligne (2 lignes max.) dans la largeur de la carte.
 	func _card_note(s: String, fs: int) -> void:
-		var wl := UiStyle.wrap_lines(s, fs, size.x - 16.0, true)
+		var wl := UiStyle.wrap_lines(s, fs, size.x - 24.0, true)
 		var n := mini(wl.size(), 2)
-		var y0 := 84.0 - (n - 1) * 6.0
+		var h := 6.0 + n * 14.0
+		var back := Rect2(6, 22.0, size.x - 12.0, h)
+		draw_colored_polygon(UiStyle.chamfer(back, 10.0), Color(0.04, 0.03, 0.02, 0.82))
 		for i in n:
-			UiStyle.text(self, Vector2(0, y0 + i * 13.0), String(wl[i]), fs, GameData.AMBER, true,
+			UiStyle.text(self, Vector2(0, 22.0 + 15.0 + i * 14.0), String(wl[i]), fs, GameData.AMBER, true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 
 	func _draw() -> void:
@@ -1339,16 +1381,13 @@ class BuildIcon extends Control:
 		var pulse := 0.5 + 0.5 * sin(t * 5.0)
 
 		var fcol: Color = game.fdata["color"]
-		var accent: Color = fcol * 1.5 if avail else Color(0.4, 0.35, 0.5)
+		var accent: Color = UiStyle.GOLD if avail else Color(0.4, 0.35, 0.5)
 		accent.a = 1.0
 		if ready:
-			accent = GameData.GREEN
+			accent = Color("6fd69a")
 		var lit := maxf(hover_t, 0.35 + 0.65 * pulse if ready else 0.0)
-		var line := Color(accent.r, accent.g, accent.b, 0.45 + 0.55 * lit)
-		UiStyle.frame(self, Rect2(Vector2(2, 2), size - Vector2(4, 4)), 14.0, line, UiStyle.PANEL, lit * 0.8, lit * 0.6)
-		# Liseré de faction en haut
-		if avail:
-			draw_rect(Rect2(20, 6, size.x - 40.0, 2.0), Color(fcol.r, fcol.g, fcol.b, 0.7))
+		var busy_lit := 0.9 if busy else 0.0
+		UiStyle.frame(self, Rect2(Vector2(1, 1), size - Vector2(2, 2)), 16.0, accent, UiStyle.PANEL, 0.0, maxf(lit, busy_lit))
 
 		var c := Vector2(size.x * 0.5, 50.0 - hover_t * 2.0)
 		_draw_icon(c, avail)
@@ -1377,25 +1416,24 @@ class BuildIcon extends Control:
 		var queued: int = game.queued_count(id)
 		if queued > 0:
 			var tag := Rect2(size.x - 44.0, 12.0, 32.0, 20.0)
-			draw_colored_polygon(UiStyle.chamfer(tag, 6.0), Color(0.05, 0.03, 0.1, 0.95))
-			draw_polyline(UiStyle.closed(UiStyle.chamfer(tag, 6.0)), UiStyle.GOLD, 1.6, true)
-			UiStyle.text(self, Vector2(tag.position.x, tag.position.y + 15.0), "x%d" % queued, 13, Color.WHITE,
+			draw_colored_polygon(UiStyle.chamfer(tag, 8.0), UiStyle.GOLD)
+			UiStyle.text(self, Vector2(tag.position.x, tag.position.y + 15.0), "x%d" % queued, 13, Color("2a1c00"),
 					true, HORIZONTAL_ALIGNMENT_CENTER, tag.size.x)
 		if busy:
-			draw_arc(c, 38.0, 0.0, TAU, 48, Color(1, 1, 1, 0.12), 4.0, true)
+			draw_arc(c, 38.0, 0.0, TAU, 48, Color(1, 1, 1, 0.1), 3.0, true)
 			draw_arc(c, 38.0, -PI / 2.0, -PI / 2.0 + TAU * float(p["progress"]), 48,
-					GameData.AMBER_HDR, 4.0, true)
+					UiStyle.GOLD, 3.0, true)
 		elif ready:
-			draw_arc(c, 38.0, 0.0, TAU, 48, GameData.GREEN, 4.0, true)
+			draw_arc(c, 38.0, 0.0, TAU, 48, Color("6fd69a"), 3.0, true)
 
 		var tc := UiStyle.TEXT if avail else Color(0.5, 0.45, 0.55)
-		var nm := GameData.name_of(id, game.faction_id).to_upper()
+		var nm := GameData.name_of(id, game.faction_id)
 		var nsz := 12
 		while nsz > 8 and UiStyle.text_width(nm, nsz, true) > size.x - 6.0:
 			nsz -= 1 # les noms longs rétrécissent pour tenir dans la carte
 		UiStyle.text(self, Vector2(0, 104), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		if ready:
-			UiStyle.text(self, Vector2(0, 122), "PRÊT — CLIC", 12, Color(0.5, 1.0, 0.7, 0.6 + 0.4 * pulse), true,
+			UiStyle.text(self, Vector2(0, 122), "Prêt : cliquer", 12, Color(0.5, 1.0, 0.7, 0.7 + 0.3 * pulse), true,
 					HORIZONTAL_ALIGNMENT_CENTER, size.x)
 		else:
 			var rich: bool = game.can_afford(id)

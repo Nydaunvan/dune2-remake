@@ -1,7 +1,6 @@
 class_name UiStyle
-## Langage visuel de l'interface « sietch-tech » : panneaux obsidienne aux coins
-## coupés (haut-gauche et bas-droit), filets dorés, jauges segmentées, typographie
-## espacée en capitales. Tout est dessiné par le code.
+## Langage visuel de l'interface : panneaux sombres aux coins arrondis, filets fins, une seule couleur
+## d'accent (l'or), jauges lisses, libellés en minuscules avec majuscule initiale. Tout est dessiné par le code.
 
 const GOLD := Color("ffcf5a")
 const GOLD_DIM := Color("b98a2e")
@@ -58,8 +57,8 @@ static func title_font() -> Font:
 	if _title == null:
 		_title = FontVariation.new()
 		_title.base_font = ThemeDB.fallback_font
-		_title.spacing_glyph = 2
-		_title.variation_embolden = 0.35
+		_title.spacing_glyph = 0
+		_title.variation_embolden = 0.28
 	return _title
 
 
@@ -113,19 +112,18 @@ static func body_font() -> Font:
 	return _body
 
 
-## Polygone dont les coins haut-gauche et bas-droit sont coupés.
-static func chamfer(r: Rect2, cut: float, both := false) -> PackedVector2Array:
+## Polygone aux coins arrondis (le nom « chamfer » est conservé : tout le dessin de l'interface l'utilise).
+## `cut` donne l'ordre de grandeur du rayon.
+static func chamfer(r: Rect2, cut: float, _both := false) -> PackedVector2Array:
+	var rad := clampf(cut * 0.55, 3.0, minf(10.0, minf(r.size.x, r.size.y) * 0.5))
 	var p := r.position
 	var e := r.end
-	var pts := PackedVector2Array([
-		Vector2(p.x + cut, p.y), Vector2(e.x, p.y),
-		Vector2(e.x, e.y - cut), Vector2(e.x - cut, e.y),
-		Vector2(p.x, e.y), Vector2(p.x, p.y + cut)])
-	if both:
-		pts = PackedVector2Array([
-			Vector2(p.x + cut, p.y), Vector2(e.x - cut, p.y), Vector2(e.x, p.y + cut),
-			Vector2(e.x, e.y - cut), Vector2(e.x - cut, e.y), Vector2(p.x + cut, e.y),
-			Vector2(p.x, e.y - cut), Vector2(p.x, p.y + cut)])
+	var pts := PackedVector2Array()
+	var cs := [Vector2(e.x - rad, p.y + rad), Vector2(e.x - rad, e.y - rad), Vector2(p.x + rad, e.y - rad), Vector2(p.x + rad, p.y + rad)]
+	for k in 4:
+		for i in 6:
+			var a := -PI * 0.5 + (k + i / 5.0) * PI * 0.5
+			pts.append(cs[k] + Vector2.from_angle(a) * rad)
 	return pts
 
 
@@ -135,40 +133,43 @@ static func closed(pts: PackedVector2Array) -> PackedVector2Array:
 	return c
 
 
-## Cadre complet : fond, filet principal, lueur et petites équerres dorées aux coins.
-static func frame(ci: CanvasItem, r: Rect2, cut: float, line: Color, fill: Color = PANEL, glow := 0.0, lit := 0.0) -> void:
+## Cadre : fond sombre, filet fin. `lit` (0..1) éclaire le filet au survol ou à la sélection.
+static func frame(ci: CanvasItem, r: Rect2, cut: float, line: Color, fill: Color = PANEL, _glow := 0.0, lit := 0.0) -> void:
 	var pts := chamfer(r, cut)
 	var fc := fill.lerp(PANEL_HI, lit)
-	fc.a *= 0.5 # fond translucide
+	fc.a = 0.9
 	ci.draw_colored_polygon(pts, fc)
-	if glow > 0.0:
-		ci.draw_polyline(closed(pts), Color(line.r, line.g, line.b, 0.18 * glow), 7.0, true)
-		ci.draw_polyline(closed(pts), Color(line.r, line.g, line.b, 0.3 * glow), 4.0, true)
-	ci.draw_polyline(closed(pts), line, 1.6, true)
-	# équerres dorées
-	var tl := r.position + Vector2(cut, 0)
-	ci.draw_line(tl, tl + Vector2(14, 0), GOLD, 2.4, true)
-	ci.draw_line(r.position + Vector2(0, cut), r.position + Vector2(0, cut + 14), GOLD, 2.4, true)
-	var br := r.end - Vector2(cut, 0)
-	ci.draw_line(br, br - Vector2(14, 0), GOLD, 2.4, true)
-	ci.draw_line(r.end - Vector2(0, cut), r.end - Vector2(0, cut + 14), GOLD, 2.4, true)
+	var lc := Color(1, 1, 1, 0.14).lerp(Color(line.r, line.g, line.b, 0.95), clampf(lit, 0.0, 1.0))
+	ci.draw_polyline(closed(pts), lc, 1.0 + lit * 0.6, true)
+
+
+## « ATTAQUER » → « Attaquer » : les libellés historiques sont écrits en capitales, on les affiche en minuscules
+## avec une majuscule initiale (les sigles de trois lettres ou moins restent tels quels).
+static func casef(s: String) -> String:
+	if s.length() <= 3 or s != s.to_upper() or s == s.to_lower():
+		return s
+	return s.substr(0, 1) + s.substr(1).to_lower()
 
 
 static func text(ci: CanvasItem, pos: Vector2, s: String, size: int, col: Color, title := false,
 		align := HORIZONTAL_ALIGNMENT_LEFT, width := -1.0) -> void:
 	var f := title_font() if title else body_font()
-	ci.draw_string_outline(f, pos, s, align, width, size, 4, Color(0, 0, 0, 0.75))
+	if title:
+		s = casef(s)
+	ci.draw_string(f, pos + Vector2(0, 1.2), s, align, width, size, Color(0, 0, 0, 0.6))
 	ci.draw_string(f, pos, s, align, width, size, col)
 
 
 ## Texte centré dans un rectangle, horizontalement et verticalement (hauteur de capitales si `caps`).
 static func text_center(ci: CanvasItem, r: Rect2, s: String, size: int, col: Color, title := false, caps := false) -> void:
 	var f := title_font() if title else body_font()
+	if title:
+		s = casef(s)
 	var w := f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x
 	var cy := r.position.y + r.size.y * 0.5
 	var base := cy + (size * 0.36 if caps else (f.get_ascent(size) - f.get_descent(size)) * 0.5)
 	var pos := Vector2(r.position.x + (r.size.x - w) * 0.5, base)
-	ci.draw_string_outline(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, 4, Color(0, 0, 0, 0.75))
+	ci.draw_string(f, pos + Vector2(0, 1.2), s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, Color(0, 0, 0, 0.6))
 	ci.draw_string(f, pos, s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size, col)
 
 
@@ -215,29 +216,30 @@ static func para(ci: CanvasItem, pos: Vector2, s: String, size: int, col: Color,
 
 static func text_width(s: String, size: int, title := false) -> float:
 	var f := title_font() if title else body_font()
+	if title:
+		s = casef(s)
 	return f.get_string_size(s, HORIZONTAL_ALIGNMENT_LEFT, -1.0, size).x
 
 
-## Jauge segmentée (cases allumées jusqu'à la valeur).
-static func seg_bar(ci: CanvasItem, r: Rect2, frac: float, col: Color, cell := 9.0, gap := 3.0) -> void:
-	var n := int(floor((r.size.x + gap) / (cell + gap)))
-	var lit := int(round(clampf(frac, 0.0, 1.0) * n))
-	for i in n:
-		var x := r.position.x + i * (cell + gap)
-		var c := col if i < lit else Color(1, 1, 1, 0.08)
-		ci.draw_rect(Rect2(x, r.position.y, cell, r.size.y), c)
-		if i < lit:
-			ci.draw_rect(Rect2(x, r.position.y, cell, 2.0), Color(1, 1, 1, 0.35))
+## Jauge lisse (barre arrondie remplie jusqu'à la valeur).
+static func seg_bar(ci: CanvasItem, r: Rect2, frac: float, col: Color, _cell := 9.0, _gap := 3.0) -> void:
+	var rr := Rect2(r.position, Vector2(r.size.x, maxf(r.size.y, 4.0)))
+	var back := StyleBoxFlat.new()
+	back.bg_color = Color(1, 1, 1, 0.12)
+	back.set_corner_radius_all(int(rr.size.y * 0.5))
+	ci.draw_style_box(back, rr)
+	if frac > 0.003:
+		var fb := StyleBoxFlat.new()
+		fb.bg_color = col
+		fb.set_corner_radius_all(int(rr.size.y * 0.5))
+		ci.draw_style_box(fb, Rect2(rr.position, Vector2(maxf(rr.size.y, rr.size.x * clampf(frac, 0.0, 1.0)), rr.size.y)))
 
 
-## Titre de section : libellé, filet et losange.
+## Titre de section : libellé et filet fin.
 static func section(ci: CanvasItem, pos: Vector2, w: float, label: String, accent: Color) -> void:
-	ci.draw_colored_polygon(PackedVector2Array([
-		pos + Vector2(0, -5), pos + Vector2(5, 0), pos + Vector2(0, 5), pos + Vector2(-5, 0)]), GOLD)
-	var f := title_font()
-	var tw := f.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1.0, 13).x
-	text(ci, pos + Vector2(12, 5), label, 13, accent, true)
-	ci.draw_line(pos + Vector2(12 + tw + 10, 0), pos + Vector2(w, 0), Color(accent.r, accent.g, accent.b, 0.4), 1.2, true)
+	var tw := text_width(label, 13, true)
+	text(ci, pos + Vector2(0, 5), label, 13, TEXT_DIM, true)
+	ci.draw_line(pos + Vector2(tw + 10, 0), pos + Vector2(w, 0), Color(accent.r, accent.g, accent.b, 0.22), 1.0, true)
 
 
 ## Petits pictogrammes (arrêt, déplacement, attaque, vente, ressources).

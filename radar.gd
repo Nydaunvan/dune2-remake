@@ -23,12 +23,10 @@ func _draw() -> void:
 	var r := minf(size.x, size.y) / 2.0 - 16.0
 	map_rect = Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)
 	var t := Time.get_ticks_msec() / 1000.0
-	var acc: Color = GameData.CYAN
+	var acc: Color = UiStyle.GOLD
 
 	# Halo diffus et fond « verre » sombre
-	for k in 6:
-		draw_circle(c, r + 18.0 - k * 2.5, Color(acc.r, acc.g, acc.b, 0.025 + k * 0.012))
-	draw_circle(c, r + 4.0, Color(0.03, 0.02, 0.07, 0.96))
+	draw_circle(c, r + 4.0, Color(0.05, 0.04, 0.03, 0.96))
 
 	# Carte découpée en disque + brouillard
 	var pts := PackedVector2Array()
@@ -98,8 +96,8 @@ func _draw() -> void:
 	for k in 22:
 		var a := a0 - k * 0.04
 		draw_line(c, c + Vector2.from_angle(a) * r,
-				Color(acc.r, acc.g, acc.b, (1.0 - k / 22.0) * 0.22), 3.0, true)
-	draw_line(c, c + Vector2.from_angle(a0) * r, Color(acc.r, acc.g, acc.b, 0.55), 1.2, true)
+				Color(acc.r, acc.g, acc.b, (1.0 - k / 22.0) * 0.12), 3.0, true)
+	draw_line(c, c + Vector2.from_angle(a0) * r, Color(acc.r, acc.g, acc.b, 0.35), 1.2, true)
 
 	# Cadre de caméra à coins marqués
 	var vp: Vector2 = game.get_viewport_rect().size / game.camera.zoom
@@ -115,20 +113,9 @@ func _draw() -> void:
 		draw_line(corner[0], corner[0] + corner[1] * cl, Color.WHITE, 2.0)
 		draw_line(corner[0], corner[0] + corner[2] * cl, Color.WHITE, 2.0)
 
-	# Anneau fin, liseré intérieur et graduations
+	# Anneau fin
 	draw_arc(c, r + 1.0, 0.0, TAU, 128, Color(0, 0, 0, 0.6), 3.0, true)
-	draw_arc(c, r + 4.0, 0.0, TAU, 128, Color(acc.r, acc.g, acc.b, 0.95), 2.0, true)
-	draw_arc(c, r + 9.0, 0.0, TAU, 128, Color(1, 1, 1, 0.12), 1.0, true)
-	for i in 72:
-		var a := TAU * i / 72.0
-		var major := i % 18 == 0
-		var l := 8.0 if major else (4.0 if i % 6 == 0 else 2.0)
-		draw_line(c + Vector2.from_angle(a) * (r + 10.0),
-				c + Vector2.from_angle(a) * (r + 10.0 + l),
-				Color(acc.r, acc.g, acc.b, 0.8) if major else Color(1, 1, 1, 0.3), 1.5 if major else 1.0, true)
-	# Repère nord
-	var nf := ThemeDB.fallback_font
-	draw_string(nf, Vector2(c.x - 4.0, 11.0), "N", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color(1, 1, 1, 0.85))
+	draw_arc(c, r + 3.0, 0.0, TAU, 128, Color(acc.r, acc.g, acc.b, 0.7), 1.5, true)
 
 
 func _team_color(team: int) -> Color:
