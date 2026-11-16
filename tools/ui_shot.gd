@@ -6,6 +6,7 @@ var started := -1
 func _initialize() -> void:
 	GameSession.faction = OS.get_environment("FACTION") if OS.has_environment("FACTION") else "solis"
 	GameSession.mode = "skirmish"
+	GameSession.instant_bases = OS.has_environment("BASE")
 	main = load("res://main.tscn").instantiate()
 	root.add_child(main)
 func _process(_d: float) -> bool:
@@ -14,7 +15,13 @@ func _process(_d: float) -> bool:
 		return false
 	if started < 0:
 		started = f
-	if f - started == 90:
+	if OS.has_environment("SELECT") and f - started == 70:
+		for b in main.buildings:
+			if b.team == 0 and b.id == OS.get_environment("SELECT"):
+				main.selected_building = b
+				main.camera.position = b.world_center()
+				break
+	if f - started == 110:
 		var out := OS.get_environment("OUT") if OS.has_environment("OUT") else "/tmp/shots/ui.png"
 		root.get_viewport().get_texture().get_image().save_png(out)
 		print("capture ", out)

@@ -146,9 +146,7 @@ static func frame(ci: CanvasItem, r: Rect2, cut: float, line: Color, fill: Color
 ## « ATTAQUER » → « Attaquer » : les libellés historiques sont écrits en capitales, on les affiche en minuscules
 ## avec une majuscule initiale (les sigles de trois lettres ou moins restent tels quels).
 static func casef(s: String) -> String:
-	if s.length() <= 3 or s != s.to_upper() or s == s.to_lower():
-		return s
-	return s.substr(0, 1) + s.substr(1).to_lower()
+	return s
 
 
 static func text(ci: CanvasItem, pos: Vector2, s: String, size: int, col: Color, title := false,

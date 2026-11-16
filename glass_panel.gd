@@ -24,3 +24,20 @@ func _init(margin := 0.0, radius := 20.0,
 
 func _on_resized() -> void:
 	mat.set_shader_parameter("rect_size", size)
+
+
+## Remplace le fond sombre par un panneau texturé du skin de faction (NinePatch).
+func set_skin(skin_name: String) -> void:
+	bg.visible = false
+	var np := NinePatchRect.new()
+	np.texture = UiSkin.tex(skin_name)
+	var m: Array = UiSkin.MARGINS.get(skin_name, [24, 24, 24, 24])
+	np.patch_margin_left = m[0]
+	np.patch_margin_top = m[1]
+	np.patch_margin_right = m[2]
+	np.patch_margin_bottom = m[3]
+	np.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	np.show_behind_parent = true
+	add_child(np)
+	move_child(np, 0)
+	np.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

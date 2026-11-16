@@ -16,14 +16,18 @@ func _process(_delta: float) -> void:
 	queue_redraw()
 
 
+const RADIUS := 0.395 # rayon de la carte (fraction de la taille), à l'intérieur du cadre octogonal
+
+
 func _draw() -> void:
 	if game == null:
 		return
+	UiSkin.image(self, "fond_radar", Rect2(Vector2.ZERO, size).grow(-size.x * 0.07))
 	var c := size / 2.0
-	var r := minf(size.x, size.y) / 2.0 - 16.0
+	var r := minf(size.x, size.y) * RADIUS
 	map_rect = Rect2(c - Vector2(r, r), Vector2(r, r) * 2.0)
 	var t := Time.get_ticks_msec() / 1000.0
-	var acc: Color = UiStyle.GOLD
+	var acc: Color = UiSkin.accent
 
 	# Halo diffus et fond « verre » sombre
 	draw_circle(c, r + 4.0, Color(0.05, 0.04, 0.03, 0.96))
@@ -115,7 +119,8 @@ func _draw() -> void:
 
 	# Anneau fin
 	draw_arc(c, r + 1.0, 0.0, TAU, 128, Color(0, 0, 0, 0.6), 3.0, true)
-	draw_arc(c, r + 3.0, 0.0, TAU, 128, Color(acc.r, acc.g, acc.b, 0.7), 1.5, true)
+	draw_arc(c, r + 2.0, 0.0, TAU, 128, Color(acc.r, acc.g, acc.b, 0.5), 1.0, true)
+	UiSkin.image(self, "cadre_radar", Rect2(Vector2.ZERO, size))
 
 
 func _team_color(team: int) -> Color:
