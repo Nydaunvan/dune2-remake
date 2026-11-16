@@ -4,7 +4,6 @@ extends CanvasLayer
 ## (radar, commandes, construction), notifications animées.
 
 const SIDEBAR_W := 540.0
-const RADAR_W := 340.0
 const MARGIN := 12.0
 const TOPBAR_H := 96.0
 const CARD_W := 190.0
@@ -153,16 +152,17 @@ func _build_sidebar() -> void:
 	sidebar.add_child(header)
 
 	# Radar : cadre du kit en bas à gauche, carte dans sa zone intérieure
-	var rh := RADAR_W / UiSkin.aspect("radar")
+	radar_w = 260.0 if _solis_compact() else 340.0
+	var rh := radar_w / UiSkin.aspect("radar")
 	radar_panel = ArtFrame.new("radar")
 	radar_panel.anchor_top = 1.0
 	radar_panel.anchor_bottom = 1.0
 	radar_panel.offset_left = 6.0
-	radar_panel.offset_right = 6.0 + RADAR_W
+	radar_panel.offset_right = 6.0 + radar_w
 	radar_panel.offset_top = -rh - 6.0
 	radar_panel.offset_bottom = -6.0
 	root.add_child(radar_panel)
-	var ri := UiSkin.inner("radar", Rect2(Vector2.ZERO, Vector2(RADAR_W, rh)))
+	var ri := UiSkin.inner("radar", Rect2(Vector2.ZERO, Vector2(radar_w, rh)))
 	radar = Radar.new()
 	radar.game = game
 	radar.world_size = game.world_size
@@ -171,17 +171,8 @@ func _build_sidebar() -> void:
 	radar.size = ri.size
 	radar_panel.add_child(radar)
 
-	# Journal des événements : sous les objectifs, à gauche
-	log_panel = GlassPanel.new(0.0, 4.0)
-	log_panel.set_skin("panneau_journal")
-	log_panel.position = Vector2(MARGIN, 200)
-	log_panel.size = UiSkin.outer_for("panneau_journal", Vector2(330, 118))
-	root.add_child(log_panel)
-	var li := UiSkin.inner("panneau_journal", Rect2(Vector2.ZERO, log_panel.size))
-	event_log = EventLog.new()
-	event_log.position = li.position
-	event_log.size = li.size
-	log_panel.add_child(event_log)
+	if not _solis_compact():
+		_build_log()
 
 	# Onglets
 	var tabs := [["building", "BÂTIMENTS"], ["unit", "UNITÉS"]]
@@ -228,11 +219,30 @@ func _build_sidebar() -> void:
 
 
 var card_scale := 0.85
+var radar_w := 340.0
+
+
+## Maison Solis : les objectifs prennent le cadre du journal, qui disparaît ; carte plus petite.
+func _solis_compact() -> bool:
+	return UiSkin.dir == "solis"
+
+
+func _build_log() -> void:
+	log_panel = GlassPanel.new(0.0, 4.0)
+	log_panel.set_skin("panneau_journal")
+	log_panel.position = Vector2(MARGIN, 200)
+	log_panel.size = UiSkin.outer_for("panneau_journal", Vector2(330, 118))
+	root.add_child(log_panel)
+	var li := UiSkin.inner("panneau_journal", Rect2(Vector2.ZERO, log_panel.size))
+	event_log = EventLog.new()
+	event_log.position = li.position
+	event_log.size = li.size
+	log_panel.add_child(event_log)
 
 
 ## Cadre de sélection : bandeau du kit en bas, avec emplacement de portrait intégré.
 func _build_selection() -> void:
-	var x0 := RADAR_W + 14.0
+	var x0 := radar_w + 14.0
 	var fw := 1920.0 - SIDEBAR_W - 8.0 - x0
 	var fh := minf(fw / UiSkin.aspect("panneau_selection") * 1.3, 420.0)
 	sel_frame = ArtFrame.new("panneau_selection")
@@ -290,8 +300,8 @@ func _rebuild_icons() -> void:
 func _process(_delta: float) -> void:
 	if game == null:
 		return
-	var ly := objective_panel.position.y + (objective_panel.size.y + 6.0 if objective_panel.visible else 0.0)
-	log_panel.position.y = ly
+	if log_panel != null:
+		log_panel.position.y = objective_panel.position.y + (objective_panel.size.y + 6.0 if objective_panel.visible else 0.0)
 	if game.placing_id != "":
 		info_label.text = "Clic gauche : poser le bâtiment\nClic droit ou Échap : annuler"
 	elif game.command_mode == "move":
@@ -522,7 +532,7 @@ class EventLog extends Control:
 
 
 class ObjectivePanel extends Control:
-	const ART := "panneau_objectifs"
+	var ART := "panneau_objectifs"
 	const CW := 300.0 # largeur de contenu
 	var game
 	var pulse := 0.0
@@ -549,6 +559,8 @@ class ObjectivePanel extends Control:
 
 	func _init(p_game) -> void:
 		game = p_game
+		if UiSkin.dir == "solis":
+			ART = "panneau_journal"
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
