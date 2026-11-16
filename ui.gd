@@ -222,9 +222,9 @@ var card_scale := 0.85
 var radar_w := 340.0
 
 
-## Maison Solis : les objectifs prennent le cadre du journal, qui disparaît ; carte plus petite.
+## Solis et Kharn : les objectifs prennent le cadre du journal, qui disparaît ; carte plus petite.
 func _solis_compact() -> bool:
-	return UiSkin.dir == "solis"
+	return UiSkin.dir == "solis" or UiSkin.dir == "kharn"
 
 
 func _build_log() -> void:
@@ -245,6 +245,9 @@ func _build_selection() -> void:
 	var x0 := radar_w + 14.0
 	var fw := 1920.0 - SIDEBAR_W - 8.0 - x0
 	var fh := minf(fw / UiSkin.aspect("panneau_selection") * 1.3, 420.0)
+	if _solis_compact():
+		fw *= 0.85 # cadre réduit, proportions d'origine
+		fh = fw / UiSkin.aspect("panneau_selection")
 	sel_frame = ArtFrame.new("panneau_selection")
 	sel_frame.anchor_top = 1.0
 	sel_frame.anchor_bottom = 1.0
@@ -559,7 +562,7 @@ class ObjectivePanel extends Control:
 
 	func _init(p_game) -> void:
 		game = p_game
-		if UiSkin.dir == "solis":
+		if UiSkin.dir == "solis" or UiSkin.dir == "kharn":
 			ART = "panneau_journal"
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
