@@ -186,7 +186,7 @@ func _build_sidebar() -> void:
 		tab_buttons.append(t)
 
 	# Cartes de production : deux colonnes, réduites pour tenir dans la colonne
-	card_cols = 2 # deux cartes côte à côte pour toutes les factions
+	card_cols = 3 # images seules : trois cartes par ligne pour gagner de la place
 	card_slot_w = (inn.size.x - 6.0 * (card_cols - 1)) / card_cols
 	card_scale = 1.0
 	UiSkin.card_w = card_slot_w
@@ -221,7 +221,7 @@ func _build_sidebar() -> void:
 
 var card_scale := 0.85
 var sidebar_w := 540.0
-var card_cols := 2
+var card_cols := 3
 var card_slot_w := 160.0
 var radar_w := 340.0
 
@@ -1416,20 +1416,7 @@ class BuildIcon extends Control:
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		if p_id == "":
 			return
-		var d := GameData.def(id)
-		var tip := "%s — %s" % [GameData.name_of(id, game.faction_id), game.cost_label(id)]
-		if not GameData.UNITS.has(id) and not d.get("wall", false):
-			var pw: int = int(d.get("power", 0))
-			tip += "\nÉnergie : " + ("produit +%d" % pw if pw > 0 else ("consomme %d" % -pw if pw < 0 else "aucune consommation"))
-			var up := GameData.upgrade_power(id)
-			if up > 0 and GameData.can_upgrade(id):
-				tip += " (+%d par niveau)" % up
-		if GameData.desc_of(id, game.faction_id) != "":
-			tip += "\n" + GameData.desc_of(id, game.faction_id)
-		var names := GameData.req_names(d)
-		if not names.is_empty():
-			tip += "\nNécessite : " + ", ".join(names)
-		tooltip_text = UiStyle.wrap_text(tip, 14, 360.0)
+		tooltip_text = " "
 		mouse_entered.connect(func() -> void: _hover = true)
 		mouse_exited.connect(func() -> void: _hover = false)
 
@@ -1509,45 +1496,12 @@ class BuildIcon extends Control:
 			vtint = Color(1.25, 1.2, 1.0)
 		UiSkin.panel(self, tn, Rect2(Vector2.ZERO, cs), vtint)
 
-		# Tout le contenu reste dans la zone intérieure du cadre
+		# Seule l'image du bâtiment / véhicule est dessinée ; les détails sont dans l'infobulle.
 		var inn := UiSkin.inner("vignette_normal", Rect2(Vector2.ZERO, cs))
-		var fs := clampi(int(inn.size.y * 0.2), 9, 14)
-		var isz := float(fs) + 2.0
-		var cx := inn.get_center().x
-		var ia := Color.WHITE if avail else Color(1, 1, 1, 0.45)
-		var items := _cost_items(avail)
-		var two_rows := _row_width(items, fs, isz) > inn.size.x - 4.0
-		var base2 := inn.end.y - 2.0 # ligne la plus basse
-		var base1 := base2 - (fs + 3.0 if two_rows else 0.0) # ligne de coût principale
-		var name_base := base1 - fs - 3.0
-		var icon_top := inn.position.y + 1.0
-		var icon_h := maxf(name_base - fs - icon_top - 1.0, 10.0)
-		fit = Vector2(inn.size.x * 0.92, icon_h)
-		_draw_icon(Vector2(cx, icon_top + icon_h * 0.5 - hover_t * 1.5), avail)
+		fit = inn.size * 0.92
+		_draw_icon(inn.get_center() - Vector2(0, hover_t * 1.5), avail)
 
-		# Mentions en haut de la zone (niveau, verrouillage, faction, énergie manquante)
-		var note_fs := maxi(fs - 1, 9)
-		var note := ""
-		var note_col := GameData.AMBER
-		if game.unit_level_block(id) != "" and (GameData.UNITS.has(id) or game.is_unlocked(id)):
-			note = String(game.unit_level_block(id))
-		elif GameData.UNITS.has(id) and not avail:
-			note = "Bâtiment requis"
-		if not GameData.UNITS.has(id) and not game.is_unlocked(id):
-			note = "Chantier niv. %d" % game.chantier_needed(id) if game.mission.is_empty() \
-					else "Mission %d" % Campaign.mission_for_unlock(game.faction_id, int(d.get("unlock", 0)))
-		elif avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
-			note = "ÉNERGIE"
-			note_col = GameData.RED
-		elif d.has("faction") and not GameData.UNITS.has(id) and note == "":
-			note = "FACTION"
-			note_col = game.fdata["color"] * 1.5
-		if note != "":
-			var wl := UiStyle.wrap_lines(note, note_fs, inn.size.x - 6.0, true)
-			for i in mini(wl.size(), 2):
-				UiStyle.text_o(self, Vector2(inn.position.x, inn.position.y + note_fs + 1.0 + i * (note_fs + 1.0)),
-						String(wl[i]), note_fs, note_col, true, HORIZONTAL_ALIGNMENT_CENTER, inn.size.x)
-
+		var fs := 12
 		var queued: int = game.queued_count(id)
 		if queued > 0:
 			var bs := float(fs) + 8.0
@@ -1555,26 +1509,37 @@ class BuildIcon extends Control:
 			UiSkin.panel(self, "badge_quantite", tag)
 			UiStyle.text_o(self, Vector2(tag.position.x, tag.position.y + bs * 0.72), "x%d" % queued, maxi(fs - 2, 8),
 					Color("f5e9c8"), true, HORIZONTAL_ALIGNMENT_CENTER, tag.size.x)
-
-		var tc := Color(0.96, 0.95, 0.9) if avail else Color(0.62, 0.64, 0.68)
-		var nm := GameData.name_of(id, game.faction_id)
-		var nsz := fs + 1
-		while nsz > 7 and UiStyle.text_width(nm, nsz, true) > inn.size.x - 2.0:
-			nsz -= 1 # les noms longs rétrécissent pour tenir dans le cadre
-		UiStyle.text_o(self, Vector2(inn.position.x, name_base), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, inn.size.x)
-
 		if busy:
-			UiSkin.bar(self, Rect2(inn.position.x + 2.0, base2 - fs, inn.size.x - 4.0, fs + 2.0), float(p["progress"]))
+			UiSkin.bar(self, Rect2(inn.position.x + 2.0, inn.end.y - fs, inn.size.x - 4.0, fs), float(p["progress"]))
 		elif ready:
-			UiStyle.text_o(self, Vector2(inn.position.x, base2), "Prêt : cliquer", fs, Color(0.5, 1.0, 0.7, 0.75 + 0.25 * pulse), true,
+			UiStyle.text_o(self, Vector2(inn.position.x, inn.end.y - 2.0), "Prêt", fs, Color(0.5, 1.0, 0.7, 0.75 + 0.25 * pulse), true,
 					HORIZONTAL_ALIGNMENT_CENTER, inn.size.x)
-		elif two_rows:
-			_draw_row(items.slice(0, 2), cx, base1, fs, isz, ia)
-			_draw_row(items.slice(2), cx, base2, fs, isz, ia)
-		else:
-			_draw_row(items, cx, base2, fs, isz, ia)
 
-	## Bâtiments débloqués : on affiche le modèle 3D cuit (ou un bloc simple sans affichage).
+	## Infobulle : nom, prix, consommation électrique, prérequis et raison d'un éventuel blocage.
+	func _get_tooltip(_at: Vector2) -> String:
+		var d := GameData.def(id)
+		var is_unit := GameData.UNITS.has(id)
+		var tip := "%s\nPrix : %s" % [GameData.name_of(id, game.faction_id), game.cost_label(id)]
+		if not is_unit and not d.get("wall", false):
+			var pw: int = int(d.get("power", 0))
+			tip += "\nÉnergie : " + ("produit +%d" % pw if pw > 0 else ("consomme %d" % -pw if pw < 0 else "aucune consommation"))
+			var up := GameData.upgrade_power(id)
+			if up > 0 and GameData.can_upgrade(id):
+				tip += " (+%d par niveau)" % up
+		if GameData.desc_of(id, game.faction_id) != "":
+			tip += "\n" + GameData.desc_of(id, game.faction_id)
+		var names := GameData.req_names(d)
+		if not names.is_empty():
+			tip += "\nNécessite : " + ", ".join(names)
+		if not is_unit and not game.is_unlocked(id):
+			tip += "\nVerrouillé : " + ("chantier niv. %d" % game.chantier_needed(id) if game.mission.is_empty() \
+					else "mission %d" % Campaign.mission_for_unlock(game.faction_id, int(d.get("unlock", 0))))
+		elif String(game.unit_level_block(id)) != "":
+			tip += "\n" + String(game.unit_level_block(id))
+		elif not is_unit and game.power_block(id) != "":
+			tip += "\nÉnergie insuffisante"
+		return UiStyle.wrap_text(tip, 14, 360.0)
+
 	func _draw_baked_icon(c: Vector2, avail: bool) -> void:
 		var key := "%s|%s" % [id, _fid()]
 		var is_unit := GameData.UNITS.has(id)
