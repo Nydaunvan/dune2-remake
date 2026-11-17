@@ -187,7 +187,7 @@ func _build_sidebar() -> void:
 
 	# Cartes de production : deux colonnes, réduites pour tenir dans la colonne
 	var cbox: Rect2 = UiSkin.card_box()[2]
-	card_cols = 2 if ((inn.size.x - 8.0) / 2.0) / cbox.size.x >= 0.62 else 1
+	card_cols = 2 # deux cartes côte à côte pour toutes les factions
 	card_scale = minf(1.0, (inn.size.x - 8.0 * (card_cols - 1)) / card_cols / cbox.size.x)
 	card_slot_w = (inn.size.x - 8.0 * (card_cols - 1)) / card_cols
 	icon_box = GridContainer.new()
