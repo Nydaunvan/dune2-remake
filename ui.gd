@@ -187,7 +187,8 @@ func _build_sidebar() -> void:
 
 	# Cartes de production : deux colonnes, réduites pour tenir dans la colonne
 	card_cols = 1 # une seule colonne verticale de cartes (image seule)
-	card_slot_w = minf(inn.size.x * 0.5, 140.0)
+	var _scroll_h := inn.size.y - tw / UiSkin.aspect("onglet_actif") - 6.0 - 136.0
+	card_slot_w = minf(inn.size.x - 8.0, _scroll_h / 2.6 * UiSkin.aspect("vignette_normal")) # ~2,6 cartes visibles
 	card_scale = 1.0
 	UiSkin.card_w = card_slot_w
 	icon_box = GridContainer.new()
