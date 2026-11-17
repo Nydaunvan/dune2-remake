@@ -138,7 +138,7 @@ func _build_sidebar() -> void:
 	sidebar.offset_left = -sidebar_w
 	sidebar.offset_right = 0.0
 	root.add_child(sidebar)
-	var inn := UiSkin.inner("panneau_construction", Rect2(0, 0, sidebar_w, vh))
+	var inn := UiSkin.inner("panneau_construction", Rect2(0, 0, sidebar_w, vh)).grow_individual(sidebar_w * 0.03, 0.0, sidebar_w * 0.03, 0.0)
 
 	# En-tête de faction : dans la partie haute ornée du panneau
 	var hh := minf(inn.position.y - 18.0, 230.0)
@@ -186,13 +186,13 @@ func _build_sidebar() -> void:
 		tab_buttons.append(t)
 
 	# Cartes de production : deux colonnes, réduites pour tenir dans la colonne
-	var cbox: Rect2 = UiSkin.card_box()[2]
 	card_cols = 2 # deux cartes côte à côte pour toutes les factions
-	card_scale = minf(1.0, (inn.size.x - 8.0 * (card_cols - 1)) / card_cols / cbox.size.x)
-	card_slot_w = (inn.size.x - 8.0 * (card_cols - 1)) / card_cols
+	card_slot_w = (inn.size.x - 6.0 * (card_cols - 1)) / card_cols
+	card_scale = 1.0
+	UiSkin.card_w = card_slot_w
 	icon_box = GridContainer.new()
 	icon_box.columns = card_cols
-	icon_box.add_theme_constant_override("h_separation", 8)
+	icon_box.add_theme_constant_override("h_separation", 6)
 	icon_box.add_theme_constant_override("v_separation", 6)
 	icon_scroll = ScrollContainer.new()
 	icon_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
@@ -293,13 +293,7 @@ func _rebuild_icons() -> void:
 	for id in ids:
 		var icon := BuildIcon.new(id, game)
 		icon.clicked.connect(game.on_item_clicked)
-		icon.scale = Vector2(card_scale, card_scale)
-		var slot := Control.new()
-		slot.custom_minimum_size = Vector2(card_slot_w, icon.custom_minimum_size.y * card_scale)
-		icon.position.x = (card_slot_w - icon.custom_minimum_size.x * card_scale) * 0.5
-		slot.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		slot.add_child(icon)
-		icon_box.add_child(slot)
+		icon_box.add_child(icon)
 		icons.append(icon)
 
 
@@ -1409,11 +1403,6 @@ class BuildIcon extends Control:
 	var game
 	var hover_t := 0.0
 	var _hover := false
-	const DW := 190.0 # taille de conception du contenu
-	const DH := 168.0
-	var art_pos := Vector2.ZERO
-	var art_sz := Vector2(190, 168)
-	var box_off := Vector2.ZERO
 	var fit := Vector2(112, 52) # zone occupée par le modèle
 	var fac := ""
 
@@ -1423,11 +1412,7 @@ class BuildIcon extends Control:
 	func _init(p_id: String, p_game) -> void:
 		id = p_id
 		game = p_game
-		var cb: Array = UiSkin.card_box()
-		art_pos = cb[0]
-		art_sz = cb[1]
-		box_off = -(cb[2] as Rect2).position
-		custom_minimum_size = (cb[2] as Rect2).size
+		custom_minimum_size = Vector2(UiSkin.card_w, UiSkin.card_w / UiSkin.aspect("vignette_normal"))
 		mouse_filter = Control.MOUSE_FILTER_STOP
 		if p_id == "":
 			return
@@ -1458,13 +1443,53 @@ class BuildIcon extends Control:
 			clicked.emit(id, event.button_index)
 			accept_event()
 
-	## Mention orange en haut de la carte : à la ligne (2 lignes max.) dans la largeur de la carte.
-	func _card_note(s: String, fs: int) -> void:
-		var wl := UiStyle.wrap_lines(s, fs, DW - 56.0, true)
-		var n := mini(wl.size(), 2)
-		for i in n:
-			UiStyle.text(self, Vector2(0, 62.0 + i * 14.0), String(wl[i]), fs, GameData.AMBER, true,
-					HORIZONTAL_ALIGNMENT_CENTER, DW)
+	## Pièces de coût : [icône, texte, couleur] ; l'énergie (si le bâtiment en produit ou en consomme) vient à la suite.
+	func _cost_items(avail: bool) -> Array:
+		var is_unit := GameData.UNITS.has(id)
+		var rich: bool = game.can_afford(id)
+		var cc := Color.WHITE
+		if not avail:
+			cc = Color(0.55, 0.57, 0.6)
+		elif not rich:
+			cc = GameData.RED
+		var first: int = game.item_cost(id)
+		var second: int = game.item_ore(id) if is_unit else GameData.sol_cost(id)
+		var c1 := cc
+		var c2 := cc
+		if avail:
+			if is_unit:
+				c1 = cc if game.credits >= first * 0.1 else GameData.RED
+				c2 = Color.WHITE if game.ore >= second * 0.1 else GameData.RED
+			else:
+				c1 = cc if game.ore >= first else GameData.RED
+				c2 = Color.WHITE if game.credits >= second else GameData.RED
+		var items: Array = [
+			["icone_epice" if is_unit else "icone_minerai", str(first), c1],
+			["icone_minerai" if is_unit else "icone_epice", str(second), c2],
+		]
+		var d := GameData.def(id)
+		if not is_unit and game.is_unlocked(id) and not d.get("wall", false):
+			var pw: int = int(d.get("power", 0))
+			if pw != 0:
+				var pc := Color("6fe0a0") if pw > 0 else GameData.AMBER
+				if not avail:
+					pc = Color(0.5, 0.52, 0.56)
+				items.append(["icone_energie", ("+%d" % pw) if pw > 0 else str(pw), pc])
+		return items
+
+	func _row_width(items: Array, fs: int, isz: float) -> float:
+		var w := 0.0
+		for it in items:
+			w += isz + 2.0 + UiStyle.text_width(String(it[1]), fs, true)
+		return w + 5.0 * maxi(items.size() - 1, 0)
+
+	func _draw_row(items: Array, center_x: float, base_y: float, fs: int, isz: float, ia: Color) -> void:
+		var x := center_x - _row_width(items, fs, isz) * 0.5
+		for it in items:
+			UiSkin.image(self, String(it[0]), Rect2(x, base_y - isz + 2.0, isz, isz), ia)
+			x += isz + 2.0
+			UiStyle.text_o(self, Vector2(x, base_y), String(it[1]), fs, it[2], true)
+			x += UiStyle.text_width(String(it[1]), fs, true) + 5.0
 
 	func _draw() -> void:
 		var d := GameData.def(id)
@@ -1474,93 +1499,80 @@ class BuildIcon extends Control:
 		var busy: bool = (not p.is_empty()) and not bool(p["ready"])
 		var t := Time.get_ticks_msec() / 1000.0
 		var pulse := 0.5 + 0.5 * sin(t * 5.0)
+		var cs := custom_minimum_size
 
 		var tn := "vignette_normal"
-		if not avail:
-			tn = "vignette_verrouillee"
-		elif busy:
-			tn = "vignette_normal"
-		var vtint := Color.WHITE
+		var vtint := Color.WHITE if avail else Color(0.55, 0.55, 0.62)
 		if busy:
 			vtint = Color(0.8, 1.0, 1.25)
 		elif ready or hover_t > 0.5:
 			vtint = Color(1.25, 1.2, 1.0)
-		UiSkin.panel(self, tn, Rect2(art_pos + box_off, art_sz), vtint)
-		draw_set_transform(box_off, 0.0, Vector2.ONE)
+		UiSkin.panel(self, tn, Rect2(Vector2.ZERO, cs), vtint)
 
-		var c := Vector2(DW * 0.5, 76.0 - hover_t * 2.0)
-		_draw_icon(c, avail)
-		if avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
-			UiStyle.text(self, Vector2(34, 62), "ÉNERGIE", 10, GameData.RED, true)
+		# Tout le contenu reste dans la zone intérieure du cadre
+		var inn := UiSkin.inner("vignette_normal", Rect2(Vector2.ZERO, cs))
+		var fs := clampi(int(inn.size.y * 0.2), 9, 14)
+		var isz := float(fs) + 2.0
+		var cx := inn.get_center().x
+		var ia := Color.WHITE if avail else Color(1, 1, 1, 0.45)
+		var items := _cost_items(avail)
+		var two_rows := _row_width(items, fs, isz) > inn.size.x - 4.0
+		var base2 := inn.end.y - 2.0 # ligne la plus basse
+		var base1 := base2 - (fs + 3.0 if two_rows else 0.0) # ligne de coût principale
+		var name_base := base1 - fs - 3.0
+		var icon_top := inn.position.y + 1.0
+		var icon_h := maxf(name_base - fs - icon_top - 1.0, 10.0)
+		fit = Vector2(inn.size.x * 0.92, icon_h)
+		_draw_icon(Vector2(cx, icon_top + icon_h * 0.5 - hover_t * 1.5), avail)
+
+		# Mentions en haut de la zone (niveau, verrouillage, faction, énergie manquante)
+		var note_fs := maxi(fs - 1, 9)
+		var note := ""
+		var note_col := GameData.AMBER
 		if game.unit_level_block(id) != "" and (GameData.UNITS.has(id) or game.is_unlocked(id)):
-			_card_note(String(game.unit_level_block(id)), 12)
+			note = String(game.unit_level_block(id))
 		elif GameData.UNITS.has(id) and not avail:
-			_card_note("Bâtiment requis", 12)
+			note = "Bâtiment requis"
 		if not GameData.UNITS.has(id) and not game.is_unlocked(id):
-			var lock_s := "Chantier niv. %d" % game.chantier_needed(id) if game.mission.is_empty() \
+			note = "Chantier niv. %d" % game.chantier_needed(id) if game.mission.is_empty() \
 					else "Mission %d" % Campaign.mission_for_unlock(game.faction_id, int(d.get("unlock", 0)))
-			_card_note(lock_s, 13)
-		elif d.has("faction") and not GameData.UNITS.has(id):
-			UiStyle.text(self, Vector2(34, 62), "FACTION", 9, game.fdata["color"] * 1.5, true)
-		if not GameData.UNITS.has(id) and game.is_unlocked(id) and not d.get("wall", false):
-			var pw: int = int(d.get("power", 0))
-			var pc := Color("6fe0a0") if pw > 0 else (GameData.AMBER if pw < 0 else UiStyle.TEXT_DIM)
-			if not avail:
-				pc = Color(0.4, 0.4, 0.4)
-			var pt := ("+%d" % pw) if pw > 0 else str(pw)
-			var py := 78.0 if game.queued_count(id) > 0 else 62.0
-			var pwid := UiStyle.text_width(pt, 14, true)
-			UiStyle.text(self, Vector2(DW - 34.0 - pwid, py), pt, 13, pc, true)
+		elif avail and not GameData.UNITS.has(id) and game.power_block(id) != "":
+			note = "ÉNERGIE"
+			note_col = GameData.RED
+		elif d.has("faction") and not GameData.UNITS.has(id) and note == "":
+			note = "FACTION"
+			note_col = game.fdata["color"] * 1.5
+		if note != "":
+			var wl := UiStyle.wrap_lines(note, note_fs, inn.size.x - 6.0, true)
+			for i in mini(wl.size(), 2):
+				UiStyle.text_o(self, Vector2(inn.position.x, inn.position.y + note_fs + 1.0 + i * (note_fs + 1.0)),
+						String(wl[i]), note_fs, note_col, true, HORIZONTAL_ALIGNMENT_CENTER, inn.size.x)
+
 		var queued: int = game.queued_count(id)
 		if queued > 0:
-			var tag := Rect2(DW - 66.0, 30.0, 30.0 * UiSkin.aspect("badge_quantite"), 30.0)
+			var bs := float(fs) + 8.0
+			var tag := Rect2(inn.end.x - bs * UiSkin.aspect("badge_quantite") - 1.0, inn.position.y + 1.0, bs * UiSkin.aspect("badge_quantite"), bs)
 			UiSkin.panel(self, "badge_quantite", tag)
-			UiStyle.text(self, Vector2(tag.position.x, tag.position.y + 20.0), "x%d" % queued, 13, Color("f5e9c8"),
-					true, HORIZONTAL_ALIGNMENT_CENTER, tag.size.x)
-		if busy:
-			UiSkin.bar(self, Rect2(30, 120.0, DW - 60.0, 12), float(p["progress"]))
+			UiStyle.text_o(self, Vector2(tag.position.x, tag.position.y + bs * 0.72), "x%d" % queued, maxi(fs - 2, 8),
+					Color("f5e9c8"), true, HORIZONTAL_ALIGNMENT_CENTER, tag.size.x)
 
-		var tc := UiStyle.TEXT if avail else Color(0.5, 0.52, 0.56)
+		var tc := Color(0.96, 0.95, 0.9) if avail else Color(0.62, 0.64, 0.68)
 		var nm := GameData.name_of(id, game.faction_id)
-		var nsz := 14
-		while nsz > 9 and UiStyle.text_width(nm, nsz, true) > DW - 50.0:
-			nsz -= 1 # les noms longs rétrécissent pour tenir dans la carte
-		UiStyle.text(self, Vector2(0, 111), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, DW)
-		if ready:
-			UiStyle.text(self, Vector2(0, 130), "Prêt : cliquer", 12, Color(0.5, 1.0, 0.7, 0.7 + 0.3 * pulse), true,
-					HORIZONTAL_ALIGNMENT_CENTER, DW)
-		elif not busy:
-			var rich: bool = game.can_afford(id)
-			var is_unit := GameData.UNITS.has(id)
-			var cc := Color.WHITE
-			if not avail:
-				cc = Color(0.45, 0.47, 0.5)
-			elif not rich:
-				cc = GameData.RED
-			var label := str(game.item_cost(id))
-			var second: int = game.item_ore(id) if is_unit else GameData.sol_cost(id)
-			var l2 := str(second)
-			# Unité : Solaris puis minerai ; bâtiment : minerai puis Solaris (rouge si on ne peut pas payer)
-			var i1 := "icone_epice" if is_unit else "icone_minerai"
-			var i2 := "icone_minerai" if is_unit else "icone_epice"
-			var c1 := cc
-			var c2 := cc
-			if avail:
-				if is_unit:
-					c1 = cc if game.credits >= game.item_cost(id) * 0.1 else GameData.RED
-					c2 = Color.WHITE if game.ore >= second * 0.1 else GameData.RED
-				else:
-					c1 = cc if game.ore >= game.item_cost(id) else GameData.RED
-					c2 = Color.WHITE if game.credits >= second else GameData.RED
-			var w1 := UiStyle.text_width(label, 13)
-			var w2 := UiStyle.text_width(l2, 13)
-			var x1 := (DW - (w1 + w2 + 52.0)) * 0.5
-			var ia := Color.WHITE if avail else Color(1, 1, 1, 0.4)
-			UiSkin.image(self, i1, Rect2(x1, 117, 16, 16), ia)
-			UiStyle.text(self, Vector2(x1 + 20, 130), label, 13, c1)
-			var x2 := x1 + 20.0 + w1 + 12.0
-			UiSkin.image(self, i2, Rect2(x2, 117, 16, 16), ia)
-			UiStyle.text(self, Vector2(x2 + 20, 130), l2, 13, c2)
+		var nsz := fs + 1
+		while nsz > 7 and UiStyle.text_width(nm, nsz, true) > inn.size.x - 2.0:
+			nsz -= 1 # les noms longs rétrécissent pour tenir dans le cadre
+		UiStyle.text_o(self, Vector2(inn.position.x, name_base), nm, nsz, tc, true, HORIZONTAL_ALIGNMENT_CENTER, inn.size.x)
+
+		if busy:
+			UiSkin.bar(self, Rect2(inn.position.x + 2.0, base2 - fs, inn.size.x - 4.0, fs + 2.0), float(p["progress"]))
+		elif ready:
+			UiStyle.text_o(self, Vector2(inn.position.x, base2), "Prêt : cliquer", fs, Color(0.5, 1.0, 0.7, 0.75 + 0.25 * pulse), true,
+					HORIZONTAL_ALIGNMENT_CENTER, inn.size.x)
+		elif two_rows:
+			_draw_row(items.slice(0, 2), cx, base1, fs, isz, ia)
+			_draw_row(items.slice(2), cx, base2, fs, isz, ia)
+		else:
+			_draw_row(items, cx, base2, fs, isz, ia)
 
 	## Bâtiments débloqués : on affiche le modèle 3D cuit (ou un bloc simple sans affichage).
 	func _draw_baked_icon(c: Vector2, avail: bool) -> void:

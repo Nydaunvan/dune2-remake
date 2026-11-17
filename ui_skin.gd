@@ -19,6 +19,7 @@ static var inners := {}
 static var sizes := {}
 static var shapes := {}
 static var _tex := {}
+static var card_w := 150.0 # largeur réelle d'une carte de production (fixée par la colonne)
 
 
 ## Choisit le skin de la faction (retombe sur Solis si son kit n'est pas importé).
@@ -161,16 +162,3 @@ static func flat_box(border: Color, bg := Color(0.04, 0.035, 0.05, 0.96)) -> Sty
 	sb.set_corner_radius_all(4)
 	sb.set_content_margin_all(10)
 	return sb
-
-
-## Carte de production : l'illustration garde ses proportions autour de la zone de contenu de
-## 168x84 (coordonnées de conception 190x168). Renvoie [position, taille de l'illustration, boîte englobante].
-static func card_box(dw := 190.0, dh := 168.0) -> Array:
-	var f: Array = frac("vignette_normal")
-	var sz := outer_for("vignette_normal", Vector2(dw - 22.0, 84.0))
-	var pos := Vector2(dw * 0.5 - (f[0] + f[2] * 0.5) * sz.x, 92.0 - (f[1] + f[3] * 0.5) * sz.y)
-	var l := minf(0.0, pos.x)
-	var t := minf(0.0, pos.y)
-	var r := maxf(dw, pos.x + sz.x)
-	var b := maxf(dh, pos.y + sz.y)
-	return [pos, sz, Rect2(l, t, r - l, b - t)]

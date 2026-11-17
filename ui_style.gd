@@ -151,6 +151,16 @@ static func text(ci: CanvasItem, pos: Vector2, s: String, size: int, col: Color,
 	ci.draw_string(f, pos, s, align, width, size, col)
 
 
+## Texte avec contour sombre : lisible sur les fonds illustrés chargés.
+static func text_o(ci: CanvasItem, pos: Vector2, s: String, size: int, col: Color, title := false,
+		align := HORIZONTAL_ALIGNMENT_LEFT, width := -1.0) -> void:
+	var f := title_font() if title else body_font()
+	if title:
+		s = casef(s)
+	ci.draw_string_outline(f, pos, s, align, width, size, maxi(2, size / 4), Color(0, 0, 0, 0.92))
+	ci.draw_string(f, pos, s, align, width, size, col)
+
+
 ## Texte centré dans un rectangle, horizontalement et verticalement (hauteur de capitales si `caps`).
 static func text_center(ci: CanvasItem, r: Rect2, s: String, size: int, col: Color, title := false, caps := false) -> void:
 	var f := title_font() if title else body_font()

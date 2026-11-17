@@ -53,9 +53,10 @@ def expand(mask, rect):
 
 
 SHAPES = {}
-MANUAL_F = {"kharn": {"entete_faction": [0.2, 0.28, 0.6, 0.4]},
-            "vael": {"entete_faction": [0.25, 0.55, 0.5, 0.22]},
-            "conclave": {"entete_faction": [0.2, 0.6, 0.6, 0.22]}}
+MANUAL_F = {"solis": {"vignette_normal": [0.15, 0.28, 0.70, 0.44]},
+            "kharn": {"vignette_normal": [0.27, 0.185, 0.56, 0.54], "entete_faction": [0.2, 0.28, 0.6, 0.4]},
+            "vael": {"vignette_normal": [0.13, 0.245, 0.66, 0.53], "entete_faction": [0.25, 0.55, 0.5, 0.22]},
+            "conclave": {"vignette_normal": [0.225, 0.32, 0.655, 0.50], "entete_faction": [0.2, 0.6, 0.6, 0.22]}}
 MANUAL = {
     "barre_ressources": [0.07, 0.45, 0.86, 0.38], "compteur_ressource": [0.42, 0.45, 0.50, 0.40],
     "bouton_normal": [0.12, 0.2, 0.76, 0.58], "entete_faction": [0.12, 0.62, 0.76, 0.22],
@@ -155,4 +156,5 @@ def main():
     print("ok", fid, len(skin["size"]))
 
 
-main()
+if __name__ == "__main__":
+    main()
