@@ -186,8 +186,8 @@ func _build_sidebar() -> void:
 		tab_buttons.append(t)
 
 	# Cartes de production : deux colonnes, réduites pour tenir dans la colonne
-	card_cols = 3 # images seules : trois cartes par ligne pour gagner de la place
-	card_slot_w = (inn.size.x - 6.0 * (card_cols - 1)) / card_cols
+	card_cols = 1 # une seule colonne verticale de cartes (image seule)
+	card_slot_w = minf(inn.size.x * 0.5, 140.0)
 	card_scale = 1.0
 	UiSkin.card_w = card_slot_w
 	icon_box = GridContainer.new()
@@ -201,7 +201,11 @@ func _build_sidebar() -> void:
 	icon_scroll.size = Vector2(inn.size.x, inn.size.y - tab_h - 6.0 - 136.0)
 	icon_scroll.clip_contents = true
 	sidebar.add_child(icon_scroll)
-	icon_scroll.add_child(icon_box)
+	var icon_center := CenterContainer.new()
+	icon_center.custom_minimum_size.x = inn.size.x
+	icon_center.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	icon_scroll.add_child(icon_center)
+	icon_center.add_child(icon_box)
 
 	# Infos en bas de la colonne
 	info_label = Label.new()
@@ -221,7 +225,7 @@ func _build_sidebar() -> void:
 
 var card_scale := 0.85
 var sidebar_w := 540.0
-var card_cols := 3
+var card_cols := 1
 var card_slot_w := 160.0
 var radar_w := 340.0
 
@@ -293,6 +297,7 @@ func _rebuild_icons() -> void:
 	for id in ids:
 		var icon := BuildIcon.new(id, game)
 		icon.clicked.connect(game.on_item_clicked)
+		icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 		icon_box.add_child(icon)
 		icons.append(icon)
 
