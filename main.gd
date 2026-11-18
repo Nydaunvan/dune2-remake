@@ -225,7 +225,7 @@ func _ready() -> void:
 	_setup_sides()
 	markers = MissionMarkers.new(self)
 	add_child(markers)
-	ui = GameUIModern.new() if faction_id == "solis" else GameUI.new()
+	ui = GameUIModern.new() # interface modernisée pour toutes les factions (le kit illustré reste dans GameUI)
 	add_child(ui)
 	ui.setup(self)
 	if not mission.is_empty():
