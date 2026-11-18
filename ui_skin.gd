@@ -6,6 +6,8 @@ extends RefCounted
 
 const BASE := "res://assets/ui/"
 const FALLBACK := "solis"
+## Maison Solis garde l'interface classique (cadres plats, sans kit illustré).
+const CLASSIC_SOLIS := true
 const ACCENTS := {
 	"solis": "f3d27a", "kharn": "ff9a3c", "vael": "e9c46a", "conclave": "c99bff",
 }
@@ -15,6 +17,7 @@ static var accent := Color("f3d27a")
 static var direction := ""
 static var tab_text := Color.WHITE
 static var tab_text_off := Color.WHITE
+static var flat := false # interface classique : cadres dessinés en code, sans illustrations
 static var inners := {}
 static var sizes := {}
 static var shapes := {}
@@ -27,11 +30,15 @@ static func use(faction_id: String) -> void:
 	dir = faction_id if DirAccess.dir_exists_absolute(BASE + faction_id) else FALLBACK
 	_tex.clear()
 	accent = Color(String(ACCENTS.get(dir, "f3d27a")))
-	tab_text = Color("3b2a0c") if dir == "solis" else Color.WHITE
-	tab_text_off = Color("5a4520") if dir == "solis" else Color(0.85, 0.85, 0.85)
+	flat = dir == "solis" and CLASSIC_SOLIS
+	tab_text = Color("3b2a0c") if (dir == "solis" and not flat) else Color.WHITE
+	tab_text_off = Color("5a4520") if (dir == "solis" and not flat) else Color(0.85, 0.85, 0.85)
 	inners = {}
 	sizes = {}
 	shapes = {}
+	if flat:
+		_load_flat()
+		return
 	var f := FileAccess.open(BASE + dir + "/skin.json", FileAccess.READ)
 	if f != null:
 		var j = JSON.parse_string(f.get_as_text())
@@ -41,7 +48,55 @@ static func use(faction_id: String) -> void:
 			shapes = j.get("shape", {})
 
 
+## Tailles et zones intérieures de l'interface classique (aucune image de cadre).
+static func _load_flat() -> void:
+	sizes = {"panneau_construction": [440, 1080], "panneau_construction_compact": [440, 1080],
+			"onglet_actif": [220, 58], "onglet_inactif": [220, 58], "bouton_normal": [240, 60], "bouton_actif": [240, 60],
+			"bouton_presse": [240, 60], "radar": [260, 260], "cadre_portrait": [200, 200], "panneau_selection": [1200, 380],
+			"panneau_selection_compact": [1200, 380], "vignette_normal": [190, 200], "vignette_verrouillee": [190, 200],
+			"slot_production": [100, 110], "badge_quantite": [60, 38], "entete_faction": [380, 110],
+			"panneau_objectifs": [300, 150], "panneau_journal": [300, 200], "barre_ressources": [880, 100],
+			"panneau_alerte": [400, 90], "progression_fond": [300, 30]}
+	var std := [0.05, 0.07, 0.90, 0.86]
+	for n in sizes:
+		inners[n] = std
+	inners["panneau_construction"] = [0.07, 0.10, 0.86, 0.84]
+	inners["panneau_construction_compact"] = inners["panneau_construction"]
+	inners["entete_faction"] = [0.05, 0.1, 0.9, 0.8]
+	inners["barre_ressources"] = [0.02, 0.1, 0.96, 0.8]
+	inners["panneau_selection"] = [0.19, 0.07, 0.79, 0.86]
+	inners["panneau_selection_compact"] = inners["panneau_selection"]
+	inners["selection_portrait"] = [0.02, 0.07, 0.16, 0.86]
+	inners["radar"] = [0.04, 0.04, 0.92, 0.92]
+	inners["cadre_portrait"] = [0.04, 0.04, 0.92, 0.92]
+	inners["vignette_normal"] = [0.06, 0.06, 0.88, 0.88]
+	inners["slot_production"] = [0.08, 0.08, 0.84, 0.84]
+	shapes = {"radar": "square", "cadre_portrait": "square"}
+
+
+static func _is_icon(n: String) -> bool:
+	return n.begins_with("icone_") or n == "embleme" or n == "progression_remplissage"
+
+
+## Cadre plat de l'interface classique : fond sombre, filet de la couleur de faction.
+static func _flat(ci: CanvasItem, n: String, r: Rect2, modulate: Color) -> void:
+	var lit := clampf((maxf(modulate.r, modulate.b) - 1.0) * 2.5, 0.0, 1.0)
+	var dim := maxf(modulate.r, modulate.g) < 0.9
+	var fill := Color(0.045, 0.06, 0.09)
+	var line := accent
+	if n == "onglet_actif" or n == "bouton_actif":
+		fill = Color(accent.r * 0.35, accent.g * 0.35, accent.b * 0.35)
+		lit = maxf(lit, 0.6)
+	elif n == "bouton_presse":
+		lit = 1.0
+	if dim:
+		line = Color(0.4, 0.42, 0.48)
+	UiStyle.frame(ci, r.grow(-1.0), 8.0, line, fill, 0.0, lit)
+
+
 static func tex(n: String) -> Texture2D:
+	if flat and not _is_icon(n):
+		return null
 	if not _tex.has(n):
 		var path := BASE + dir + "/" + n + ".png"
 		_tex[n] = load(path) if ResourceLoader.exists(path) else null
@@ -58,6 +113,8 @@ const BANDED := {
 
 ## Rectangle de l'illustration `n` dans `r` : proportions d'origine conservées (centrée dans `r`).
 static func fit(n: String, r: Rect2) -> Rect2:
+	if flat and not _is_icon(n) and not (n in ["panneau_construction", "radar", "panneau_selection", "vignette_normal", "slot_production", "cadre_portrait"]):
+		return r
 	if BANDED.has(n) or not sizes.has(n):
 		return r
 	var a := aspect(n)
@@ -68,6 +125,9 @@ static func fit(n: String, r: Rect2) -> Rect2:
 
 ## Dessine l'illustration `n` dans `r` sans la déformer.
 static func panel(ci: CanvasItem, n: String, r: Rect2, modulate := Color.WHITE) -> void:
+	if flat and not _is_icon(n):
+		_flat(ci, n, r, modulate)
+		return
 	var t := tex(n)
 	if t == null:
 		return
@@ -116,6 +176,9 @@ static func shape(n: String) -> String:
 
 ## Bandeau horizontal : extrémités et motif central gardent leurs proportions, le reste s'étire.
 static func band(ci: CanvasItem, n: String, r: Rect2, cuts := [0.2, 0.36, 0.64, 0.8], modulate := Color.WHITE) -> void:
+	if flat:
+		_flat(ci, n, r, modulate)
+		return
 	var t := tex(n)
 	if t == null:
 		return

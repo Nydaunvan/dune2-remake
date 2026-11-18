@@ -28,6 +28,8 @@ func _on_resized() -> void:
 
 ## Remplace le fond sombre par l'illustration du kit de faction (étirée sur tout le panneau).
 func set_skin(skin_name: String) -> void:
+	if UiSkin.flat:
+		return # interface classique : on garde le fond sombre du shader
 	bg.visible = false
 	var tr := TextureRect.new()
 	tr.texture = UiSkin.tex(skin_name)
