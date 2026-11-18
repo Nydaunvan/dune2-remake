@@ -138,7 +138,7 @@ func _build_sidebar() -> void:
 	sidebar.offset_left = -sidebar_w
 	sidebar.offset_right = 0.0
 	root.add_child(sidebar)
-	var inn := UiSkin.inner("panneau_construction", Rect2(0, 0, sidebar_w, vh)).grow_individual(sidebar_w * 0.03, 0.0, sidebar_w * 0.03, 0.0)
+	var inn := UiSkin.inner("panneau_construction", Rect2(0, 0, sidebar_w, vh)).grow_individual(sidebar_w * 0.015, 0.0, sidebar_w * 0.015, 0.0)
 
 	# En-tête de faction : dans la partie haute ornée du panneau
 	var hh := minf(inn.position.y - 18.0, 230.0)
@@ -146,6 +146,10 @@ func _build_sidebar() -> void:
 	hh = hw / UiSkin.aspect("entete_faction")
 	var header := SideHeader.new(game)
 	header.position = Vector2(inn.get_center().x - hw * 0.5, 10.0 + (inn.position.y - 18.0 - hh) * 0.5)
+	if UiSkin.compact: # l'en-tête se loge dans la partie haute intérieure de la colonne
+		hh = minf(inn.position.y - vh * 0.06 - 6.0, 120.0)
+		hw = hh * UiSkin.aspect("entete_faction")
+		header.position = Vector2(inn.get_center().x - hw * 0.5, vh * 0.06)
 	header.size = Vector2(hw, hh)
 	sidebar.add_child(header)
 

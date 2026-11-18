@@ -156,5 +156,49 @@ def main():
     print("ok", fid, len(skin["size"]))
 
 
-if __name__ == "__main__":
+if __name__ == "__main__" and not (len(sys.argv) > 3 and sys.argv[3] == "compact"):
     main()
+
+
+# --- Kit « HUD COMPACT » (cadres simples, un PNG par composant) -------------------------------
+COMPACT_MAP = {
+    "01_barre_ressources": ["barre_ressources"], "02_panneau_objectifs": ["panneau_objectifs"],
+    "03_journal": ["panneau_journal"], "04_colonne_construction": ["panneau_construction", "panneau_construction_compact"],
+    "05_fiche_selection": ["panneau_selection", "panneau_selection_compact"], "06_radar": ["radar"],
+    "07_carte_batiment": ["vignette_normal", "vignette_verrouillee"], "08_cadre_portrait": ["cadre_portrait"],
+    "09_onglet_normal": ["onglet_inactif"], "10_onglet_actif": ["onglet_actif"], "11_bouton_normal": ["bouton_normal"],
+    "12_bouton_survol": ["bouton_actif", "bouton_presse"], "14_jauge_vide": ["progression_fond"],
+    "15_jauge_pleine": ["progression_remplissage"], "16_embleme": ["embleme"], "17_alerte": ["panneau_alerte"],
+    "18_file_production": ["slot_production"], "19_puce_information": ["entete_faction"],
+}
+
+
+def import_compact(zip_path, fid):
+    """Remplace les cadres d'une faction par ceux d'un kit compact ; garde les icônes existantes."""
+    out = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "assets", "ui", fid)
+    sk = json.load(open(os.path.join(out, "skin.json")))
+    z = zipfile.ZipFile(zip_path)
+    for n in z.namelist():
+        m = re.match(r"(?:.*/)?PNG_2K/(.+)\.png$", n)
+        if not m or m.group(1) not in COMPACT_MAP:
+            continue
+        im = Image.open(io.BytesIO(z.read(n))).convert("RGBA")
+        bbox = im.getchannel("A").point(lambda v: 255 if v > 10 else 0).getbbox()
+        if bbox:
+            im = im.crop(bbox)
+        im.thumbnail((1400, 1400), Image.LANCZOS)
+        for name in COMPACT_MAP[m.group(1)]:
+            im.save(os.path.join(out, name + ".png"), optimize=True)
+            sk["size"][name] = [im.width, im.height]
+            if name in PANELS:
+                r = inner_rect(im, name)
+                sk["inner"][name] = r
+                if name == "panneau_selection":
+                    sk["inner"]["selection_portrait"] = hole_rect(im, r)
+                print(name, r)
+    sk["shape"].update(SHAPES)
+    json.dump(sk, open(os.path.join(out, "skin.json"), "w"))
+
+
+if __name__ == "__main__" and len(sys.argv) > 3 and sys.argv[3] == "compact":
+    import_compact(sys.argv[1], sys.argv[2])

@@ -13,6 +13,7 @@ const ACCENTS := {
 static var dir := FALLBACK
 static var accent := Color("f3d27a")
 static var direction := ""
+static var compact := false
 static var tab_text := Color.WHITE
 static var tab_text_off := Color.WHITE
 static var inners := {}
@@ -27,8 +28,9 @@ static func use(faction_id: String) -> void:
 	dir = faction_id if DirAccess.dir_exists_absolute(BASE + faction_id) else FALLBACK
 	_tex.clear()
 	accent = Color(String(ACCENTS.get(dir, "f3d27a")))
-	tab_text = Color("3b2a0c") if dir == "solis" else Color.WHITE
-	tab_text_off = Color("5a4520") if dir == "solis" else Color(0.85, 0.85, 0.85)
+	compact = dir == "solis" # kit « HUD compact » : cadres simples
+	tab_text = Color("0a1a2c") if dir == "solis" else Color.WHITE
+	tab_text_off = Color("c8d4ea") if dir == "solis" else Color(0.85, 0.85, 0.85)
 	inners = {}
 	sizes = {}
 	shapes = {}
