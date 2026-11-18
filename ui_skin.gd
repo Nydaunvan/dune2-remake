@@ -7,7 +7,7 @@ extends RefCounted
 const BASE := "res://assets/ui/"
 const FALLBACK := "solis"
 ## Maison Solis garde l'interface classique (cadres plats, sans kit illustré).
-const CLASSIC_SOLIS := true
+const CLASSIC_SOLIS := false
 const ACCENTS := {
 	"solis": "f3d27a", "kharn": "ff9a3c", "vael": "e9c46a", "conclave": "c99bff",
 }

@@ -65,7 +65,7 @@ var map_texture: ImageTexture # mini-carte du radar
 var terrain_mat: ShaderMaterial # matériau du terrain (changement de qualité en cours de partie)
 var field_img: Image
 var field_tex: ImageTexture
-var ui: GameUI
+var ui # GameUI (kits illustrés) ou GameUIModern (Solis : interface modernisée)
 var ai: SkirmishAI
 var sfx: Sfx
 var bank: SpriteBank # modèles 3D cuits en sprites (absent sans affichage)
@@ -225,7 +225,7 @@ func _ready() -> void:
 	_setup_sides()
 	markers = MissionMarkers.new(self)
 	add_child(markers)
-	ui = GameUI.new()
+	ui = GameUIModern.new() if faction_id == "solis" else GameUI.new()
 	add_child(ui)
 	ui.setup(self)
 	if not mission.is_empty():
