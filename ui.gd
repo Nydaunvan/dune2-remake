@@ -253,7 +253,7 @@ func _build_log() -> void:
 func _build_selection() -> void:
 	var x0 := radar_w + 14.0
 	var fw := 1920.0 - sidebar_w - 8.0 - x0
-	fw *= 0.85 # cadre réduit, proportions d'origine
+	fw *= 1.0 # cadre réduit, proportions d'origine
 	var fh := fw / UiSkin.aspect("panneau_selection")
 	sel_frame = ArtFrame.new("panneau_selection")
 	sel_frame.anchor_top = 1.0
@@ -270,11 +270,17 @@ func _build_selection() -> void:
 	portrait.position = ph.get_center() - Vector2(ps, ps) * 0.5
 	portrait.fit = Vector2(ps, ps) * 0.8
 	sel_frame.add_child(portrait)
-	var inn := UiSkin.inner("panneau_selection", Rect2(Vector2.ZERO, Vector2(fw, fh))).grow_individual(fh * 0.02, fh * 0.05, fh * 0.02, fh * 0.03)
+	var inn := UiSkin.inner("panneau_selection", Rect2(Vector2.ZERO, Vector2(fw, fh))).grow_individual(fh * 0.0, fh * 0.05, fh * 0.02, fh * 0.03)
 	info_panel = InfoPanel.new(game)
 	info_panel.portrait = portrait
 	info_panel.frame = sel_frame
-	var k := minf(inn.size.x / info_panel.size.x, inn.size.y / info_panel.size.y)
+	var k := inn.size.y / 190.0
+	var wl := inn.size.x / k
+	if wl < 880.0:
+		wl = 880.0
+		k = inn.size.x / wl
+	info_panel.size = Vector2(wl, 190.0)
+	info_panel.W3 = wl - InfoPanel.COL2 - 14.0
 	info_panel.scale = Vector2(k, k)
 	info_panel.position = inn.position + (inn.size - info_panel.size * k) * 0.5
 	sel_frame.add_child(info_panel)
@@ -664,6 +670,79 @@ class QueuePanel extends Control:
 						UiSkin.bar(self, Rect2(r.position.x + r.size.x * 0.18, r.end.y - r.size.y * 0.27, r.size.x * 0.64, 9.0), float(it["progress"]))
 
 
+class TipCard extends Control:
+	const W := 300.0
+	var rows: Array = [] # [kind, ...]
+	var h := 0.0
+
+	func _init(p_id: String, game) -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
+		var d := GameData.def(p_id)
+		var is_unit := GameData.UNITS.has(p_id)
+		rows.append(["title", GameData.name_of(p_id, game.faction_id)])
+		var first: int = game.item_cost(p_id)
+		var second: int = game.item_ore(p_id) if is_unit else GameData.sol_cost(p_id)
+		rows.append(["cost", "icone_epice" if is_unit else "icone_minerai", str(first), "icone_minerai" if is_unit else "icone_epice", str(second)])
+		if not is_unit and not d.get("wall", false):
+			var pw: int = int(d.get("power", 0))
+			var txt := "Produit +%d" % pw if pw > 0 else ("Consomme %d" % -pw if pw < 0 else "Aucune consommation")
+			var up := GameData.upgrade_power(p_id)
+			if up > 0 and GameData.can_upgrade(p_id):
+				txt += "  (+%d par niveau)" % up
+			rows.append(["power", txt, pw])
+		var ds := GameData.desc_of(p_id, game.faction_id)
+		if ds != "":
+			for l in UiStyle.wrap_lines(ds, 14, W - 28.0):
+				rows.append(["text", String(l), UiStyle.TEXT_DIM])
+		var names := GameData.req_names(d)
+		if not names.is_empty():
+			for l in UiStyle.wrap_lines("Nécessite : " + ", ".join(names), 14, W - 28.0):
+				rows.append(["text", String(l), GameData.AMBER])
+		var warn := ""
+		if not is_unit and not game.is_unlocked(p_id):
+			warn = "Verrouillé : " + ("chantier niv. %d" % game.chantier_needed(p_id) if game.mission.is_empty() \
+					else "mission %d" % Campaign.mission_for_unlock(game.faction_id, int(d.get("unlock", 0))))
+		elif String(game.unit_level_block(p_id)) != "":
+			warn = String(game.unit_level_block(p_id))
+		elif not is_unit and game.power_block(p_id) != "":
+			warn = "Énergie insuffisante"
+		if warn != "":
+			rows.append(["text", warn, GameData.RED])
+		h = 18.0
+		for r in rows:
+			h += {"title": 30.0, "cost": 32.0, "power": 26.0}.get(String(r[0]), 19.0)
+		h += 10.0
+		custom_minimum_size = Vector2(W, h)
+		size = custom_minimum_size
+
+	func _draw() -> void:
+		var acc: Color = UiSkin.accent
+		draw_rect(Rect2(0, 0, size.x, 3.0), Color(acc.r, acc.g, acc.b, 0.85))
+		var y := 18.0
+		for row in rows:
+			match String(row[0]):
+				"title":
+					UiStyle.text_o(self, Vector2(14, y + 18.0), String(row[1]), 20, acc, true)
+					draw_line(Vector2(14, y + 25.0), Vector2(W - 14.0, y + 25.0), Color(acc.r, acc.g, acc.b, 0.45), 1.0)
+					y += 30.0
+				"cost":
+					UiSkin.image(self, String(row[1]), Rect2(14, y, 24, 24))
+					UiStyle.text_o(self, Vector2(44, y + 19.0), String(row[2]), 19, Color.WHITE, true)
+					UiSkin.image(self, String(row[3]), Rect2(W * 0.5, y, 24, 24))
+					UiStyle.text_o(self, Vector2(W * 0.5 + 30.0, y + 19.0), String(row[4]), 19, Color.WHITE, true)
+					y += 32.0
+				"power":
+					var pw: int = int(row[2])
+					var pc := Color("6fe0a0") if pw > 0 else (GameData.AMBER if pw < 0 else UiStyle.TEXT_DIM)
+					UiSkin.image(self, "icone_energie", Rect2(14, y, 22, 22))
+					UiStyle.text_o(self, Vector2(42, y + 17.0), String(row[1]), 16, pc, true)
+					y += 26.0
+				_:
+					UiStyle.text_o(self, Vector2(14, y + 14.0), String(row[1]), 14, row[2])
+					y += 19.0
+
+
 # --- Barre de ressources ------------------------------------------------------
 
 class HudBar extends Control:
@@ -734,7 +813,7 @@ class HudBar extends Control:
 			return
 		UiSkin.band(self, "barre_ressources", Rect2(0, 0, BAR_W, TOPBAR_H))
 		var inn := UiSkin.inner("barre_ressources", Rect2(0, 0, BAR_W, TOPBAR_H))
-		var x0 := inn.position.x + 14.0
+		var x0 := inn.get_center().x - 378.0 # contenu (~756 px) centré dans le bandeau
 		# Solaris : le compteur glisse vers la valeur réelle et clignote vert/rouge
 		var diff: float = float(game.credits) - shown_credits
 		var col := Color.WHITE
@@ -824,8 +903,10 @@ class InfoPanel extends Control:
 			"sonic": "Onde sonique", "acid": "Acide", "control": "Contrôle mental", "shard": "Éclats de cristal",
 			"mortar": "Mortier", "flame": "Lance-flammes", "plasma": "Plasma", "laser": "Laser"}
 	const LX := 14.0
-	const COL2 := 410.0
-	const CMD := COL2 - 32.0
+	const RX := 316.0   # colonne des caractéristiques
+	const COL2 := 596.0 # colonne des ordres / du rôle
+	const CMD := COL2
+	var W3 := 270.0
 	var portrait: Portrait
 	var frame: Control # cadre illustré qui contient le portrait et ce panneau
 
@@ -841,7 +922,7 @@ class InfoPanel extends Control:
 		game = p_game
 		mouse_filter = Control.MOUSE_FILTER_IGNORE
 		texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
-		size = Vector2(770.0, 262.0) # taille logique : la mise à l'échelle l'ajuste à la zone du cadre
+		size = Vector2(880.0, 190.0) # taille logique : la mise à l'échelle l'ajuste à la zone du cadre
 		btn = GameUI.NeonButton.new("AMÉLIORER")
 		btn.accent = GameData.GOLD
 		btn.glyph = "credit"
@@ -888,8 +969,8 @@ class InfoPanel extends Control:
 		for i in COMMANDS.size():
 			var cmd: Array = COMMANDS[i]
 			var cb := GameUI.NeonButton.new(cmd[1])
-			cb.position = Vector2(CMD + i * 96.0, 24)
-			cb.size = Vector2(90, 32)
+			cb.position = Vector2(CMD + i * 82.0, 14)
+			cb.size = Vector2(78, 30)
 			cb.pressed.connect(func() -> void:
 				var c: String = cb.get_meta("cmd")
 				game.on_command(c))
@@ -925,12 +1006,12 @@ class InfoPanel extends Control:
 		btn.visible = is_b or is_u
 		if is_b:
 			var b: Building = _focus
-			btn.position = Vector2(COL2, 24)
-			btn.size = Vector2(340, 32)
-			rbtn.position = Vector2(COL2, 62)
-			rbtn.size = Vector2(224, 32)
-			dbtn.position = Vector2(COL2 + 232.0, 62)
-			dbtn.size = Vector2(108, 32)
+			btn.position = Vector2(COL2, 14)
+			btn.size = Vector2(W3, 30)
+			rbtn.position = Vector2(LX, 112)
+			rbtn.size = Vector2(176, 30)
+			dbtn.position = Vector2(LX + 184.0, 112)
+			dbtn.size = Vector2(116, 30)
 			var why: String = game.upgrade_block(b, game.ore)
 			btn.enabled = why == "" or b.up_left > 0.0
 			btn.accent = GameData.RED if b.up_left > 0.0 else GameData.GOLD
@@ -945,10 +1026,10 @@ class InfoPanel extends Control:
 			btn.tooltip_text = why
 		elif is_u:
 			var u: Unit = _focus
-			btn.position = Vector2(CMD + 194.0, 62)
-			btn.size = Vector2(188, 32)
-			rbtn.position = Vector2(CMD, 62)
-			rbtn.size = Vector2(186, 32)
+			btn.position = Vector2(COL2, 50)
+			btn.size = Vector2(W3, 30)
+			rbtn.position = Vector2(LX, 112)
+			rbtn.size = Vector2(300, 30)
 			var why2: String = game.unit_upgrade_block(u)
 			btn.enabled = why2 == "" or u.tech_left > 0.0
 			btn.accent = GameData.RED if u.tech_left > 0.0 else GameData.GOLD
@@ -963,13 +1044,13 @@ class InfoPanel extends Control:
 			btn.tooltip_text = why2
 		_update_commands()
 		if _focus is Building:
-			rbtn.position = Vector2(COL2, 62)
-			rbtn.size = Vector2(224, 32)
-			dbtn.position = Vector2(COL2 + 232.0, 62)
-			dbtn.size = Vector2(108, 32)
+			rbtn.position = Vector2(LX, 112)
+			rbtn.size = Vector2(176, 30)
+			dbtn.position = Vector2(LX + 184.0, 112)
+			dbtn.size = Vector2(116, 30)
 		elif _focus is Unit:
-			rbtn.position = Vector2(CMD, 62)
-			rbtn.size = Vector2(186, 32)
+			rbtn.position = Vector2(LX, 112)
+			rbtn.size = Vector2(300, 30)
 		var can_rep: bool = (_focus is Building or _focus is Unit) and _focus.team == 0 \
 				and not (_focus is Unit and (_focus.role == "convoy"))
 		rbtn.visible = can_rep
@@ -1040,51 +1121,46 @@ class InfoPanel extends Control:
 		for i in cmd_btns.size():
 			cmd_btns[i].visible = vis[i]
 			if vis[i]:
-				cmd_btns[i].position = Vector2(x, 24)
-				x += 96.0
+				cmd_btns[i].position = Vector2(x, 14)
+				x += 82.0
 		if show:
 			cmd_btns[1].active = game.command_mode == "move"
 			cmd_btns[2].active = game.command_mode == "attack"
 
 	## Ligne « LIBELLÉ  valeur » ; la valeur passe à la ligne si elle déborde. Renvoie la hauteur utilisée.
 	func _row(x: float, y: float, label: String, value: String, vcol := UiStyle.TEXT) -> float:
-		UiStyle.text(self, Vector2(x, y), label.to_upper(), 11, UiStyle.TEXT_DIM, true)
-		var yn := UiStyle.para(self, Vector2(x + 120, y), value, 15, vcol, COL2 - x - 120.0 - 14.0, 18.0)
-		return maxf(22.0, yn - y + 4.0)
+		UiStyle.text_o(self, Vector2(x, y), label.to_upper(), 12, UiStyle.TEXT_DIM, true)
+		var yn := UiStyle.para(self, Vector2(x + 104, y), value, 16, vcol, COL2 - x - 104.0 - 12.0, 19.0)
+		return maxf(23.0, yn - y + 4.0)
 
 	## Texte de la 2e colonne, à la ligne dans 340 px. Renvoie la ligne de base suivante.
 	func _c2(y: float, s: String, size: int, col: Color) -> float:
-		return UiStyle.para(self, Vector2(COL2, y), s, size, col, 340.0, size + 5.0)
+		return UiStyle.para(self, Vector2(COL2, y), s, size + 1, col, W3, size + 6.0)
 
 	func _hp_block(name_s: String, sub: String, hp: float, hp_max: float, mine: bool, tag := "") -> void:
 		var col: Color = UiSkin.accent if mine else GameData.RED
-		# Le titre ne doit jamais déborder sur les boutons (AMÉLIORER, RÉPARER…) : corps réduit si besoin
-		var max_w := 740.0
-		if btn.visible:
-			max_w = (COL2 if _focus is Building else CMD) - LX - 22.0
+		var max_w := 300.0
 		var title := name_s.to_upper()
-		var fs := 24
-		while fs > 14 and UiStyle.text_width(title, fs, true) > max_w:
+		var fs := 22
+		while fs > 13 and UiStyle.text_width(title, fs, true) > max_w:
 			fs -= 1
-		UiStyle.text(self, Vector2(LX, 58), title, fs, col, true)
-		var tag_in_title := false
+		UiStyle.text_o(self, Vector2(LX, 30), title, fs, col, true)
+		var ty := 48.0
 		if tag != "":
-			var w := UiStyle.text_width(title, fs, true)
-			tag_in_title = w + 14.0 + UiStyle.text_width(tag, 14) <= max_w
-			if tag_in_title:
-				UiStyle.text(self, Vector2(LX + w + 14, 58), tag, 14, UiStyle.GOLD, true)
+			UiStyle.text_o(self, Vector2(LX, ty), tag, 13, UiStyle.GOLD, true)
+			ty += 16.0
 		if sub != "":
-			var sl := UiStyle.wrap_lines(sub, 13, minf(max_w + 20.0, 740.0))
-			for i in mini(sl.size(), 2):
+			var sl := UiStyle.wrap_lines(sub, 13, max_w)
+			var nmax := 2 if tag == "" else 1
+			for i in mini(sl.size(), nmax):
 				var ln: String = sl[i]
-				if i == 1 and sl.size() > 2:
+				if i == nmax - 1 and sl.size() > nmax:
 					ln = ln.substr(0, maxi(ln.length() - 1, 1)) + "…"
-				UiStyle.text(self, Vector2(LX, 76 + 15 * i), ln, 13, UiStyle.TEXT_DIM)
-		if tag != "" and not tag_in_title:
-			var sw := UiStyle.text_width(sub, 13) if sub != "" else 0.0
-			UiStyle.text(self, Vector2(LX + minf(sw, 200.0) + (14.0 if sub != "" else 0.0), 76), tag, 13, UiStyle.GOLD, true)
-		UiSkin.bar(self, Rect2(LX, 94, 340, 18), hp / maxf(hp_max, 1.0), Color("6fe0a0") if mine else Color(1.0, 0.45, 0.4))
-		UiStyle.text(self, Vector2(LX + 352.0, 106), "%d / %d" % [int(hp), int(hp_max)], 13, UiStyle.TEXT)
+				UiStyle.text(self, Vector2(LX, ty + 15 * i), ln, 13, UiStyle.TEXT_DIM)
+		var br := Rect2(LX, 80, max_w, 20)
+		UiSkin.bar(self, br, hp / maxf(hp_max, 1.0), Color("6fe0a0") if mine else Color(1.0, 0.45, 0.4))
+		UiStyle.text_o(self, Vector2(LX, br.end.y - 5.0), "%d / %d" % [int(hp), int(hp_max)], 13, Color.WHITE, true,
+				HORIZONTAL_ALIGNMENT_CENTER, max_w)
 
 	func _draw() -> void:
 		if _focus == null:
@@ -1105,18 +1181,18 @@ class InfoPanel extends Control:
 			hp += u.hp
 			hp_max += u.max_hp
 		_hp_block("%d unités" % game.selected.size(), "Sélection multiple", hp, hp_max, true)
-		UiStyle.section(self, Vector2(LX, 128), 360, "COMPOSITION", UiStyle.GOLD)
-		var x := LX
-		var y := 152.0
+		UiStyle.section(self, Vector2(RX, 16), 262, "COMPOSITION", UiStyle.GOLD)
+		var x := RX
+		var y := 40.0
 		for id in counts:
 			UiStyle.text(self, Vector2(x, y), "%d ×" % counts[id], 15, UiStyle.GOLD)
 			UiStyle.text(self, Vector2(x + 34, y), GameData.dname(id), 15, UiStyle.TEXT)
 			y += 22.0
-			if y > 228.0:
-				y = 152.0
-				x += 190.0
-		UiStyle.section(self, Vector2(COL2, 128), 340, "ORDRES", UiStyle.GOLD)
-		var ym := _c2(154.0, "Clic droit : déplacer ou attaquer", 14, UiStyle.TEXT)
+			if y > 150.0:
+				y = 40.0
+				x += 150.0
+		UiStyle.section(self, Vector2(COL2, 92), W3, "ORDRES", UiStyle.GOLD)
+		var ym := _c2(118.0, "Clic droit : déplacer ou attaquer", 14, UiStyle.TEXT)
 		ym = _c2(ym + 3.0, "ATTAQUER : avance en tirant", 14, UiStyle.TEXT)
 		_c2(ym + 3.0, "ARRÊT : annule les ordres", 14, UiStyle.TEXT)
 
@@ -1131,35 +1207,35 @@ class InfoPanel extends Control:
 		var rank_tag := String(GameData.RANKS[u.rank]["name"]).to_upper() if u.role == "combat" else ""
 		_hp_block(GameData.name_of(u.id, game.faction_id_of(u.team)), GameData.desc_of(u.id, game.faction_id_of(u.team)), u.hp, u.max_hp, mine, rank_tag)
 		if u.role == "mcv" or u.role == "convoy":
-			UiStyle.section(self, Vector2(LX, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
-			var yr := 152.0
-			yr += _row(LX, yr, "Blindage", ARMOR.get(u.armor, u.armor))
-			_row(LX, yr, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
-			UiStyle.section(self, Vector2(COL2, 128), 340, "RÔLE", UiStyle.GOLD)
+			UiStyle.section(self, Vector2(RX, 16), 262, "CARACTÉRISTIQUES", UiStyle.GOLD)
+			var yr := 40.0
+			yr += _row(RX, yr, "Blindage", ARMOR.get(u.armor, u.armor))
+			_row(RX, yr, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
+			UiStyle.section(self, Vector2(COL2, 92), W3, "RÔLE", UiStyle.GOLD)
 			if u.role == "mcv":
-				_c2(154.0, "Placez-le sur un sol rocheux dégagé puis cliquez sur DÉPLOYER pour créer votre " + GameData.dname("chantier") + " (3x3 cases).", 14, UiStyle.TEXT)
+				_c2(118.0, "Placez-le sur un sol rocheux dégagé puis cliquez sur DÉPLOYER pour créer votre " + GameData.dname("chantier") + " (3x3 cases).", 14, UiStyle.TEXT)
 			else:
-				_c2(154.0, "Cargaison à évacuer par le point cyan, au bord de la carte (visible sur la carte et le radar).", 14, UiStyle.TEXT)
+				_c2(118.0, "Cargaison à évacuer par le point cyan, au bord de la carte (visible sur la carte et le radar).", 14, UiStyle.TEXT)
 			return
-		UiStyle.section(self, Vector2(LX, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
-		var y := 152.0
-		y += _row(LX, y, "Blindage", ARMOR.get(u.armor, u.armor))
-		y += _row(LX, y, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
+		UiStyle.section(self, Vector2(RX, 16), 262, "CARACTÉRISTIQUES", UiStyle.GOLD)
+		var y := 40.0
+		y += _row(RX, y, "Blindage", ARMOR.get(u.armor, u.armor))
+		y += _row(RX, y, "Vitesse", "%d    Vision %d cases" % [int(u.speed), u.vision])
 		if u.weapon != "":
 			var mult := 1.0 + GameData.RANK_DMG * u.rank
-			y += _row(LX, y, "Arme", String(WEAPON.get(u.weapon, u.weapon)) + (" — air + sol" if GameData.can_hit_air(u.id) else " — sol seulement"))
-			_row(LX, y, "Dégâts", "%.0f /s    Portée %d cases" % [u.dps * mult, int(u.w_range / 32.0)])
+			y += _row(RX, y, "Arme", String(WEAPON.get(u.weapon, u.weapon)) + (" — air + sol" if GameData.can_hit_air(u.id) else " — sol seulement"))
+			_row(RX, y, "Dégâts", "%.0f /s    Portée %d cases" % [u.dps * mult, int(u.w_range / 32.0)])
 		elif u.heal_rate > 0.0:
-			y += _row(LX, y, "Soins", "%d PV/s aux alliés" % int(u.heal_rate))
-			_row(LX, y, "Rayon", "%d cases" % int(u.heal_range / 32.0))
+			y += _row(RX, y, "Soins", "%d PV/s aux alliés" % int(u.heal_rate))
+			_row(RX, y, "Rayon", "%d cases" % int(u.heal_range / 32.0))
 		elif u.role == "transport":
-			y += _row(LX, y, "Soute", "%d / %d unités" % [u.cargo_units.size(), u.slots])
-			_row(LX, y, "Vol", "Ignore le terrain")
+			y += _row(RX, y, "Soute", "%d / %d unités" % [u.cargo_units.size(), u.slots])
+			_row(RX, y, "Vol", "Ignore le terrain")
 		else:
-			y += _row(LX, y, "Capacité", "%d  (%d en soute)" % [roundi(u.cargo_cap), roundi(u.cargo)])
-			_row(LX, y, "Rendement", "%d /s" % int(u.harvest_rate))
-		UiStyle.section(self, Vector2(COL2, 128), 340, "ÉVOLUTION" if u.role == "combat" else "RÔLE", UiStyle.GOLD)
-		var y2 := 154.0
+			y += _row(RX, y, "Capacité", "%d  (%d en soute)" % [roundi(u.cargo_cap), roundi(u.cargo)])
+			_row(RX, y, "Rendement", "%d /s" % int(u.harvest_rate))
+		UiStyle.section(self, Vector2(COL2, 92), W3, "ÉVOLUTION" if u.role == "combat" else "RÔLE", UiStyle.GOLD)
+		var y2 := 118.0
 		if u.role == "combat":
 			var nxt := ""
 			if u.rank + 1 < GameData.RANKS.size():
@@ -1214,7 +1290,7 @@ class InfoPanel extends Control:
 		var d := GameData.def(b.id)
 		var mine: bool = b.team == 0
 		_hp_block(GameData.name_of(b.id, game.faction_id_of(b.team)), _building_sub(b, mine), b.hp, b.max_hp, mine)
-		UiStyle.section(self, Vector2(LX, 128), 360, "CARACTÉRISTIQUES", UiStyle.GOLD)
+		UiStyle.section(self, Vector2(RX, 16), 262, "CARACTÉRISTIQUES", UiStyle.GOLD)
 		var rows: Array = []
 		if not d.get("wall", false) and GameData.can_upgrade(b.id):
 			rows.append(["Niveau", "%d / %d" % [b.level, GameData.MAX_LEVEL]])
@@ -1261,13 +1337,13 @@ class InfoPanel extends Control:
 		rows.append(["Vision", "%d cases" % b.vision])
 		if b.offline:
 			rows.append(["État", "HORS TENSION"])
-		var y := 152.0
+		var y := 40.0
 		for r in rows:
-			y += _row(LX, y, r[0], r[1], GameData.RED if r[0] == "État" else UiStyle.TEXT)
+			y += _row(RX, y, r[0], r[1], GameData.RED if r[0] == "État" else UiStyle.TEXT)
 		if mine and GameData.can_upgrade(b.id):
-			UiStyle.section(self, Vector2(COL2, 128), 340, "NIVEAU SUIVANT" if b.level < GameData.MAX_LEVEL else "ÉVOLUTION", UiStyle.GOLD)
+			UiStyle.section(self, Vector2(COL2, 92), W3, "NIVEAU SUIVANT" if b.level < GameData.MAX_LEVEL else "ÉVOLUTION", UiStyle.GOLD)
 			if b.level < GameData.MAX_LEVEL:
-				var yy := 154.0
+				var yy := 118.0
 				var up_txt: String = String(GameData.UPGRADES.get(b.id, ""))
 				if up_txt == "":
 					up_txt = "+40 % PV" + (", +25 % de dégâts" if b.weapon != "" else "")
@@ -1277,12 +1353,12 @@ class InfoPanel extends Control:
 					parts.append("consomme %d énergie de plus" % -dp)
 				for part in parts:
 					yy = UiStyle.para(self, Vector2(COL2, yy), "◆ " + part, 13,
-							GameData.AMBER if String(part).begins_with("consomme") else UiStyle.TEXT, 340.0, 17.0) + 3.0
+							GameData.AMBER if String(part).begins_with("consomme") else UiStyle.TEXT, W3, 18.0) + 3.0
 				var why: String = game.upgrade_block(b, game.ore)
 				if why != "":
-					UiStyle.para(self, Vector2(COL2, maxf(yy, 214.0)), why, 13, GameData.RED, 340.0, 16.0)
+					UiStyle.para(self, Vector2(COL2, maxf(yy, 168.0)), why, 13, GameData.RED, W3, 16.0)
 			else:
-				UiStyle.text(self, Vector2(COL2, 154), "Niveau maximum atteint", 15, UiStyle.GOLD)
+				UiStyle.text(self, Vector2(COL2, 118), "Niveau maximum atteint", 15, UiStyle.GOLD)
 
 
 # --- Bouton néon --------------------------------------------------------------
@@ -1504,7 +1580,7 @@ class BuildIcon extends Control:
 
 		# Seule l'image du bâtiment / véhicule est dessinée ; les détails sont dans l'infobulle.
 		var inn := UiSkin.inner("vignette_normal", Rect2(Vector2.ZERO, cs))
-		fit = inn.size * 0.92
+		fit = inn.size * 1.1
 		_draw_icon(inn.get_center() - Vector2(0, hover_t * 1.5), avail)
 
 		var fs := 12
@@ -1521,7 +1597,10 @@ class BuildIcon extends Control:
 			UiStyle.text_o(self, Vector2(inn.position.x, inn.end.y - 2.0), "Prêt", fs, Color(0.5, 1.0, 0.7, 0.75 + 0.25 * pulse), true,
 					HORIZONTAL_ALIGNMENT_CENTER, inn.size.x)
 
-	## Infobulle : nom, prix, consommation électrique, prérequis et raison d'un éventuel blocage.
+	func _make_custom_tooltip(_for_text: String) -> Object:
+		return TipCard.new(id, game)
+
+	## Texte brut de l'infobulle (repli).
 	func _get_tooltip(_at: Vector2) -> String:
 		var d := GameData.def(id)
 		var is_unit := GameData.UNITS.has(id)
@@ -1557,7 +1636,7 @@ class BuildIcon extends Control:
 		if src.size.x < 2.0 or src.size.y < 2.0:
 			src = Rect2(Vector2.ZERO, tex.get_size())
 		# On cadre sur la partie réellement dessinée du modèle, pour qu'elle remplisse l'icône
-		var k := minf(minf(fit.x / src.size.x, fit.y / src.size.y), 2.6)
+		var k := minf(minf(fit.x / src.size.x, fit.y / src.size.y), 4.5)
 		var dsz := src.size * k
 		var col := Color.WHITE if avail else Color(0.5, 0.5, 0.56, 0.85)
 		var cc := c + Vector2(0, 2)

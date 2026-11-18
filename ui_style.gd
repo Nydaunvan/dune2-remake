@@ -22,8 +22,12 @@ static func theme() -> Theme:
 	_theme = Theme.new()
 	_theme.default_font = body_font()
 	_theme.default_font_size = 15
-	var tip: StyleBox = UiSkin.flat_box(UiSkin.accent)
-	(tip as StyleBoxFlat).set_content_margin_all(12)
+	var tip := UiSkin.flat_box(UiSkin.accent, Color(0.04, 0.045, 0.07, 0.97))
+	tip.set_content_margin_all(6)
+	tip.set_border_width_all(2)
+	tip.shadow_color = Color(0, 0, 0, 0.45)
+	tip.shadow_size = 8
+	tip.border_blend = true
 	_theme.set_stylebox("panel", "TooltipPanel", tip)
 	_theme.set_color("font_color", "TooltipLabel", TEXT)
 	_theme.set_color("font_outline_color", "TooltipLabel", Color(0, 0, 0, 0.8))

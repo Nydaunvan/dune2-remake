@@ -21,6 +21,13 @@ func _process(_d: float) -> bool:
 				main.selected_building = b
 				main.camera.position = b.world_center()
 				break
+	if OS.has_environment("TIP") and f - started == 90:
+		var pc := PanelContainer.new()
+		pc.theme_type_variation = &""
+		pc.add_theme_stylebox_override("panel", UiStyle.theme().get_stylebox("panel", "TooltipPanel"))
+		pc.add_child(GameUI.TipCard.new(OS.get_environment("TIP"), main))
+		pc.position = Vector2(1000, 500)
+		main.ui.add_child(pc)
 	if f - started == 110:
 		var out := OS.get_environment("OUT") if OS.has_environment("OUT") else "/tmp/shots/ui.png"
 		root.get_viewport().get_texture().get_image().save_png(out)
