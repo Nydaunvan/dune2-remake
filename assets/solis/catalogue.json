@@ -1,0 +1,469 @@
+[
+  {
+    "id": "solis_atelier_de_conception",
+    "faction": "Solis",
+    "nom": "Atelier de conception",
+    "categorie": "bâtiment",
+    "fonction_source": "Chantier (départ)",
+    "design_propose": "Hall hexagonal bas à antenne centrale et atelier en ailes",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "portes et antenne",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×3",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_centrale_solaire",
+    "faction": "Solis",
+    "nom": "Centrale solaire",
+    "categorie": "bâtiment",
+    "fonction_source": "Énergie",
+    "design_propose": "Ailes de panneaux photovoltaïques sur mâts articulés",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "panneaux, rotor ou pulsation",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_raffinerie_solaire",
+    "faction": "Solis",
+    "nom": "Raffinerie solaire",
+    "categorie": "bâtiment",
+    "fonction_source": "Raffinage de l'épice",
+    "design_propose": "Silos ocre et séparateur centrifuge dans une coque claire",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "convoyeur et cuves",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_fonderie_de_precision",
+    "faction": "Solis",
+    "nom": "Fonderie de précision",
+    "categorie": "bâtiment",
+    "fonction_source": "Fonte du minerai",
+    "design_propose": "Four à induction et cheminée compacte",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "four et trémie",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_usine_d_assemblage",
+    "faction": "Solis",
+    "nom": "Usine d'assemblage",
+    "categorie": "bâtiment",
+    "fonction_source": "Production terrestre",
+    "design_propose": "Hangar lisse à deux portes coulissantes",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "portes et bras de montage",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_tourelle_de_garde",
+    "faction": "Solis",
+    "nom": "Tourelle de garde",
+    "categorie": "bâtiment",
+    "fonction_source": "Défense de base",
+    "design_propose": "Tourelle compacte à canon coaxial",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "tourelle yaw/pitch et recul",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_mur_de_plastacier",
+    "faction": "Solis",
+    "nom": "Mur de plastacier",
+    "categorie": "bâtiment",
+    "fonction_source": "Mur",
+    "design_propose": "Panneau de plastacier incliné et renfort bleu",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "aucun",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy"
+    ],
+    "emprise_cases": "1×1",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_reservoir_d_epice",
+    "faction": "Solis",
+    "nom": "Réservoir d'épice",
+    "categorie": "bâtiment",
+    "fonction_source": "Stockage d'épice",
+    "design_propose": "Cuve cylindrique claire et liquide orange",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "jauge ou pompe",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_reservoir_de_minerai",
+    "faction": "Solis",
+    "nom": "Réservoir de minerai",
+    "categorie": "bâtiment",
+    "fonction_source": "Stockage de minerai",
+    "design_propose": "Trémie claire à inserts argentés",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "trappe et convoyeur",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_centre_de_veille",
+    "faction": "Solis",
+    "nom": "Centre de veille",
+    "categorie": "bâtiment",
+    "fonction_source": "Radar",
+    "design_propose": "Dôme et antenne à balayage",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "antenne yaw / dish pitch",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_baie_de_reparation",
+    "faction": "Solis",
+    "nom": "Baie de réparation",
+    "categorie": "bâtiment",
+    "fonction_source": "Réparation",
+    "design_propose": "Baie ouverte avec bras robotisés",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "bras ou faisceau de réparation",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_reacteur_solaire",
+    "faction": "Solis",
+    "nom": "Réacteur solaire",
+    "categorie": "bâtiment",
+    "fonction_source": "Grosse énergie",
+    "design_propose": "Réacteur à anneau solaire rayonnant",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "rotor ou noyau émissif",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_rampe_de_roquettes",
+    "faction": "Solis",
+    "nom": "Rampe de roquettes",
+    "categorie": "bâtiment",
+    "fonction_source": "Défense longue portée",
+    "design_propose": "Pod à missiles sur cardan",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "tourelle yaw/pitch et couvercles",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_aerodrome",
+    "faction": "Solis",
+    "nom": "Aérodrome",
+    "categorie": "bâtiment",
+    "fonction_source": "Production aérienne",
+    "design_propose": "Hangar à piste intégrée et balisage bleu",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "portes, balises et zone d’atterrissage",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_tour_sonique",
+    "faction": "Solis",
+    "nom": "Tour sonique",
+    "categorie": "bâtiment",
+    "fonction_source": "Onde sonique de zone",
+    "design_propose": "Tour avec anneaux acoustiques concentriques",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_mortier_lourd",
+    "faction": "Solis",
+    "nom": "Mortier lourd",
+    "categorie": "bâtiment",
+    "fonction_source": "Artillerie longue portée, sol seulement",
+    "design_propose": "Mortier sur vérins orientables et plateforme stabilisée",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_comptoir_technique",
+    "faction": "Solis",
+    "nom": "Comptoir technique",
+    "categorie": "bâtiment",
+    "fonction_source": "Produit 3,5 Solaris par seconde",
+    "design_propose": "Comptoir cubique, modules de calcul et antennes",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "portes, mécanismes de production",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  },
+  {
+    "id": "solis_canon_solaire",
+    "faction": "Solis",
+    "nom": "Canon solaire",
+    "categorie": "bâtiment",
+    "fonction_source": "Frappe orbitale, sol seulement",
+    "design_propose": "Canon orbital en deux anneaux et tube télescopique",
+    "style_faction": "Titane clair, céramique blanche, inserts cobalt, surfaces précises, chanfreins propres et poussière fine.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "3×3",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D produit"
+  }
+]

@@ -374,8 +374,13 @@ func _physics_process(delta: float) -> void:
 		if game.bank != null and game.bank.has("%s|%s" % [hk, game.faction_id_of(team)]):
 			# bout du canon de la tête de tourelle, à l'angle exact de l'image affichée
 			var snapped: float = game.bank.snap_angle("%s|%s" % [hk, game.faction_id_of(team)], aim)
-			from = world_center() + Models.muzzle_offset(hk, snapped, _muzzle_i)
-			_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(hk)
+			var fid_m: String = game.faction_id_of(team)
+			if Models.solis_glb(id, fid_m) and Models.SOLIS_MUZZLES.has("%s_tete" % id):
+				# modèle importé : une seule bouche, relevée sur le modèle
+				from = world_center() + Models.muzzle_offset_f("%s_tete" % id, snapped, 0, fid_m)
+			else:
+				from = world_center() + Models.muzzle_offset(hk, snapped, _muzzle_i)
+				_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(hk)
 		fx_t = 0.6 if id == "tour_sonique" else (0.25 if id == "tour_prisme" else 0.0)
 		shot_t = 0.2
 		shot_at = from - position
@@ -424,6 +429,10 @@ func _draw_anim(s: Vector2, fid: String, bank) -> void:
 	var t := Time.get_ticks_msec() / 1000.0 + _phase
 	var powered: bool = game.power_ok(team)
 	var acc: Color = GameData.FACTIONS[fid]["color"] if GameData.FACTIONS.has(fid) else Color.WHITE
+	# Bâtiments Solis importés : les effets ci-dessous sont calés sur les anciens modèles, on ne garde que le radar
+	var glb := Models.solis_glb(id, fid)
+	if glb and id != "radar":
+		return
 	match id:
 		"radar":
 			var ang := t * (1.15 if powered else 0.2)
@@ -438,8 +447,9 @@ func _draw_anim(s: Vector2, fid: String, bank) -> void:
 				draw_arc(c, lerpf(18.0, 86.0, k), 0.0, TAU, 48, Color(0.4, 1.0, 0.6, (1.0 - k) * 0.30), 2.0, true)
 				var tip := c + Models.project(Vector3(0, 40, 0), 0.0)
 				draw_line(tip, tip + Vector2.from_angle(ang) * 30.0, Color(0.5, 1.0, 0.7, 0.18), 3.0, true)
-			var blink := 0.5 + 0.5 * sin(t * 6.0)
-			draw_circle(c + Models.project(Vector3(0, 31.5, 0), 0.0), 3.0 + blink, Color(1.0, 0.3, 0.25, 0.35 + 0.4 * blink))
+			if not glb:
+				var blink := 0.5 + 0.5 * sin(t * 6.0)
+				draw_circle(c + Models.project(Vector3(0, 31.5, 0), 0.0), 3.0 + blink, Color(1.0, 0.3, 0.25, 0.35 + 0.4 * blink))
 		"tour_sonique":
 			var em := c + Models.muzzle_offset("tour_sonique_tete", aim, 0)
 			var pulse := 0.5 + 0.5 * sin(t * 3.0)

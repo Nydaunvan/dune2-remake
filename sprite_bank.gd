@@ -81,14 +81,14 @@ func setup(p_game, faction_ids: Array) -> void:
 			var fr := Vector2(cs * 32) + Vector2(BUILDING_MARGIN, BUILDING_MARGIN)
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": 1,
 					"frame": fr, "extra": BUILDING_EXTRA, "ss": ss_building, "hd": true})
-			if TIERED.has(id): # paliers d'évolution : un modèle différent aux niveaux 2 et 3
+			if TIERED.has(id) and not Models.solis_glb(id, f): # paliers d'évolution : un modèle différent aux niveaux 2 et 3
 				for lv in [2, 3]:
 					_jobs.append({"key": "%s|%s|L%d" % [id, f, lv], "id": id, "accent": accent, "faction": f, "angles": 1,
 							"frame": fr, "extra": BUILDING_EXTRA, "ss": ss_building, "hd": true, "tier": lv})
 			if id == "radar":
 				_jobs.append({"key": "radar_tete|%s" % f, "id": "radar_tete", "accent": accent, "faction": f,
 						"angles": 32, "frame": Vector2(96, 96), "extra": 60.0})
-			if id == "tourelle":
+			if id == "tourelle" and not Models.solis_glb(id, f):
 				for lv in [2, 3]:
 					_jobs.append({"key": "tourelle_tete|%s|L%d" % [f, lv], "id": "tourelle_tete", "accent": accent, "faction": f, "angles": ANGLES,
 							"frame": Vector2(96, 96), "extra": 60.0, "tier": lv})

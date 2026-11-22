@@ -121,6 +121,9 @@ static func build(id: String, accent: Color, faction := "") -> Node3D:
 
 static func _build_model(id: String, accent: Color, faction := "") -> Node3D:
 	var r := Node3D.new()
+	# Maison Solis : bâtiments en modèles 3D importés (pack « Solis_18_Batiments »)
+	if faction == "solis" and _solis_glb_build(r, id):
+		return r
 	# Bâtiments et engins communs : chaque faction a sa propre silhouette (Solis garde le modèle de base)
 	if faction != "" and ModelsFac.build(r, id, faction, accent):
 		return r
@@ -180,6 +183,94 @@ static func _build_model(id: String, accent: Color, faction := "") -> Node3D:
 			if not ModelsExt.build(r, id, body, hi, accent):
 				_box(r, Vector3(20, 10, 20), Vector3(0, 5, 0), accent)
 	return r
+
+
+# --- Bâtiments de Maison Solis importés (glTF) ----------------------------------
+## Identifiant de jeu -> fichier solis_<nom>.gltf. Une case = 2 m dans le pack, soit 16 px/m (case de 32 px).
+const SOLIS_GLB := {
+	"chantier": "atelier_de_conception", "centrale": "centrale_solaire", "raffinerie": "raffinerie_solaire",
+	"fonderie": "fonderie_de_precision", "usine": "usine_d_assemblage", "tourelle": "tourelle_de_garde",
+	"silo": "reservoir_d_epice", "silo_minerai": "reservoir_de_minerai", "radar": "centre_de_veille",
+	"reparation": "baie_de_reparation", "reacteur": "reacteur_solaire", "batterie": "rampe_de_roquettes",
+	"aerodrome": "aerodrome", "tour_sonique": "tour_sonique", "mortier_lourd": "mortier_lourd",
+	"comptoir_solis": "comptoir_technique", "canon_solaire": "canon_solaire",
+}
+const SOLIS_PX_PER_M := 16.0
+## Bouches de tir des têtes de tourelle (x avant, y hauteur, z côté), relevées sur les nœuds « Muzzle » des modèles.
+const SOLIS_MUZZLES := {
+	"tourelle_tete": Vector3(24.8, 18.2, 0), "batterie_tete": Vector3(18.7, 23.0, 0), "tour_sonique_tete": Vector3(20.6, 20.3, 0),
+	"mortier_lourd_tete": Vector3(26.4, 31.1, 0), "canon_solaire_tete": Vector3(24.6, 42.7, 0),
+}
+static var _solis_scenes := {}
+
+
+static func _solis_path(id: String) -> String:
+	return "res://assets/solis/models/solis_%s.gltf" % SOLIS_GLB.get(id.trim_suffix("_tete"), "")
+
+
+## Vrai si ce modèle (bâtiment ou tête de tourelle) vient du pack glTF de Maison Solis.
+static func solis_glb(id: String, faction: String) -> bool:
+	return faction == "solis" and SOLIS_GLB.has(id.trim_suffix("_tete")) and ResourceLoader.exists(_solis_path(id))
+
+
+## Bouche de tir d'une tête de tourelle ; celle du pack pour Solis, sinon celle des modèles de base.
+static func muzzle_offset_f(id: String, rot: float, idx: int, faction: String) -> Vector2:
+	if faction == "solis" and SOLIS_MUZZLES.has(id) and solis_glb(id, faction):
+		var m: Vector3 = SOLIS_MUZZLES[id]
+		return Vector2(m.x, m.z).rotated(rot) + Vector2(0.0, -m.y * tan(deg_to_rad(30.0)))
+	return muzzle_offset(id, rot, idx)
+
+
+static func _xf_in(root: Node3D, node: Node3D) -> Transform3D:
+	var t := Transform3D.IDENTITY
+	var n: Node = node
+	while n != null and n != root:
+		t = (n as Node3D).transform * t
+		n = n.get_parent()
+	return t
+
+
+## Cache tout sauf la branche qui mène à `keep` (et ses descendants).
+static func _only_branch(root: Node3D, keep: Node3D) -> void:
+	var n: Node = keep
+	while n != root and n != null:
+		for sib in n.get_parent().get_children():
+			if sib != n and sib is Node3D:
+				(sib as Node3D).visible = false
+		n = n.get_parent()
+
+
+static func _solis_glb_build(r: Node3D, id: String) -> bool:
+	var head := id.ends_with("_tete")
+	var base := id.trim_suffix("_tete")
+	if not SOLIS_GLB.has(base) or not ResourceLoader.exists(_solis_path(id)):
+		return false
+	var ps: PackedScene = _solis_scenes.get(base)
+	if ps == null:
+		ps = load(_solis_path(id))
+		_solis_scenes[base] = ps
+	var inst := ps.instantiate() as Node3D
+	var yaw := inst.find_child("TurretYaw*", true, false) as Node3D
+	var g := Node3D.new()
+	if head:
+		if yaw == null:
+			inst.free()
+			g.free()
+			return false
+		# tête : avant du modèle (-Z) vers +X ; l'axe de la tourelle est ramené sur le centre du bâtiment
+		g.transform = Transform3D(Basis(Vector3.UP, -PI / 2.0).scaled(Vector3.ONE * SOLIS_PX_PER_M), Vector3.ZERO)
+		_only_branch(inst, yaw)
+		var piv := _xf_in(inst, yaw).origin
+		g.position = -(g.transform.basis * Vector3(piv.x, 0.0, piv.z))
+	else:
+		# façade (-Z) tournée vers le joueur (+Z)
+		g.transform = Transform3D(Basis(Vector3.UP, PI).scaled(Vector3.ONE * SOLIS_PX_PER_M), Vector3.ZERO)
+		if yaw != null:
+			yaw.visible = false
+	g.add_child(inst)
+	r.add_child(g)
+	return true
+
 
 
 # --- Bouches de tir ----------------------------------------------------------
