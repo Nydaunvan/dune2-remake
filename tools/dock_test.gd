@@ -81,6 +81,10 @@ func _process(_d: float) -> bool:
 		_check(h._dk == "" and h.ramp_lift == 0.0, "redescendue (état %s, lift %.1f)" % [h._dk, h.ramp_lift])
 		_check(left_foot, "la moissonneuse a pu repartir malgré les murs collés à la rampe (pos %s)" % str(h.position))
 		_check(float(main.credits) > ore0, "crédits encaissés (%d -> %d)" % [int(ore0), int(main.credits)])
+		if OS.has_environment("DOCK_ONLY"):
+			print("Résultat : %d échec(s)" % fails)
+			quit(1 if fails > 0 else 0)
+			return true
 		tank = main._spawn_unit("brute", main._find_free_cell(Vector2i(main.start_cell) + Vector2i(0, 8)), 0)
 		tank.hp = tank.max_hp * 0.4
 		var rep = null

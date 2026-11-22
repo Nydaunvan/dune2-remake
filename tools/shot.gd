@@ -87,7 +87,7 @@ func _process(_d: float) -> bool:
 				var dot := Node2D.new()
 				dot.top_level = true
 				dot.z_index = 100
-				var mo: Vector2 = Models.muzzle_offset(ids[i], angs[r], 0)
+				var mo: Vector2 = Models.muzzle_offset_t(ids[i], angs[r], angs[r], 0, node.faction_id) if Models.has_turret(ids[i], node.faction_id) else Models.muzzle_offset(ids[i], angs[r], 0, node.faction_id)
 				dot.position = u.position + mo + (Vector2(0, -46) if u.air else Vector2.ZERO)
 				dot.set_script(load("res://tools/dot.gd"))
 				node.add_child(dot)

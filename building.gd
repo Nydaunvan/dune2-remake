@@ -371,15 +371,17 @@ func _physics_process(delta: float) -> void:
 		cooldown = wd["cd"]
 		var from := world_center() + Vector2.from_angle(aim) * 22.0
 		var hk := "%s_tete" % id
-		if not Models.has_muzzle(hk):
+		if not Models.has_muzzle(hk, game.faction_id_of(team)):
 			hk = "tourelle_tete"
 		if game.bank != null and game.bank.has("%s|%s" % [hk, game.faction_id_of(team)]):
 			# bout du canon de la tête de tourelle, à l'angle exact de l'image affichée
 			var snapped: float = game.bank.snap_angle("%s|%s" % [hk, game.faction_id_of(team)], aim)
 			var fid_m: String = game.faction_id_of(team)
-			if Models.solis_glb(id, fid_m) and Models.SOLIS_MUZZLES.has("%s_tete" % id):
-				# modèle importé : une seule bouche, relevée sur le modèle
-				from = world_center() + Models.muzzle_offset_f("%s_tete" % id, snapped, 0, fid_m)
+			var nm: int = Models.imp_muzzle_count("%s_tete" % id, fid_m)
+			if nm > 0:
+				# modèle importé : bouche(s) relevée(s) sur le modèle, alternées s'il y en a plusieurs
+				from = world_center() + Models.muzzle_offset_f("%s_tete" % id, snapped, _muzzle_i, fid_m)
+				_muzzle_i = (_muzzle_i + 1) % nm
 			else:
 				from = world_center() + Models.muzzle_offset(hk, snapped, _muzzle_i)
 				_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(hk)
@@ -432,7 +434,7 @@ func _draw_anim(s: Vector2, fid: String, bank) -> void:
 	var powered: bool = game.power_ok(team)
 	var acc: Color = GameData.FACTIONS[fid]["color"] if GameData.FACTIONS.has(fid) else Color.WHITE
 	# Bâtiments Solis importés : les effets ci-dessous sont calés sur les anciens modèles, on ne garde que le radar
-	var glb := Models.solis_glb(id, fid)
+	var glb := Models.imp_glb(id, fid)
 	if glb and id != "radar":
 		if id == "raffinerie" or id == "fonderie":
 			_draw_unload_fx(c, t) # flot de particules du véhicule vers la trémie, recalé sur la piste

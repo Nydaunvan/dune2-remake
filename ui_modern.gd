@@ -1494,12 +1494,12 @@ class BuildIcon extends Control:
 		draw_texture_rect_region(tex, Rect2(cc - dsz / 2.0, dsz), src, col)
 		# Tourelle d'un véhicule : cuite à part, posée sur le pivot de la coque
 		if is_unit:
-			if Models.has_turret(id):
+			if Models.has_turret(id, game.faction_id):
 				var tk := "%s_tete|%s" % [id, game.faction_id]
 				var tt = game.bank.frame(tk, ang)
 				if tt != null:
 					var hull_c: Vector2 = cc + (game.bank.centre_px(key, ang) - (src.position + src.size * 0.5)) * k
-					var po := Models.turret_offset(id, ang)
+					var po := Models.turret_offset(id, ang, game.faction_id)
 					var ps: Vector2 = game.bank.px_scale(key)
 					var tcen: Vector2 = hull_c + Vector2(po.x * ps.x, po.y * ps.y) * k
 					var hcp: Vector2 = game.bank.centre_px(tk, ang)

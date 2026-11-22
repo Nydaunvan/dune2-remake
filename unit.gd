@@ -103,6 +103,9 @@ var _dk_paid := 0     # part déjà versée au compteur
 var _dk_applied := 0  # part réellement encaissée (stockage plein : le reste est perdu)
 var _dk_coin_t := 0.0
 var _dk_out := Vector2.ZERO   # point de sortie dégagé après la rampe
+var fid: String:                # faction du propriétaire (modèles importés propres à chaque faction)
+	get:
+		return game.faction_id_of(team) if game != null else ""
 var ramp_lift := 0.0          # hauteur due à la rampe (px écran)
 var turret := false           # tourelle indépendante de la coque (sprite de tourelle cuit à part)
 var turret_rot := 0.0         # cap (monde) de la tourelle
@@ -133,7 +136,7 @@ func setup(p_id: String, p_game, p_color: Color) -> void:
 	air = d.get("air", false)
 	var mstyle: Dictionary = ModelsExt.STYLES.get(id, {})
 	mech = mstyle.get("k", "") == "mech"
-	turret = Models.has_turret(id)
+	turret = Models.has_turret(id, fid)
 	if mech:
 		# Foulée : un cycle complet de marche = 2 × S / facteur d'appui, pour que les pieds posés ne glissent pas
 		_stride = ModelsMech.cycle_length(mstyle) * float(mstyle.get("s", 1.0))
@@ -685,7 +688,7 @@ func refresh_sprites() -> void:
 
 
 func _process(_delta: float) -> void:
-	if selected or (air and alive and Models.rotors(id).size() > 0):
+	if selected or (air and alive and Models.rotors(id, fid).size() > 0):
 		queue_redraw() # anneau de sélection pulsé / pales en rotation
 	var bank: SpriteBank = game.bank
 	if bank != null:
@@ -884,10 +887,10 @@ func _shoot(t) -> void:
 		special_t = 20.0
 	var from := position + Vector2.from_angle(turret_rot if turret else rotation) * 16.0
 	# Le projectile part du bout du canon dessiné (alterné entre les canons s'il y en a plusieurs)
-	var mo := Models.muzzle_offset_t(id, rotation, turret_rot, _muzzle_i) if turret else Models.muzzle_offset(id, rotation, _muzzle_i)
+	var mo := Models.muzzle_offset_t(id, rotation, turret_rot, _muzzle_i, fid) if turret else Models.muzzle_offset(id, rotation, _muzzle_i, fid)
 	if mo != Vector2.INF and game.bank != null and game.bank.has(_sprite_key()):
 		from = position + mo + (Vector2(0, -lift_px()) if air else Vector2.ZERO)
-		_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(id)
+		_muzzle_i = (_muzzle_i + 1) % Models.muzzle_count(id, fid)
 	game.fire(self, t, weapon, dps * float(wd["cd"]) * (1.0 + GameData.RANK_DMG * rank), from, ctrl)
 
 
@@ -1172,7 +1175,7 @@ func _ramp_pts(b) -> Dictionary:
 		# piste plate (modèle importé) : on se range devant la façade (A), on avance sur la piste jusqu'à ce que le nez touche
 		# la porte (P). Si la piste est plus courte que le véhicule, le reste du châssis dépasse devant le bâtiment.
 		var z0: float = float(q["z0"])
-		return {"A": c + Vector2(q["x"], z0 + 4.0), "B": c + Vector2(q["x"], z0), "P": c + Vector2(q["x"], float(q["nose"]) + radius),
+		return {"A": c + Vector2(q["x"], z0 + 4.0), "B": c + Vector2(q["x"], z0), "P": c + Vector2(q["x"], float(q["pc"]) if q.has("pc") else float(q["nose"]) + radius),
 				"h": 0.0, "z0": c.y + z0, "zb": c.y + z0}
 	return {"A": c + Vector2(q["x"], q["z0"] + 4.0), "B": c + Vector2(q["x"], q["pz"] + q["d"] / 2.0),
 			"P": c + Vector2(q["x"], q["pz"]), "h": absf(Models.project(Vector3(0, q["h"], 0), 0.0).y), "z0": c.y + q["z0"], "zb": c.y + q["pz"] + q["d"] / 2.0}
@@ -1375,14 +1378,14 @@ func _draw_sprite() -> bool:
 		var tt = bank.frame(tk, turret_rot)
 		if tt != null:
 			var tsnap := bank.snap_angle(tk, turret_rot)
-			draw_set_transform(Models.turret_offset(id, rotation).rotated(unrot) + rl, (turret_rot - tsnap) + unrot, Vector2.ONE)
+			draw_set_transform(Models.turret_offset(id, rotation, fid).rotated(unrot) + rl, (turret_rot - tsnap) + unrot, Vector2.ONE)
 			draw_texture_rect(tt, bank.draw_rect(tk, turret_rot), false)
 	return true
 
 
 ## Pales tournantes des hélicoptères et transports : dessinées chaque image par-dessus le sprite.
 func _draw_rotors(unrot: float) -> void:
-	var rs := Models.rotors(id)
+	var rs := Models.rotors(id, fid)
 	if rs.is_empty():
 		return
 	draw_set_transform(Vector2(0, -lift_px()).rotated(unrot), unrot, Vector2.ONE)

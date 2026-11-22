@@ -54,14 +54,16 @@ const TURRET_PIVOTS := {
 }
 
 
-static func turret_pivot(id: String) -> Vector3:
+static func turret_pivot(id: String, faction := "") -> Vector3:
+	if faction == "kharn" and ModelsKharn.has_unit(id):
+		return ModelsKharn.PIVOTS.get(id, Vector3.INF)
 	if TURRET_PIVOTS.has(id):
 		return TURRET_PIVOTS[id]
 	return ModelsExt.turret_pivot(id)
 
 
-static func has_turret(id: String) -> bool:
-	return turret_pivot(id) != Vector3.INF
+static func has_turret(id: String, faction := "") -> bool:
+	return turret_pivot(id, faction) != Vector3.INF
 
 
 ## Groupe « tourelle » d'un modèle : ses pièces sont données relativement au pivot. Cuit à part (voir build).
@@ -74,9 +76,9 @@ static func _tur(r: Node3D, pivot: Vector3) -> Node3D:
 
 
 ## Bouche de tir d'une unité à tourelle : le pivot suit la coque (cap `hull_rot`), la bouche suit la tourelle (`tur_rot`).
-static func muzzle_offset_t(id: String, hull_rot: float, tur_rot: float, idx := 0) -> Vector2:
-	var piv := turret_pivot(id)
-	var arr: Array = _muzzles(id)
+static func muzzle_offset_t(id: String, hull_rot: float, tur_rot: float, idx := 0, faction := "") -> Vector2:
+	var piv := turret_pivot(id, faction)
+	var arr: Array = _muzzles(id, faction)
 	var m: Vector3 = arr[idx % arr.size()]
 	var base := Vector2(piv.x, piv.z).rotated(hull_rot)
 	var rel := Vector2(m.x - piv.x, m.z - piv.z).rotated(tur_rot)
@@ -84,8 +86,8 @@ static func muzzle_offset_t(id: String, hull_rot: float, tur_rot: float, idx := 
 
 
 ## Décalage 2D du pivot de tourelle pour un cap de coque donné (sert à poser le sprite de tourelle sur la coque).
-static func turret_offset(id: String, hull_rot: float) -> Vector2:
-	var piv := turret_pivot(id)
+static func turret_offset(id: String, hull_rot: float, faction := "") -> Vector2:
+	var piv := turret_pivot(id, faction)
 	return Vector2(piv.x, piv.z).rotated(hull_rot) + Vector2(0.0, -piv.y * tan(deg_to_rad(30.0)))
 
 
@@ -98,7 +100,7 @@ static var tier := 1
 static func build(id: String, accent: Color, faction := "") -> Node3D:
 	var head := id.ends_with("_tete")
 	var base := id.trim_suffix("_tete")
-	if has_turret(base):
+	if has_turret(base, faction):
 		var m := _build_model(base, accent, faction)
 		var tur := m.get_node_or_null("TUR")
 		if tur != null:
@@ -123,6 +125,9 @@ static func _build_model(id: String, accent: Color, faction := "") -> Node3D:
 	var r := Node3D.new()
 	# Maison Solis : bâtiments en modèles 3D importés (pack « Solis_18_Batiments »)
 	if faction == "solis" and _solis_glb_build(r, id):
+		return r
+	# Légion Kharn : 18 bâtiments et 19 unités importés (pack « Kharn_37_Batiments_Unites »)
+	if faction == "kharn" and ModelsKharn.build(r, id):
 		return r
 	# Bâtiments et engins communs : chaque faction a sa propre silhouette (Solis garde le modèle de base)
 	if faction != "" and ModelsFac.build(r, id, faction, accent):
@@ -213,8 +218,28 @@ static func solis_glb(id: String, faction: String) -> bool:
 	return faction == "solis" and SOLIS_GLB.has(id.trim_suffix("_tete")) and ResourceLoader.exists(_solis_path(id))
 
 
+## Vrai si ce bâtiment (ou sa tête) est un modèle importé, quelle que soit la faction (Solis ou Kharn).
+static func imp_glb(id: String, faction: String) -> bool:
+	if faction == "kharn":
+		return ModelsKharn.has_building(id)
+	return solis_glb(id, faction)
+
+
+## Nombre de bouches relevées sur le modèle importé d'une tête de tourelle (0 : pas de modèle importé ou pas de bouche).
+static func imp_muzzle_count(head_id: String, faction: String) -> int:
+	if faction == "kharn" and ModelsKharn.has_building(head_id) and ModelsKharn.HEAD_MUZZLES.has(head_id):
+		return ModelsKharn.HEAD_MUZZLES[head_id].size()
+	if solis_glb(head_id, faction) and SOLIS_MUZZLES.has(head_id):
+		return 1
+	return 0
+
+
 ## Bouche de tir d'une tête de tourelle ; celle du pack pour Solis, sinon celle des modèles de base.
 static func muzzle_offset_f(id: String, rot: float, idx: int, faction: String) -> Vector2:
+	if faction == "kharn" and ModelsKharn.has_building(id) and ModelsKharn.HEAD_MUZZLES.has(id):
+		var arr: Array = ModelsKharn.HEAD_MUZZLES[id]
+		var mk: Vector3 = arr[idx % arr.size()]
+		return Vector2(mk.x, mk.z).rotated(rot) + Vector2(0.0, -mk.y * tan(deg_to_rad(30.0)))
 	if faction == "solis" and SOLIS_MUZZLES.has(id) and solis_glb(id, faction):
 		var m: Vector3 = SOLIS_MUZZLES[id]
 		return Vector2(m.x, m.z).rotated(rot) + Vector2(0.0, -m.y * tan(deg_to_rad(30.0)))
@@ -303,11 +328,18 @@ const MUZZLES := {
 }
 
 
-static func has_muzzle(id: String) -> bool:
+static func has_muzzle(id: String, faction := "") -> bool:
+	if faction == "kharn" and (ModelsKharn.has_unit(id) or ModelsKharn.has_building(id)):
+		return ModelsKharn.MUZZLES.has(id) or ModelsKharn.HEAD_MUZZLES.has(id) # modèle importé : seules ses bouches comptent
 	return MUZZLES.has(id) or ModelsExt.has(id.trim_suffix("_tete"))
 
 
-static func _muzzles(id: String) -> Array:
+static func _muzzles(id: String, faction := "") -> Array:
+	if faction == "kharn":
+		if ModelsKharn.MUZZLES.has(id):
+			return ModelsKharn.MUZZLES[id]
+		if ModelsKharn.HEAD_MUZZLES.has(id):
+			return ModelsKharn.HEAD_MUZZLES[id]
 	if MUZZLES.has(id):
 		return MUZZLES[id]
 	return ModelsExt.muzzles(id.trim_suffix("_tete"))
@@ -316,10 +348,10 @@ static func _muzzles(id: String) -> Array:
 ## Décalage 2D (monde, depuis le centre) de la bouche n° `idx` pour un modèle orienté `rot`.
 ## Même projection oblique que SpriteBank : la hauteur monte à l'écran de y·tan(TILT).
 ## Renvoie Vector2.INF si le modèle n'a pas de bouche définie.
-static func muzzle_offset(id: String, rot: float, idx := 0) -> Vector2:
-	if not has_muzzle(id):
+static func muzzle_offset(id: String, rot: float, idx := 0, faction := "") -> Vector2:
+	if not has_muzzle(id, faction):
 		return Vector2.INF
-	var arr: Array = _muzzles(id)
+	var arr: Array = _muzzles(id, faction)
 	var m: Vector3 = arr[idx % arr.size()]
 	return Vector2(m.x, m.z).rotated(rot) + Vector2(0.0, -m.y * tan(deg_to_rad(30.0)))
 
@@ -333,9 +365,18 @@ const DOORS := {
 }
 
 
+## Porte de production d'un bâtiment (modèle importé de la Légion Kharn, sinon table de base). Vide s'il n'en a pas.
+static func door_of(id: String, faction := "") -> Dictionary:
+	if faction == "kharn" and ModelsKharn.DOORS.has(id) and ModelsKharn.has_building(id):
+		return ModelsKharn.DOORS[id]
+	return DOORS.get(id, {})
+
+
 ## Rotors animés (dessinés par l'unité, pas cuits dans le sprite) : moyeu (x, y, z du modèle),
 ## rayon, nombre de pales, vitesse (rad/s), plan horizontal (rotor principal) ou vertical (rotor de queue).
-static func rotors(id: String) -> Array:
+static func rotors(id: String, faction := "") -> Array:
+	if faction == "kharn" and ModelsKharn.has_unit(id):
+		return ModelsKharn.ROTORS.get(id, [])
 	if ModelsExt.has(id):
 		return ModelsExt.rotors(id)
 	match id:
@@ -354,8 +395,8 @@ static func project(p: Vector3, rot: float) -> Vector2:
 	return Vector2(p.x, p.z).rotated(rot) + Vector2(0.0, -p.y * tan(deg_to_rad(30.0)))
 
 
-static func muzzle_count(id: String) -> int:
-	return _muzzles(id).size() if has_muzzle(id) else 1
+static func muzzle_count(id: String, faction := "") -> int:
+	return _muzzles(id, faction).size() if has_muzzle(id, faction) else 1
 
 
 # --- Primitives ---------------------------------------------------------------
@@ -802,6 +843,8 @@ const RAMPS_SOLIS := {
 static func ramp_of(id: String, faction := "") -> Dictionary:
 	if faction == "solis" and RAMPS_SOLIS.has(id) and solis_glb(id, faction):
 		return RAMPS_SOLIS[id]
+	if faction == "kharn" and ModelsKharn.RAMPS.has(id) and ModelsKharn.has_building(id):
+		return ModelsKharn.RAMPS[id]
 	return RAMPS.get(id, {})
 
 

@@ -1,0 +1,1168 @@
+[
+  {
+    "id": "kharn_forteresse_de_commandement",
+    "faction": "Kharn",
+    "nom": "Forteresse de commandement",
+    "categorie": "bâtiment",
+    "fonction_source": "Chantier (départ)",
+    "design_propose": "Fortin carré à tours blindées et sas frontal",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "portes et antenne",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×3",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.94,
+      2.835,
+      5.94
+    ]
+  },
+  {
+    "id": "kharn_chaudiere_de_guerre",
+    "faction": "Kharn",
+    "nom": "Chaudière de guerre",
+    "categorie": "bâtiment",
+    "fonction_source": "Énergie",
+    "design_propose": "Deux chaudières blindées et cheminées verticales",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "panneaux, rotor ou pulsation",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      2.917,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_raffinerie_lourde",
+    "faction": "Kharn",
+    "nom": "Raffinerie lourde",
+    "categorie": "bâtiment",
+    "fonction_source": "Raffinage de l'épice",
+    "design_propose": "Cuves massives rouges, tuyaux et convoyeur blindé",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "convoyeur et cuves",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.94,
+      2.577,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_haut_fourneau",
+    "faction": "Kharn",
+    "nom": "Haut fourneau",
+    "categorie": "bâtiment",
+    "fonction_source": "Fonte du minerai",
+    "design_propose": "Haut fourneau massif à gueule de fonte",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "four et trémie",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.94,
+      3.537,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_arsenal",
+    "faction": "Kharn",
+    "nom": "Arsenal",
+    "categorie": "bâtiment",
+    "fonction_source": "Production terrestre",
+    "design_propose": "Usine blindée avec grande porte et rails",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "portes et bras de montage",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.94,
+      2.787,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_casemate",
+    "faction": "Kharn",
+    "nom": "Casemate",
+    "categorie": "bâtiment",
+    "fonction_source": "Défense de base",
+    "design_propose": "Casemate basse à canon épais",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "tourelle yaw/pitch et recul",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      2.07,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_mur_de_beton",
+    "faction": "Kharn",
+    "nom": "Mur de béton",
+    "categorie": "bâtiment",
+    "fonction_source": "Mur",
+    "design_propose": "Bloc béton, plaque rouge et barres",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "aucun",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy"
+    ],
+    "emprise_cases": "1×1",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      1.94,
+      1.625,
+      1.94
+    ]
+  },
+  {
+    "id": "kharn_silo_blinde",
+    "faction": "Kharn",
+    "nom": "Silo blindé",
+    "categorie": "bâtiment",
+    "fonction_source": "Stockage d'épice",
+    "design_propose": "Silo blindé rouge avec conduits orange",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "jauge ou pompe",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      2.41,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_soute_a_minerai",
+    "faction": "Kharn",
+    "nom": "Soute à minerai",
+    "categorie": "bâtiment",
+    "fonction_source": "Stockage de minerai",
+    "design_propose": "Soute lourde et trémie métallique",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "trappe et convoyeur",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      1.648,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_poste_d_ecoute",
+    "faction": "Kharn",
+    "nom": "Poste d'écoute",
+    "categorie": "bâtiment",
+    "fonction_source": "Radar",
+    "design_propose": "Tour radar blindée et parabole lourde",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "antenne yaw / dish pitch",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      3.078,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_garage_de_campagne",
+    "faction": "Kharn",
+    "nom": "Garage de campagne",
+    "categorie": "bâtiment",
+    "fonction_source": "Réparation",
+    "design_propose": "Garage avec pont de levage",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "bras ou faisceau de réparation",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.94,
+      1.9,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_reacteur_lourd",
+    "faction": "Kharn",
+    "nom": "Réacteur lourd",
+    "categorie": "bâtiment",
+    "fonction_source": "Grosse énergie",
+    "design_propose": "Générateur lourd refroidi par radiateurs",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "rotor ou noyau émissif",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      2.07,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_batterie_de_roquettes",
+    "faction": "Kharn",
+    "nom": "Batterie de roquettes",
+    "categorie": "bâtiment",
+    "fonction_source": "Défense longue portée",
+    "design_propose": "Batterie blindée à tubes multiples",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "tourelle yaw/pitch et couvercles",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      1.69,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_piste_de_guerre",
+    "faction": "Kharn",
+    "nom": "Piste de guerre",
+    "categorie": "bâtiment",
+    "fonction_source": "Production aérienne",
+    "design_propose": "Piste bétonnée blindée et hangar massif",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "portes, balises et zone d’atterrissage",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.94,
+      2.605,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_bunker",
+    "faction": "Kharn",
+    "nom": "Bunker",
+    "categorie": "bâtiment",
+    "fonction_source": "Fortin ultra-résistant",
+    "design_propose": "Bunker bas à embrasures et toit blindé",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      1.888,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_batterie_de_mortiers",
+    "faction": "Kharn",
+    "nom": "Batterie de mortiers",
+    "categorie": "bâtiment",
+    "fonction_source": "Artillerie longue portée, sol seulement",
+    "design_propose": "Batterie de mortiers jumelés à plaques rouges",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.94,
+      2.261,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_fonderie_lourde",
+    "faction": "Kharn",
+    "nom": "Fonderie lourde",
+    "categorie": "bâtiment",
+    "fonction_source": "Produit 4 minerai par seconde",
+    "design_propose": "Usine lourde à haut fourneau et grues",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "portes, mécanismes de production",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.94,
+      2.887,
+      3.94
+    ]
+  },
+  {
+    "id": "kharn_marteau_de_guerre",
+    "faction": "Kharn",
+    "nom": "Marteau de guerre",
+    "categorie": "bâtiment",
+    "fonction_source": "Frappe orbitale, sol seulement",
+    "design_propose": "Supercanon orbital rouge à culasse massive",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "3×3",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.94,
+      2.925,
+      5.94
+    ]
+  },
+  {
+    "id": "kharn_recolteur_blinde",
+    "faction": "Kharn",
+    "nom": "Récolteur blindé",
+    "categorie": "unité",
+    "fonction_source": "Récolteur",
+    "design_propose": "Récolteur chenillé avec lame blindée",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, outil de récolte, trappe",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "harvest",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      1.728,
+      1.48,
+      2.699
+    ]
+  },
+  {
+    "id": "kharn_mineur_lourd",
+    "faction": "Kharn",
+    "nom": "Mineur lourd",
+    "categorie": "unité",
+    "fonction_source": "Mineur",
+    "design_propose": "Mineur lourd à forets jumelés",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, foret, vérin",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "mine",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      1.728,
+      1.312,
+      2.632
+    ]
+  },
+  {
+    "id": "kharn_engin_de_siege",
+    "faction": "Kharn",
+    "nom": "Engin de siège",
+    "categorie": "unité",
+    "fonction_source": "Engin de base",
+    "design_propose": "Engin de siège à modules blindés dépliants",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, panneaux déployables",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "deploy"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      2.04,
+      1.45,
+      2.771
+    ]
+  },
+  {
+    "id": "kharn_rodeur",
+    "faction": "Kharn",
+    "nom": "Rôdeur",
+    "categorie": "unité",
+    "fonction_source": "Buggy d'assaut rapide et bon marché",
+    "design_propose": "Buggy ouvert robuste à mitrailleuse",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      1.784,
+      1.308,
+      2.259
+    ]
+  },
+  {
+    "id": "kharn_belier",
+    "faction": "Kharn",
+    "nom": "Bélier",
+    "categorie": "unité",
+    "fonction_source": "Buggy d'assaut bon marché",
+    "design_propose": "Buggy blindé à pare-chocs agressif",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      1.784,
+      1.211,
+      2.827
+    ]
+  },
+  {
+    "id": "kharn_demolisseur",
+    "faction": "Kharn",
+    "nom": "Démolisseur",
+    "categorie": "unité",
+    "fonction_source": "Blindé bélier, détruit les bâtiments",
+    "design_propose": "Char-bélier à lame frontale massive",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      2.15,
+      1.63,
+      3.275
+    ]
+  },
+  {
+    "id": "kharn_brasier",
+    "faction": "Kharn",
+    "nom": "Brasier",
+    "categorie": "unité",
+    "fonction_source": "Lance-flammes, fauche l'infanterie légère",
+    "design_propose": "Véhicule avec réservoir et lance-flammes pivotant",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      1.728,
+      1.42,
+      2.271
+    ]
+  },
+  {
+    "id": "kharn_depanneuse",
+    "faction": "Kharn",
+    "nom": "Dépanneuse",
+    "categorie": "unité",
+    "fonction_source": "Répare les alliés proches",
+    "design_propose": "Blindé atelier à treuil et grue",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, bras ou émetteur de réparation",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "repair"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      1.728,
+      1.88,
+      2.001
+    ]
+  },
+  {
+    "id": "kharn_salve",
+    "faction": "Kharn",
+    "nom": "Salve",
+    "categorie": "unité",
+    "fonction_source": "Lance-missiles anti-aérien",
+    "design_propose": "Lance-missiles antiaérien à quatre tubes",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      1.728,
+      1.61,
+      2.001
+    ]
+  },
+  {
+    "id": "kharn_cogneur",
+    "faction": "Kharn",
+    "nom": "Cogneur",
+    "categorie": "unité",
+    "fonction_source": "Mécha de mêlée, ravage bâtiments et infanterie",
+    "design_propose": "Bipède lourd à masses mécaniques et poings",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "biped",
+    "composants_mobiles": "rig 2 jambes, bassin, articulations, pieds, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "walk",
+      "turn_left",
+      "turn_right",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      2.12,
+      2.415,
+      1.225
+    ]
+  },
+  {
+    "id": "kharn_gladiateur",
+    "faction": "Kharn",
+    "nom": "Gladiateur",
+    "categorie": "unité",
+    "fonction_source": "Mécha d'assaut moyen avec bouclier",
+    "design_propose": "Bipède blindé, bouclier et autocanon",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "biped",
+    "composants_mobiles": "rig 2 jambes, bassin, articulations, pieds, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "walk",
+      "turn_left",
+      "turn_right",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      2.236,
+      2.415,
+      1.79
+    ]
+  },
+  {
+    "id": "kharn_brute",
+    "faction": "Kharn",
+    "nom": "Brute",
+    "categorie": "unité",
+    "fonction_source": "Char lourd",
+    "design_propose": "Char lourd trapu, tourelle blindée",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      2.15,
+      1.75,
+      2.917
+    ]
+  },
+  {
+    "id": "kharn_obusier",
+    "faction": "Kharn",
+    "nom": "Obusier",
+    "categorie": "unité",
+    "fonction_source": "Artillerie lourde longue portée (sol)",
+    "design_propose": "Artillerie chenillée, mortier et stabilisateurs",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      2.15,
+      2.404,
+      2.892
+    ]
+  },
+  {
+    "id": "kharn_titan",
+    "faction": "Kharn",
+    "nom": "Titan",
+    "categorie": "unité",
+    "fonction_source": "Char super-lourd, quasi indestructible",
+    "design_propose": "Super-char à quatre trains de chenilles",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      2.548,
+      1.955,
+      3.802
+    ]
+  },
+  {
+    "id": "kharn_mastodonte",
+    "faction": "Kharn",
+    "nom": "Mastodonte",
+    "categorie": "unité",
+    "fonction_source": "Mécha quadrupède à double lance-roquettes (sol et air)",
+    "design_propose": "Quadrupède lourd, double lance-roquettes",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "quadruped",
+    "composants_mobiles": "rig 4 jambes, hanches, genoux, pieds, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "walk",
+      "turn_left",
+      "turn_right",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      2.47,
+      2.885,
+      2.215
+    ]
+  },
+  {
+    "id": "kharn_aigle",
+    "faction": "Kharn",
+    "nom": "Aigle",
+    "categorie": "unité",
+    "fonction_source": "Chasseur lourd de supériorité aérienne",
+    "design_propose": "Intercepteur blindé rouge et noir",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "air",
+    "composants_mobiles": "propulseurs, gouvernes, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.274,
+      1.647,
+      2.903
+    ]
+  },
+  {
+    "id": "kharn_faucheur",
+    "faction": "Kharn",
+    "nom": "Faucheur",
+    "categorie": "unité",
+    "fonction_source": "Hélicoptère à roquettes",
+    "design_propose": "Hélicoptère d’attaque à rotors et pods",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "rotor",
+    "composants_mobiles": "rotor principal et anti-couple, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      4.04,
+      1.69,
+      4.29
+    ]
+  },
+  {
+    "id": "kharn_mule",
+    "faction": "Kharn",
+    "nom": "Mule",
+    "categorie": "unité",
+    "fonction_source": "Transport de 6 unités",
+    "design_propose": "Transport lourd à moteurs latéraux et rampe",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "transport",
+    "composants_mobiles": "propulseurs, trappe et rampe",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "load",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      3.849,
+      1.66,
+      3.213
+    ]
+  },
+  {
+    "id": "kharn_forteresse_volante",
+    "faction": "Kharn",
+    "nom": "Forteresse volante",
+    "categorie": "unité",
+    "fonction_source": "Bombardier lourd (sol)",
+    "design_propose": "Bombardier épais à tourelles ventrales",
+    "style_faction": "Acier gris anthracite, plaques rouges oxydées, rivets massifs, échappements et renforts industriels.",
+    "architecture": "air",
+    "composants_mobiles": "propulseurs, gouvernes, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; animations du catalogue restant des spécifications gameplay",
+    "dimensions_m": [
+      5.189,
+      1.955,
+      3.534
+    ]
+  }
+]

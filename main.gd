@@ -3507,9 +3507,9 @@ func spawn_for(id: String, team: int) -> Unit:
 		if bb.id == from_id and bb.team == team and bb.alive:
 			b = bb
 			break
-	if b == null or not Models.DOORS.has(from_id):
+	var door: Dictionary = Models.door_of(from_id, faction_id_of(team))
+	if b == null or door.is_empty():
 		return u
-	var door: Dictionary = Models.DOORS[from_id]
 	var c := b.world_center()
 	b.open_door(1.7)
 	if door.has("pad"):

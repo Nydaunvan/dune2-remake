@@ -62,7 +62,7 @@ func setup(p_game, faction_ids: Array) -> void:
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": ANGLES,
 					"frame": UNIT_FRAME, "extra": UNIT_EXTRA, "ss": uss, "crop": true, "hd": true})
 			# Tourelle indépendante : cuite à part, centrée sur son pivot, 16 angles
-			if Models.has_turret(id):
+			if Models.has_turret(id, f):
 				_jobs.append({"key": "%s_tete|%s" % [id, f], "id": "%s_tete" % id, "accent": accent, "faction": f, "angles": ANGLES,
 						"frame": Vector2(96, 96), "extra": 44.0, "ss": ss_unit, "crop": true, "hd": true})
 			# Mechas : images de marche (pattes qui bougent), une par phase du cycle
@@ -81,14 +81,14 @@ func setup(p_game, faction_ids: Array) -> void:
 			var fr := Vector2(cs * 32) + Vector2(BUILDING_MARGIN, BUILDING_MARGIN)
 			_jobs.append({"key": "%s|%s" % [id, f], "id": id, "accent": accent, "faction": f, "angles": 1,
 					"frame": fr, "extra": BUILDING_EXTRA, "ss": ss_building, "hd": true})
-			if TIERED.has(id) and not Models.solis_glb(id, f): # paliers d'évolution : un modèle différent aux niveaux 2 et 3
+			if TIERED.has(id) and not Models.imp_glb(id, f): # paliers d'évolution : un modèle différent aux niveaux 2 et 3
 				for lv in [2, 3]:
 					_jobs.append({"key": "%s|%s|L%d" % [id, f, lv], "id": id, "accent": accent, "faction": f, "angles": 1,
 							"frame": fr, "extra": BUILDING_EXTRA, "ss": ss_building, "hd": true, "tier": lv})
 			if id == "radar":
 				_jobs.append({"key": "radar_tete|%s" % f, "id": "radar_tete", "accent": accent, "faction": f,
 						"angles": 32, "frame": Vector2(96, 96), "extra": 60.0})
-			if id == "tourelle" and not Models.solis_glb(id, f):
+			if id == "tourelle" and not Models.imp_glb(id, f):
 				for lv in [2, 3]:
 					_jobs.append({"key": "tourelle_tete|%s|L%d" % [f, lv], "id": "tourelle_tete", "accent": accent, "faction": f, "angles": ANGLES,
 							"frame": Vector2(96, 96), "extra": 60.0, "tier": lv})
@@ -339,7 +339,7 @@ func _worker(idx: int) -> void:
 # Une cuisson complète prend de longues secondes ; relue du disque (données brutes compressées zstd, mipmaps comprises),
 # elle est quasi instantanée. Le cache est invalidé dès que le code des modèles, les shaders, la version ou les réglages changent.
 
-const CACHE_FILES := ["models.gd", "models_ext.gd", "models_fac.gd", "models_mech.gd", "models_tiers.gd", "sprite_bank.gd",
+const CACHE_FILES := ["models.gd", "models_kharn.gd", "models_ext.gd", "models_fac.gd", "models_mech.gd", "models_tiers.gd", "sprite_bank.gd",
 		"game_data.gd", "shaders/hull.gdshader"]
 var _cache_dir := ""
 var _cache_sig := ""
