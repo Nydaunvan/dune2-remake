@@ -688,6 +688,7 @@ func _build_terrain() -> void:
 	field_tex = ImageTexture.create_from_image(field_img)
 	var mat := ShaderMaterial.new()
 	mat.shader = DisplayCfg.terrain_shader()
+	DisplayCfg.bind_terrain_textures(mat)
 	terrain_mat = mat
 	mat.set_shader_parameter("field", field_tex)
 	mat.set_shader_parameter("world_size", world_size)
@@ -711,6 +712,7 @@ func _build_terrain() -> void:
 func apply_terrain_quality() -> void:
 	if terrain_mat != null:
 		terrain_mat.shader = DisplayCfg.terrain_shader()
+		DisplayCfg.bind_terrain_textures(terrain_mat)
 
 
 func _build_minimap() -> void:
