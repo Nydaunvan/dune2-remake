@@ -1,0 +1,1305 @@
+[
+  {
+    "id": "conclave_noyau_cristallin",
+    "faction": "Conclave",
+    "nom": "Noyau cristallin",
+    "categorie": "bâtiment",
+    "fonction_source": "Chantier (départ)",
+    "design_propose": "Noyau prismatique sur socle radial noir",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "portes et antenne",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×3",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Rotor_": 1
+    },
+    "dimensions_m": [
+      5.876,
+      3.425,
+      5.876
+    ]
+  },
+  {
+    "id": "conclave_cuve_d_energie_vive",
+    "faction": "Conclave",
+    "nom": "Cuve d'énergie vive",
+    "categorie": "bâtiment",
+    "fonction_source": "Énergie",
+    "design_propose": "Cuve cylindrique noire et cristal pulsant",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "panneaux, rotor ou pulsation",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      3.917,
+      2.48,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_alambic_de_cristal",
+    "faction": "Conclave",
+    "nom": "Alambic de cristal",
+    "categorie": "bâtiment",
+    "fonction_source": "Raffinage de l'épice",
+    "design_propose": "Alambic prismatique et conduits de cristal orange",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "convoyeur et cuves",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.876,
+      2.16,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_creuset_d_obsidienne",
+    "faction": "Conclave",
+    "nom": "Creuset d'obsidienne",
+    "categorie": "bâtiment",
+    "fonction_source": "Fonte du minerai",
+    "design_propose": "Creuset noir à cœur orange, mâchoires minérales",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "four et trémie",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.876,
+      1.991,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_matrice_de_cristal",
+    "faction": "Conclave",
+    "nom": "Matrice de cristal",
+    "categorie": "bâtiment",
+    "fonction_source": "Production terrestre",
+    "design_propose": "Matrice polygonale et portail de formation",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "portes et bras de montage",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Rotor_": 1
+    },
+    "dimensions_m": [
+      5.876,
+      2.445,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_sentinelle_de_cristal",
+    "faction": "Conclave",
+    "nom": "Sentinelle de cristal",
+    "categorie": "bâtiment",
+    "fonction_source": "Défense de base",
+    "design_propose": "Prisme dard sur base rotative",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "tourelle yaw/pitch et recul",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1
+    },
+    "dimensions_m": [
+      3.917,
+      1.58,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_mur_de_pierre_noire",
+    "faction": "Conclave",
+    "nom": "Mur de pierre noire",
+    "categorie": "bâtiment",
+    "fonction_source": "Mur",
+    "design_propose": "Bloc d’obsidienne fracturé et joint violet",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "aucun",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy"
+    ],
+    "emprise_cases": "1×1",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      2.117,
+      1.83,
+      2.085
+    ]
+  },
+  {
+    "id": "conclave_urne_d_epice",
+    "faction": "Conclave",
+    "nom": "Urne d'épice",
+    "categorie": "bâtiment",
+    "fonction_source": "Stockage d'épice",
+    "design_propose": "Urne polygonale noire à cœur ambre",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "jauge ou pompe",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      3.917,
+      2.22,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_geode_de_stockage",
+    "faction": "Conclave",
+    "nom": "Géode de stockage",
+    "categorie": "bâtiment",
+    "fonction_source": "Stockage de minerai",
+    "design_propose": "Géode ouverte avec fragments métalliques",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "trappe et convoyeur",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      3.917,
+      1.476,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_il_de_cristal",
+    "faction": "Conclave",
+    "nom": "Œil de cristal",
+    "categorie": "bâtiment",
+    "fonction_source": "Radar",
+    "design_propose": "Œil violet suspendu entre anneaux noirs",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "antenne yaw / dish pitch",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1
+    },
+    "dimensions_m": [
+      3.917,
+      2.865,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_bassin_de_regeneration",
+    "faction": "Conclave",
+    "nom": "Bassin de régénération",
+    "categorie": "bâtiment",
+    "fonction_source": "Réparation",
+    "design_propose": "Bassin noir et bras minéraux de régénération",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "bras ou faisceau de réparation",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Arm_": 2
+    },
+    "dimensions_m": [
+      5.876,
+      1.58,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_cur_de_cristal",
+    "faction": "Conclave",
+    "nom": "Cœur de cristal",
+    "categorie": "bâtiment",
+    "fonction_source": "Grosse énergie",
+    "design_propose": "Cœur violet enfermé dans une cage d’obsidienne",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "rotor ou noyau émissif",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Rotor_": 1
+    },
+    "dimensions_m": [
+      3.917,
+      2.175,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_batterie_d_eclats",
+    "faction": "Conclave",
+    "nom": "Batterie d'éclats",
+    "categorie": "bâtiment",
+    "fonction_source": "Défense longue portée",
+    "design_propose": "Couronne de projecteurs d’éclats",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "tourelle yaw/pitch et couvercles",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 3,
+      "GunRecoil": 3,
+      "Muzzle": 3
+    },
+    "dimensions_m": [
+      3.917,
+      1.437,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_plateforme_d_envol",
+    "faction": "Conclave",
+    "nom": "Plateforme d'envol",
+    "categorie": "bâtiment",
+    "fonction_source": "Production aérienne",
+    "design_propose": "Dalle d’envol polygonale à anneaux violets",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "portes, balises et zone d’atterrissage",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.876,
+      1.46,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_tour_prisme",
+    "faction": "Conclave",
+    "nom": "Tour prisme",
+    "categorie": "bâtiment",
+    "fonction_source": "Éclats de cristal en zone",
+    "design_propose": "Socle noir avec prisme pivotant",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1
+    },
+    "dimensions_m": [
+      3.917,
+      2.63,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_serre_cristalline",
+    "faction": "Conclave",
+    "nom": "Serre cristalline",
+    "categorie": "bâtiment",
+    "fonction_source": "Produit 3 minerai par seconde",
+    "design_propose": "Serre polygonale à cristaux cultivés",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "portes, mécanismes de production",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.876,
+      1.898,
+      3.917
+    ]
+  },
+  {
+    "id": "conclave_nova_de_cristal",
+    "faction": "Conclave",
+    "nom": "Nova de cristal",
+    "categorie": "bâtiment",
+    "fonction_source": "Frappe orbitale, sol seulement",
+    "design_propose": "Obélisque orbital avec anneau de charge violet",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "3×3",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Rotor_": 1
+    },
+    "dimensions_m": [
+      5.876,
+      4.17,
+      5.876
+    ]
+  },
+  {
+    "id": "conclave_collecteur_flottant",
+    "faction": "Conclave",
+    "nom": "Collecteur flottant",
+    "categorie": "unité",
+    "fonction_source": "Récolteur",
+    "design_propose": "Collecteur noir flottant avec couronne aspirante",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, outil de récolte, trappe",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "harvest",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Body": 1,
+      "Rotor_": 1
+    },
+    "dimensions_m": [
+      1.803,
+      1.155,
+      1.876
+    ]
+  },
+  {
+    "id": "conclave_foreur_de_cristal",
+    "faction": "Conclave",
+    "nom": "Foreur de cristal",
+    "categorie": "unité",
+    "fonction_source": "Mineur",
+    "design_propose": "Foreur flottant à pointe cristalline",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, foret, vérin",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "mine",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Body": 1,
+      "Drill_": 1
+    },
+    "dimensions_m": [
+      1.803,
+      0.87,
+      2.311
+    ]
+  },
+  {
+    "id": "conclave_germe_de_base",
+    "faction": "Conclave",
+    "nom": "Germe de base",
+    "categorie": "unité",
+    "fonction_source": "Engin de base",
+    "design_propose": "Germe flottant à pétales de cristal déployables",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, panneaux déployables",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "deploy"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Body": 1,
+      "Deploy_": 4
+    },
+    "dimensions_m": [
+      1.859,
+      1.215,
+      1.783
+    ]
+  },
+  {
+    "id": "conclave_tesson",
+    "faction": "Conclave",
+    "nom": "Tesson",
+    "categorie": "unité",
+    "fonction_source": "Raider cristallin rapide",
+    "design_propose": "Raider flottant en éclats noirs pointus",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.284,
+      1.135,
+      1.783
+    ]
+  },
+  {
+    "id": "conclave_ombre",
+    "faction": "Conclave",
+    "nom": "Ombre",
+    "categorie": "unité",
+    "fonction_source": "Éclaireur furtif, harcèle l'air",
+    "design_propose": "Éclaireur flottant à panneaux furtifs",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.11,
+      1.255,
+      1.783
+    ]
+  },
+  {
+    "id": "conclave_prisme",
+    "faction": "Conclave",
+    "nom": "Prisme",
+    "categorie": "unité",
+    "fonction_source": "Char à éclats cristallins (zone)",
+    "design_propose": "Char flottant à tourelle prismatique",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      1.803,
+      1.146,
+      2.006
+    ]
+  },
+  {
+    "id": "conclave_fracasseur",
+    "faction": "Conclave",
+    "nom": "Fracasseur",
+    "categorie": "unité",
+    "fonction_source": "Brise les structures à coups d'éclats",
+    "design_propose": "Châssis flottant lourd à bélier d’obsidienne",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.351,
+      1.431,
+      2.185
+    ]
+  },
+  {
+    "id": "conclave_aiguille",
+    "faction": "Conclave",
+    "nom": "Aiguille",
+    "categorie": "unité",
+    "fonction_source": "Tourelle mobile anti-aérienne",
+    "design_propose": "Plateforme mobile à prisme AA rotatif",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      1.803,
+      1.862,
+      2.146
+    ]
+  },
+  {
+    "id": "conclave_geode",
+    "faction": "Conclave",
+    "nom": "Géode",
+    "categorie": "unité",
+    "fonction_source": "Marcheur de cristal, éclats en zone (sol)",
+    "design_propose": "Marcheur quadrupède à coque minérale",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "quadruped",
+    "composants_mobiles": "rig 4 jambes, hanches, genoux, pieds, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "walk",
+      "turn_left",
+      "turn_right",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Hip_": 4,
+      "Knee_": 4,
+      "Foot_": 4,
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.31,
+      2.442,
+      1.72
+    ]
+  },
+  {
+    "id": "conclave_stele",
+    "faction": "Conclave",
+    "nom": "Stèle",
+    "categorie": "unité",
+    "fonction_source": "Marcheur gardien, vise l'air et le sol",
+    "design_propose": "Bipède gardien élancé et lanceur violet",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "biped",
+    "composants_mobiles": "rig 2 jambes, bassin, articulations, pieds, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "walk",
+      "turn_left",
+      "turn_right",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Hip_": 2,
+      "Knee_": 2,
+      "Foot_": 2,
+      "Body": 1,
+      "Arm_": 2
+    },
+    "dimensions_m": [
+      2.455,
+      2.125,
+      1.434
+    ]
+  },
+  {
+    "id": "conclave_obelisque",
+    "faction": "Conclave",
+    "nom": "Obélisque",
+    "categorie": "unité",
+    "fonction_source": "Artillerie de cristal longue portée (sol)",
+    "design_propose": "Artillerie flottante à colonne d’éclats orientable",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      1.803,
+      2.014,
+      2.26
+    ]
+  },
+  {
+    "id": "conclave_monolithe",
+    "faction": "Conclave",
+    "nom": "Monolithe",
+    "categorie": "unité",
+    "fonction_source": "Char lourd d'obsidienne",
+    "design_propose": "Char flottant d’obsidienne, canon prismatique",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.17,
+      1.44,
+      2.625
+    ]
+  },
+  {
+    "id": "conclave_veilleur",
+    "faction": "Conclave",
+    "nom": "Veilleur",
+    "categorie": "unité",
+    "fonction_source": "Soigne les alliés proches",
+    "design_propose": "Unité flottante de soutien à anneaux rotatifs",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, bras ou émetteur de réparation",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "repair"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Body": 1,
+      "Rotor_": 1
+    },
+    "dimensions_m": [
+      1.803,
+      1.38,
+      1.783
+    ]
+  },
+  {
+    "id": "conclave_quartz",
+    "faction": "Conclave",
+    "nom": "Quartz",
+    "categorie": "unité",
+    "fonction_source": "Mortier de cristal longue portée (sol)",
+    "design_propose": "Mortier flottant à capuchon cristallin inclinable",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "hover",
+    "composants_mobiles": "oscillation et inclinaison, propulseurs, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      1.803,
+      1.564,
+      1.783
+    ]
+  },
+  {
+    "id": "conclave_cariatide",
+    "faction": "Conclave",
+    "nom": "Cariatide",
+    "categorie": "unité",
+    "fonction_source": "Géant d'obsidienne, très solide, se régénère vite",
+    "design_propose": "Géant bipède à plaques et articulations violettes",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "biped",
+    "composants_mobiles": "rig 2 jambes, bassin, articulations, pieds, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "walk",
+      "turn_left",
+      "turn_right",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Hip_": 2,
+      "Knee_": 2,
+      "Foot_": 2,
+      "Body": 1,
+      "Arm_": 2
+    },
+    "dimensions_m": [
+      2.523,
+      2.996,
+      1.705
+    ]
+  },
+  {
+    "id": "conclave_scintille",
+    "faction": "Conclave",
+    "nom": "Scintille",
+    "categorie": "unité",
+    "fonction_source": "Intercepteur de cristal",
+    "design_propose": "Intercepteur cristallin à trois pointes",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "air",
+    "composants_mobiles": "propulseurs, gouvernes, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.83,
+      1.003,
+      2.245
+    ]
+  },
+  {
+    "id": "conclave_passeur",
+    "faction": "Conclave",
+    "nom": "Passeur",
+    "categorie": "unité",
+    "fonction_source": "Transport de 5 unités",
+    "design_propose": "Transport flottant à pétales ouvrants",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "transport",
+    "composants_mobiles": "propulseurs, trappe et rampe",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "load",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Body": 1,
+      "Deploy_": 2,
+      "Ramp_": 1
+    },
+    "dimensions_m": [
+      2.794,
+      1.063,
+      2.238
+    ]
+  },
+  {
+    "id": "conclave_eclipse",
+    "faction": "Conclave",
+    "nom": "Éclipse",
+    "categorie": "unité",
+    "fonction_source": "Bombardier à éclats (sol, zone)",
+    "design_propose": "Bombardier noir en croissant",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "air",
+    "composants_mobiles": "propulseurs, gouvernes, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Body": 1
+    },
+    "dimensions_m": [
+      3.134,
+      0.965,
+      2.768
+    ]
+  },
+  {
+    "id": "conclave_aurore",
+    "faction": "Conclave",
+    "nom": "Aurore",
+    "categorie": "unité",
+    "fonction_source": "Canonnière plasma, vise l'air et le sol",
+    "design_propose": "Canonnière plasma à prismes orientables",
+    "style_faction": "Obsidienne facettée, métal sombre, prismes violets émissifs et joints cristallins.",
+    "architecture": "air",
+    "composants_mobiles": "propulseurs, gouvernes, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 2,
+      "GunPitch": 2,
+      "GunRecoil": 2,
+      "Muzzle": 2,
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.451,
+      0.87,
+      2.768
+    ]
+  }
+]

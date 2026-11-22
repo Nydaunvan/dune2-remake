@@ -7,13 +7,13 @@ func _gl(root: Node3D, n: Node3D) -> Transform3D:
 		c = c.get_parent()
 	return t
 func _initialize() -> void:
-	var dir := DirAccess.open("res://assets/kharn/models")
+	var dir := DirAccess.open("res://assets/" + OS.get_environment("PACK") + "/models")
 	var out := {}
 	for f in dir.get_files():
 		if not f.ends_with(".gltf"): continue
-		var ps: PackedScene = load("res://assets/kharn/models/" + f)
+		var ps: PackedScene = load("res://assets/" + OS.get_environment("PACK") + "/models/" + f)
 		var inst := ps.instantiate() as Node3D
-		var id := f.trim_prefix("kharn_").trim_suffix(".gltf")
+		var id := f.get_basename().trim_prefix(OS.get_environment("PACK") + "_").trim_suffix(".gltf")
 		var d := {"tur": null, "muz": [], "door": [], "rotor": [], "arm": [], "conv": []}
 		var mn := Vector3(1e9, 1e9, 1e9)
 		var mx := -mn
@@ -44,7 +44,7 @@ func _initialize() -> void:
 		d["aabb"] = [snappedf(mn.x, 0.01), snappedf(mn.y, 0.01), snappedf(mn.z, 0.01), snappedf(mx.x, 0.01), snappedf(mx.y, 0.01), snappedf(mx.z, 0.01)]
 		out[id] = d
 		inst.free()
-	var fa := FileAccess.open("/tmp/kharn_dump.json", FileAccess.WRITE)
+	var fa := FileAccess.open("/tmp/dump_" + OS.get_environment("PACK") + ".json", FileAccess.WRITE)
 	fa.store_string(JSON.stringify(out))
 	fa.close()
 	quit()

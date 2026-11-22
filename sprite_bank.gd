@@ -339,7 +339,7 @@ func _worker(idx: int) -> void:
 # Une cuisson complète prend de longues secondes ; relue du disque (données brutes compressées zstd, mipmaps comprises),
 # elle est quasi instantanée. Le cache est invalidé dès que le code des modèles, les shaders, la version ou les réglages changent.
 
-const CACHE_FILES := ["models.gd", "models_kharn.gd", "models_ext.gd", "models_fac.gd", "models_mech.gd", "models_tiers.gd", "sprite_bank.gd",
+const CACHE_FILES := ["models.gd", "models_kharn.gd", "models_conclave.gd", "models_vael.gd", "models_ext.gd", "models_fac.gd", "models_mech.gd", "models_tiers.gd", "sprite_bank.gd",
 		"game_data.gd", "shaders/hull.gdshader"]
 var _cache_dir := ""
 var _cache_sig := ""

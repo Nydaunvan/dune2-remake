@@ -1,0 +1,1378 @@
+[
+  {
+    "id": "vael_camp_de_base",
+    "faction": "Vael",
+    "nom": "Camp de base",
+    "categorie": "bâtiment",
+    "fonction_source": "Chantier (départ)",
+    "design_propose": "Camp modulaire avec abris tendus et atelier de récupération",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "portes et antenne",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×3",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.91,
+      2.65,
+      5.91
+    ]
+  },
+  {
+    "id": "vael_dynamo_du_desert",
+    "faction": "Vael",
+    "nom": "Dynamo du désert",
+    "categorie": "bâtiment",
+    "fonction_source": "Énergie",
+    "design_propose": "Dynamo mécano-éolienne sur trépied",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "panneaux, rotor ou pulsation",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Rotor_": 1
+    },
+    "dimensions_m": [
+      3.91,
+      2.076,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_comptoir_de_raffinage",
+    "faction": "Vael",
+    "nom": "Comptoir de raffinage",
+    "categorie": "bâtiment",
+    "fonction_source": "Raffinage de l'épice",
+    "design_propose": "Séparateur de grains sous auvent, citernes récupérées",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "convoyeur et cuves",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.91,
+      2.035,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_forge_nomade",
+    "faction": "Vael",
+    "nom": "Forge nomade",
+    "categorie": "bâtiment",
+    "fonction_source": "Fonte du minerai",
+    "design_propose": "Forge ouverte avec creuset et soufflets blindés",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "four et trémie",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.91,
+      1.857,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_atelier_ambulant",
+    "faction": "Vael",
+    "nom": "Atelier ambulant",
+    "categorie": "bâtiment",
+    "fonction_source": "Production terrestre",
+    "design_propose": "Atelier tentaculaire modulaire, grue et bâche",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "portes et bras de montage",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Arm_": 1
+    },
+    "dimensions_m": [
+      5.91,
+      1.97,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_poste_d_embuscade",
+    "faction": "Vael",
+    "nom": "Poste d'embuscade",
+    "categorie": "bâtiment",
+    "fonction_source": "Défense de base",
+    "design_propose": "Poste camouflé à canon déporté",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "tourelle yaw/pitch et recul",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1
+    },
+    "dimensions_m": [
+      3.91,
+      1.772,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_mur_de_sable",
+    "faction": "Vael",
+    "nom": "Mur de sable",
+    "categorie": "bâtiment",
+    "fonction_source": "Mur",
+    "design_propose": "Gabions de sable et plaques de récupération",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "aucun",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy"
+    ],
+    "emprise_cases": "1×1",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      1.91,
+      1.56,
+      1.91
+    ]
+  },
+  {
+    "id": "vael_entrepot_d_epice",
+    "faction": "Vael",
+    "nom": "Entrepôt d'épice",
+    "categorie": "bâtiment",
+    "fonction_source": "Stockage d'épice",
+    "design_propose": "Entrepôt à sacs et cuve orange",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "jauge ou pompe",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      3.91,
+      1.88,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_entrepot_de_minerai",
+    "faction": "Vael",
+    "nom": "Entrepôt de minerai",
+    "categorie": "bâtiment",
+    "fonction_source": "Stockage de minerai",
+    "design_propose": "Casiers de minerai sous abri vert",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "trappe et convoyeur",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      3.91,
+      2.011,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_vigie_nomade",
+    "faction": "Vael",
+    "nom": "Vigie nomade",
+    "categorie": "bâtiment",
+    "fonction_source": "Radar",
+    "design_propose": "Vigie sur mât télescopique",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "antenne yaw / dish pitch",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1
+    },
+    "dimensions_m": [
+      3.91,
+      3.135,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_rebouteux",
+    "faction": "Vael",
+    "nom": "Rebouteux",
+    "categorie": "bâtiment",
+    "fonction_source": "Réparation",
+    "design_propose": "Atelier de soin et grue de récupération",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "bras ou faisceau de réparation",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Arm_": 2
+    },
+    "dimensions_m": [
+      5.91,
+      1.957,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_reacteur_de_contrebande",
+    "faction": "Vael",
+    "nom": "Réacteur de contrebande",
+    "categorie": "bâtiment",
+    "fonction_source": "Grosse énergie",
+    "design_propose": "Réacteur compact de contrebande à tuyaux visibles",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "rotor ou noyau émissif",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Rotor_": 1
+    },
+    "dimensions_m": [
+      3.91,
+      1.78,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_salve_du_desert",
+    "faction": "Vael",
+    "nom": "Salve du désert",
+    "categorie": "bâtiment",
+    "fonction_source": "Défense longue portée",
+    "design_propose": "Rampe mobile sous camo et rails",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "tourelle yaw/pitch et couvercles",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 2,
+      "Muzzle": 2
+    },
+    "dimensions_m": [
+      3.91,
+      1.255,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_piste_de_fortune",
+    "faction": "Vael",
+    "nom": "Piste de fortune",
+    "categorie": "bâtiment",
+    "fonction_source": "Production aérienne",
+    "design_propose": "Plateforme improvisée avec filets et balises",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "portes, balises et zone d’atterrissage",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.91,
+      1.91,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_tour_acide",
+    "faction": "Vael",
+    "nom": "Tour acide",
+    "categorie": "bâtiment",
+    "fonction_source": "Perce les blindages",
+    "design_propose": "Tour à réservoirs verts et buse rotative",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1
+    },
+    "dimensions_m": [
+      3.91,
+      1.94,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_marche_noir",
+    "faction": "Vael",
+    "nom": "Marché noir",
+    "categorie": "bâtiment",
+    "fonction_source": "Produit 4 Solaris par seconde",
+    "design_propose": "Marché modulaire sous toile, caisses et antenne",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "portes, mécanismes de production",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.91,
+      2.03,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_lanceur_de_spores",
+    "faction": "Vael",
+    "nom": "Lanceur de spores",
+    "categorie": "bâtiment",
+    "fonction_source": "Artillerie longue portée, sol seulement",
+    "design_propose": "Mortier organomécanique à capsules de spores",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "2×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1
+    },
+    "dimensions_m": [
+      3.91,
+      2.12,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_caravanserail",
+    "faction": "Vael",
+    "nom": "Caravansérail",
+    "categorie": "bâtiment",
+    "fonction_source": "Produit 3,5 minerai par seconde",
+    "design_propose": "Caravansérail fortifié, remorques et citernes",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "portes, mécanismes de production",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "operate"
+    ],
+    "emprise_cases": "3×2",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {},
+    "dimensions_m": [
+      5.91,
+      1.686,
+      3.91
+    ]
+  },
+  {
+    "id": "vael_pluie_acide",
+    "faction": "Vael",
+    "nom": "Pluie acide",
+    "categorie": "bâtiment",
+    "fonction_source": "Frappe orbitale, sol seulement",
+    "design_propose": "Émetteur orbital à cuves d’acide et paraboles asymétriques",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "building",
+    "composants_mobiles": "base, support arme yaw/pitch si pertinent, socket muzzle, composants de charge",
+    "animations": [
+      "idle",
+      "construct",
+      "destroy",
+      "fire"
+    ],
+    "emprise_cases": "3×3",
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "Muzzle": 1
+    },
+    "dimensions_m": [
+      5.91,
+      3.135,
+      5.91
+    ]
+  },
+  {
+    "id": "vael_pilleur_d_epice",
+    "faction": "Vael",
+    "nom": "Pilleur d'épice",
+    "categorie": "unité",
+    "fonction_source": "Récolteur",
+    "design_propose": "Pilleur à châssis articulé et bacs latéraux",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, outil de récolte, trappe",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "harvest",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Wheel_": 4,
+      "Steer_": 2,
+      "Tool_": 1
+    },
+    "dimensions_m": [
+      1.651,
+      1.346,
+      2.374
+    ]
+  },
+  {
+    "id": "vael_fouilleur",
+    "faction": "Vael",
+    "nom": "Fouilleur",
+    "categorie": "unité",
+    "fonction_source": "Mineur",
+    "design_propose": "Fouilleur compact avec bras déporté",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, foret, vérin",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "mine",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Wheel_": 4,
+      "Steer_": 2,
+      "Arm_": 1
+    },
+    "dimensions_m": [
+      1.656,
+      1.504,
+      2.419
+    ]
+  },
+  {
+    "id": "vael_chariot_de_camp",
+    "faction": "Vael",
+    "nom": "Chariot de camp",
+    "categorie": "unité",
+    "fonction_source": "Engin de base",
+    "design_propose": "Chariot nomade à abris empilés",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, panneaux déployables",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "deploy"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Wheel_": 4,
+      "Steer_": 2
+    },
+    "dimensions_m": [
+      1.651,
+      1.593,
+      2.069
+    ]
+  },
+  {
+    "id": "vael_rat_des_sables",
+    "faction": "Vael",
+    "nom": "Rat des sables",
+    "categorie": "unité",
+    "fonction_source": "Raider ultra-rapide, fragile",
+    "design_propose": "Buggy ultraléger ouvert à roues hautes",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Wheel_": 4,
+      "Steer_": 2
+    },
+    "dimensions_m": [
+      1.651,
+      1.323,
+      2.069
+    ]
+  },
+  {
+    "id": "vael_faucon",
+    "faction": "Vael",
+    "nom": "Faucon",
+    "categorie": "unité",
+    "fonction_source": "Raider rapide, harcèle l'air",
+    "design_propose": "Raider vert à canon AA pivotant",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Wheel_": 4,
+      "Steer_": 2
+    },
+    "dimensions_m": [
+      1.651,
+      1.719,
+      2.169
+    ]
+  },
+  {
+    "id": "vael_vipere",
+    "faction": "Vael",
+    "nom": "Vipère",
+    "categorie": "unité",
+    "fonction_source": "Char antiblindage (acide)",
+    "design_propose": "Char moyen à réservoirs acides et canon",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Wheel_": 6,
+      "Track_": 2
+    },
+    "dimensions_m": [
+      1.875,
+      1.536,
+      2.45
+    ]
+  },
+  {
+    "id": "vael_saboteur",
+    "faction": "Vael",
+    "nom": "Saboteur",
+    "categorie": "unité",
+    "fonction_source": "Sape les structures à l'acide",
+    "design_propose": "Petit véhicule asymétrique avec lance acide",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Wheel_": 4,
+      "Steer_": 2
+    },
+    "dimensions_m": [
+      1.651,
+      1.698,
+      2.219
+    ]
+  },
+  {
+    "id": "vael_guerisseur",
+    "faction": "Vael",
+    "nom": "Guérisseur",
+    "categorie": "unité",
+    "fonction_source": "Soigne les alliés proches",
+    "design_propose": "Véhicule médical à bras et cuves",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, bras ou émetteur de réparation",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "repair"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Wheel_": 4,
+      "Steer_": 2,
+      "Arm_": 1
+    },
+    "dimensions_m": [
+      1.651,
+      1.658,
+      2.069
+    ]
+  },
+  {
+    "id": "vael_harpon",
+    "faction": "Vael",
+    "nom": "Harpon",
+    "categorie": "unité",
+    "fonction_source": "Lance-missiles anti-aérien",
+    "design_propose": "Lance-missiles AA sur châssis rapide",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "Muzzle": 1,
+      "Wheel_": 4,
+      "Steer_": 2
+    },
+    "dimensions_m": [
+      1.651,
+      1.473,
+      2.069
+    ]
+  },
+  {
+    "id": "vael_tarentule",
+    "faction": "Vael",
+    "nom": "Tarentule",
+    "categorie": "unité",
+    "fonction_source": "Mécha-arachnide rapide, harcèle à l'acide",
+    "design_propose": "Hexapode arachnide léger et buse d’acide",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "hexapod",
+    "composants_mobiles": "rig 6 jambes, articulations et pieds, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "walk",
+      "turn_left",
+      "turn_right",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Hip_": 6,
+      "Knee_": 6,
+      "Foot_": 6,
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.41,
+      1.985,
+      1.887
+    ]
+  },
+  {
+    "id": "vael_mirage",
+    "faction": "Vael",
+    "nom": "Mirage",
+    "categorie": "unité",
+    "fonction_source": "Prend le contrôle d'un char ennemi",
+    "design_propose": "Véhicule furtif à antenne de contrôle directionnelle",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "wheeled",
+    "composants_mobiles": "roues, direction, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "Wheel_": 4,
+      "Steer_": 2
+    },
+    "dimensions_m": [
+      1.651,
+      2.038,
+      2.069
+    ]
+  },
+  {
+    "id": "vael_scorpion",
+    "faction": "Vael",
+    "nom": "Scorpion",
+    "categorie": "unité",
+    "fonction_source": "Char à l'acide, redoutable contre les blindés",
+    "design_propose": "Char lourd à canon acide et cuves dorsales",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Wheel_": 6,
+      "Track_": 2
+    },
+    "dimensions_m": [
+      1.875,
+      1.656,
+      2.83
+    ]
+  },
+  {
+    "id": "vael_cracheur",
+    "faction": "Vael",
+    "nom": "Cracheur",
+    "categorie": "unité",
+    "fonction_source": "Mortier à spores longue portée (sol)",
+    "design_propose": "Mortier à capsules de spores sur affût",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "tracked",
+    "composants_mobiles": "chenilles UV, galets, suspension, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Wheel_": 6,
+      "Track_": 2
+    },
+    "dimensions_m": [
+      1.875,
+      2.132,
+      2.484
+    ]
+  },
+  {
+    "id": "vael_mygale",
+    "faction": "Vael",
+    "nom": "Mygale",
+    "categorie": "unité",
+    "fonction_source": "Mécha-arachnide d'embuscade, acide longue portée",
+    "design_propose": "Octopode arachnide bas et arme d’acide longue portée",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "octopod",
+    "composants_mobiles": "rig 8 jambes, articulations et pieds, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "walk",
+      "turn_left",
+      "turn_right",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Hip_": 8,
+      "Knee_": 8,
+      "Foot_": 8,
+      "Body": 1
+    },
+    "dimensions_m": [
+      2.41,
+      2.095,
+      2.485
+    ]
+  },
+  {
+    "id": "vael_cigale",
+    "faction": "Vael",
+    "nom": "Cigale",
+    "categorie": "unité",
+    "fonction_source": "Drone d'espionnage",
+    "design_propose": "Drone espion compact à hélices carénées",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "air",
+    "composants_mobiles": "propulseurs, gouvernes, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Rotor_": 2
+    },
+    "dimensions_m": [
+      2.37,
+      1.125,
+      2.189
+    ]
+  },
+  {
+    "id": "vael_milan",
+    "faction": "Vael",
+    "nom": "Milan",
+    "categorie": "unité",
+    "fonction_source": "Chasseur léger de harcèlement",
+    "design_propose": "Chasseur léger à ailes delta et panneaux réparés",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "air",
+    "composants_mobiles": "propulseurs, gouvernes, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Flap_": 2
+    },
+    "dimensions_m": [
+      3.075,
+      1.125,
+      2.635
+    ]
+  },
+  {
+    "id": "vael_pelican",
+    "faction": "Vael",
+    "nom": "Pélican",
+    "categorie": "unité",
+    "fonction_source": "Transport rapide de 4 unités",
+    "design_propose": "Transport rapide à portes latérales",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "transport",
+    "composants_mobiles": "propulseurs, trappe et rampe",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "load",
+      "unload"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "Door_": 2,
+      "Flap_": 2
+    },
+    "dimensions_m": [
+      3.075,
+      1.405,
+      2.22
+    ]
+  },
+  {
+    "id": "vael_frelon",
+    "faction": "Vael",
+    "nom": "Frelon",
+    "categorie": "unité",
+    "fonction_source": "Bombardier acide (sol)",
+    "design_propose": "Bombardier acide à capsules sous ailes",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "air",
+    "composants_mobiles": "propulseurs, gouvernes, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Flap_": 2
+    },
+    "dimensions_m": [
+      3.475,
+      1.125,
+      2.647
+    ]
+  },
+  {
+    "id": "vael_cobra",
+    "faction": "Vael",
+    "nom": "Cobra",
+    "categorie": "unité",
+    "fonction_source": "Hélicoptère acide, vise l'air et le sol",
+    "design_propose": "Hélicoptère compact à buse d’acide orientable",
+    "style_faction": "Alliages olive, toile sable, assemblages asymétriques réparables, tuyaux verts et patine désertique.",
+    "architecture": "rotor",
+    "composants_mobiles": "rotor principal et anti-couple, inclinaison, support arme yaw/pitch selon géométrie, recul, socket muzzle",
+    "animations": [
+      "idle",
+      "move",
+      "death",
+      "takeoff",
+      "land",
+      "fire"
+    ],
+    "emprise_cases": null,
+    "livrables": [
+      "glTF + BIN",
+      "TSCN",
+      "PBR 2K partagées",
+      "PNG alpha 1024",
+      "source Blender"
+    ],
+    "etat": "Modèle 3D et pivots produits ; les animations décrites dans le catalogue restent les spécifications gameplay.",
+    "pivot_counts": {
+      "TurretYaw": 1,
+      "GunPitch": 1,
+      "GunRecoil": 1,
+      "Muzzle": 1,
+      "Rotor_": 1,
+      "TailRotor": 1
+    },
+    "dimensions_m": [
+      3.93,
+      1.488,
+      4.145
+    ]
+  }
+]

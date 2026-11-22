@@ -54,9 +54,19 @@ const TURRET_PIVOTS := {
 }
 
 
+## Importeur glTF d'une faction (script ModelsKharn / ModelsConclave / ModelsVael), null pour les autres (Solis a son propre pack).
+static func _imp(faction: String) -> GDScript:
+	match faction:
+		"kharn": return ModelsKharn
+		"conclave": return ModelsConclave
+		"vael": return ModelsVael
+	return null
+
+
 static func turret_pivot(id: String, faction := "") -> Vector3:
-	if faction == "kharn" and ModelsKharn.has_unit(id):
-		return ModelsKharn.PIVOTS.get(id, Vector3.INF)
+	var ip := _imp(faction)
+	if ip != null and ip.has_unit(id):
+		return ip.PIVOTS.get(id, Vector3.INF)
 	if TURRET_PIVOTS.has(id):
 		return TURRET_PIVOTS[id]
 	return ModelsExt.turret_pivot(id)
@@ -127,7 +137,8 @@ static func _build_model(id: String, accent: Color, faction := "") -> Node3D:
 	if faction == "solis" and _solis_glb_build(r, id):
 		return r
 	# Légion Kharn : 18 bâtiments et 19 unités importés (pack « Kharn_37_Batiments_Unites »)
-	if faction == "kharn" and ModelsKharn.build(r, id):
+	var ip := _imp(faction)
+	if ip != null and ip.build(r, id):
 		return r
 	# Bâtiments et engins communs : chaque faction a sa propre silhouette (Solis garde le modèle de base)
 	if faction != "" and ModelsFac.build(r, id, faction, accent):
@@ -220,15 +231,17 @@ static func solis_glb(id: String, faction: String) -> bool:
 
 ## Vrai si ce bâtiment (ou sa tête) est un modèle importé, quelle que soit la faction (Solis ou Kharn).
 static func imp_glb(id: String, faction: String) -> bool:
-	if faction == "kharn":
-		return ModelsKharn.has_building(id)
+	var ip := _imp(faction)
+	if ip != null:
+		return ip.has_building(id)
 	return solis_glb(id, faction)
 
 
 ## Nombre de bouches relevées sur le modèle importé d'une tête de tourelle (0 : pas de modèle importé ou pas de bouche).
 static func imp_muzzle_count(head_id: String, faction: String) -> int:
-	if faction == "kharn" and ModelsKharn.has_building(head_id) and ModelsKharn.HEAD_MUZZLES.has(head_id):
-		return ModelsKharn.HEAD_MUZZLES[head_id].size()
+	var ip := _imp(faction)
+	if ip != null and ip.has_building(head_id) and ip.HEAD_MUZZLES.has(head_id):
+		return ip.HEAD_MUZZLES[head_id].size()
 	if solis_glb(head_id, faction) and SOLIS_MUZZLES.has(head_id):
 		return 1
 	return 0
@@ -236,8 +249,9 @@ static func imp_muzzle_count(head_id: String, faction: String) -> int:
 
 ## Bouche de tir d'une tête de tourelle ; celle du pack pour Solis, sinon celle des modèles de base.
 static func muzzle_offset_f(id: String, rot: float, idx: int, faction: String) -> Vector2:
-	if faction == "kharn" and ModelsKharn.has_building(id) and ModelsKharn.HEAD_MUZZLES.has(id):
-		var arr: Array = ModelsKharn.HEAD_MUZZLES[id]
+	var ip := _imp(faction)
+	if ip != null and ip.has_building(id) and ip.HEAD_MUZZLES.has(id):
+		var arr: Array = ip.HEAD_MUZZLES[id]
 		var mk: Vector3 = arr[idx % arr.size()]
 		return Vector2(mk.x, mk.z).rotated(rot) + Vector2(0.0, -mk.y * tan(deg_to_rad(30.0)))
 	if faction == "solis" and SOLIS_MUZZLES.has(id) and solis_glb(id, faction):
@@ -329,17 +343,19 @@ const MUZZLES := {
 
 
 static func has_muzzle(id: String, faction := "") -> bool:
-	if faction == "kharn" and (ModelsKharn.has_unit(id) or ModelsKharn.has_building(id)):
-		return ModelsKharn.MUZZLES.has(id) or ModelsKharn.HEAD_MUZZLES.has(id) # modèle importé : seules ses bouches comptent
+	var ip := _imp(faction)
+	if ip != null and (ip.has_unit(id) or ip.has_building(id)):
+		return ip.MUZZLES.has(id) or ip.HEAD_MUZZLES.has(id) # modèle importé : seules ses bouches comptent
 	return MUZZLES.has(id) or ModelsExt.has(id.trim_suffix("_tete"))
 
 
 static func _muzzles(id: String, faction := "") -> Array:
-	if faction == "kharn":
-		if ModelsKharn.MUZZLES.has(id):
-			return ModelsKharn.MUZZLES[id]
-		if ModelsKharn.HEAD_MUZZLES.has(id):
-			return ModelsKharn.HEAD_MUZZLES[id]
+	var ip := _imp(faction)
+	if ip != null:
+		if ip.MUZZLES.has(id):
+			return ip.MUZZLES[id]
+		if ip.HEAD_MUZZLES.has(id):
+			return ip.HEAD_MUZZLES[id]
 	if MUZZLES.has(id):
 		return MUZZLES[id]
 	return ModelsExt.muzzles(id.trim_suffix("_tete"))
@@ -367,16 +383,18 @@ const DOORS := {
 
 ## Porte de production d'un bâtiment (modèle importé de la Légion Kharn, sinon table de base). Vide s'il n'en a pas.
 static func door_of(id: String, faction := "") -> Dictionary:
-	if faction == "kharn" and ModelsKharn.DOORS.has(id) and ModelsKharn.has_building(id):
-		return ModelsKharn.DOORS[id]
+	var ip := _imp(faction)
+	if ip != null and ip.DOORS.has(id) and ip.has_building(id):
+		return ip.DOORS[id]
 	return DOORS.get(id, {})
 
 
 ## Rotors animés (dessinés par l'unité, pas cuits dans le sprite) : moyeu (x, y, z du modèle),
 ## rayon, nombre de pales, vitesse (rad/s), plan horizontal (rotor principal) ou vertical (rotor de queue).
 static func rotors(id: String, faction := "") -> Array:
-	if faction == "kharn" and ModelsKharn.has_unit(id):
-		return ModelsKharn.ROTORS.get(id, [])
+	var ip := _imp(faction)
+	if ip != null and ip.has_unit(id):
+		return ip.ROTORS.get(id, [])
 	if ModelsExt.has(id):
 		return ModelsExt.rotors(id)
 	match id:
@@ -843,8 +861,9 @@ const RAMPS_SOLIS := {
 static func ramp_of(id: String, faction := "") -> Dictionary:
 	if faction == "solis" and RAMPS_SOLIS.has(id) and solis_glb(id, faction):
 		return RAMPS_SOLIS[id]
-	if faction == "kharn" and ModelsKharn.RAMPS.has(id) and ModelsKharn.has_building(id):
-		return ModelsKharn.RAMPS[id]
+	var ip := _imp(faction)
+	if ip != null and ip.RAMPS.has(id) and ip.has_building(id):
+		return ip.RAMPS[id]
 	return RAMPS.get(id, {})
 
 
