@@ -217,11 +217,13 @@ func _draw_unload_fx(c: Vector2, t: float) -> void:
 	var u = dock_user
 	if u == null or not is_instance_valid(u) or u._dk != "work" or u._dk_kind != "unload":
 		return
-	var q: Dictionary = Models.ramp_of(id)
+	var q: Dictionary = Models.ramp_of(id, game.faction_id_of(team))
 	if q.is_empty():
 		return
 	var from: Vector2 = c + (u.position - world_center()) + Vector2(0, -u.ramp_lift - 8.0)
 	var hop: Vector2 = c + Models.project(Vector3(float(q["x"]), 16.0, -2.0), 0.0)
+	if q.has("nose"): # modèle importé : la trémie est derrière la porte
+		hop = c + Models.project(Vector3(float(q["x"]), 12.0, float(q["nose"]) - 4.0), 0.0)
 	var col := Color(1.0, 0.62, 0.2) if id == "raffinerie" else Color(0.55, 0.8, 1.0)
 	var pulse := 0.5 + 0.5 * sin(t * 14.0)
 	draw_circle(hop, 9.0 + 3.0 * pulse, Color(col.r, col.g, col.b, 0.16 + 0.16 * pulse))
@@ -432,6 +434,8 @@ func _draw_anim(s: Vector2, fid: String, bank) -> void:
 	# Bâtiments Solis importés : les effets ci-dessous sont calés sur les anciens modèles, on ne garde que le radar
 	var glb := Models.solis_glb(id, fid)
 	if glb and id != "radar":
+		if id == "raffinerie" or id == "fonderie":
+			_draw_unload_fx(c, t) # flot de particules du véhicule vers la trémie, recalé sur la piste
 		return
 	match id:
 		"radar":

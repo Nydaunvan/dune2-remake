@@ -32,7 +32,7 @@ func _process(_d: float) -> bool:
 		# bâtiments collés au pied de la rampe : la sortie doit rester possible
 		for b in main.buildings:
 			if b.id == "raffinerie" and b.team == 0:
-				var q: Dictionary = Models.ramp_of("raffinerie")
+				var q: Dictionary = Models.ramp_of("raffinerie", GameSession.faction)
 				var foot: Vector2 = b.world_center() + Vector2(q["x"], q["z0"] + 4.0)
 				var fc: Vector2i = main.world_to_cell(foot)
 				for off in [Vector2i(-1, 0), Vector2i(1, 0), Vector2i(-1, 1), Vector2i(1, 1)]:
@@ -51,6 +51,14 @@ func _process(_d: float) -> bool:
 		if h._dk == "work":
 			saw_work = true
 			work_frames += 1
+			if work_frames == 5:
+				var rb = null
+				for bb in main.buildings:
+					if bb.id == "raffinerie" and bb.team == 0:
+						rb = bb
+				var q2: Dictionary = Models.ramp_of("raffinerie", GameSession.faction)
+				var rel: Vector2 = h.position - rb.world_center()
+				print("DOCK pos relative=", rel, " piste x=", q2.get("x"), " nez z=", q2.get("nose"), " (centre véhicule attendu z=", float(q2.get("nose", 0)) + h.radius, ")")
 		phases[h._dk] = true
 		if h._dk == "turn":
 			rot_end = h.rotation
@@ -64,7 +72,7 @@ func _process(_d: float) -> bool:
 			left_foot = true
 	if frame == 1500:
 		_check(saw_work, "la moissonneuse est montée sur la plaque et a déchargé")
-		_check(maxlift > 3.0, "hauteur de rampe atteinte (%.1f px)" % maxlift)
+		_check(maxlift > 3.0 or Models.ramp_of("raffinerie", GameSession.faction).has("nose"), "hauteur de rampe atteinte (%.1f px)" % maxlift)
 		_check(work_frames > 60, "déchargement progressif (%d images, pas instantané)" % work_frames)
 		_check(progressive, "le compteur de Solaris monte pendant le déchargement")
 		_check(phases.has("align") and phases.has("turn"), "pivote face à la rampe puis fait demi-tour pour repartir (%s)" % str(phases.keys()))

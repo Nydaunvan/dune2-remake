@@ -576,7 +576,7 @@ func _repair(delta: float) -> void:
 	if not _valid(repair_site):
 		state = "seek" if is_worker() else "idle"
 		return
-	if not air and not Models.ramp_of(repair_site.id).is_empty():
+	if not air and not Models.ramp_of(repair_site.id, game.faction_id_of(repair_site.team)).is_empty():
 		var near := path.is_empty() or position.distance_to(_ramp_pts(repair_site)["A"]) < 48.0
 		if not near:
 			return
@@ -1106,7 +1106,7 @@ func _start_return() -> void:
 ## Case d'attente : le pied de la rampe si le bâtiment en a une, sinon la case libre la plus proche autour de lui.
 func _ramp_cell(b) -> Vector2i:
 	var from: Vector2i = game.world_to_cell(position)
-	if not air and not Models.ramp_of(b.id).is_empty():
+	if not air and not _rq(b).is_empty():
 		var ac: Vector2i = game.world_to_cell(_ramp_pts(b)["A"])
 		if game._is_walkable(ac):
 			return ac
@@ -1118,7 +1118,7 @@ func _at_dock() -> bool:
 	var dock = game.find_dock(cargo_kind, game.world_to_cell(position), team)
 	if dock == null:
 		return false
-	if not Models.ramp_of(dock.id).is_empty() and not air:
+	if not _rq(dock).is_empty() and not air:
 		return position.distance_to(_ramp_pts(dock)["A"]) < 48.0
 	var r := Rect2(Vector2(dock.cell) * 32.0, Vector2(dock.cell_size) * 32.0).grow(radius + 10.0)
 	return r.has_point(position)
@@ -1160,16 +1160,27 @@ func _unload() -> void:
 # --- Rampes d'accostage (raffinerie, fonderie, centre de réparation) ----------------
 
 ## Points de la rampe en coordonnées monde : A (pied), B (jonction rampe/plaque), P (centre de la plaque) ; h en px écran.
+## Rampe du bâtiment `b` (selon la faction de son propriétaire).
+func _rq(b) -> Dictionary:
+	return Models.ramp_of(b.id, game.faction_id_of(b.team))
+
+
 func _ramp_pts(b) -> Dictionary:
-	var q: Dictionary = Models.ramp_of(b.id)
+	var q: Dictionary = _rq(b)
 	var c: Vector2 = b.world_center()
+	if q.has("nose"):
+		# piste plate (modèle importé) : on se range devant la façade (A), on avance sur la piste jusqu'à ce que le nez touche
+		# la porte (P). Si la piste est plus courte que le véhicule, le reste du châssis dépasse devant le bâtiment.
+		var z0: float = float(q["z0"])
+		return {"A": c + Vector2(q["x"], z0 + 4.0), "B": c + Vector2(q["x"], z0), "P": c + Vector2(q["x"], float(q["nose"]) + radius),
+				"h": 0.0, "z0": c.y + z0, "zb": c.y + z0}
 	return {"A": c + Vector2(q["x"], q["z0"] + 4.0), "B": c + Vector2(q["x"], q["pz"] + q["d"] / 2.0),
 			"P": c + Vector2(q["x"], q["pz"]), "h": absf(Models.project(Vector3(0, q["h"], 0), 0.0).y), "z0": c.y + q["z0"], "zb": c.y + q["pz"] + q["d"] / 2.0}
 
 
 ## 0 : pas de rampe / trop loin (on garde l'ancien comportement) ; 1 : accostage commencé ; 2 : rampe occupée, il faut attendre.
 func _dock_begin(b, kind: String) -> int:
-	if air or Models.ramp_of(b.id).is_empty():
+	if air or _rq(b).is_empty():
 		return 0
 	var du = b.dock_user
 	if du != null and du != self and is_instance_valid(du) and du.alive and du._dk != "":

@@ -788,7 +788,20 @@ const RAMPS := {
 }
 
 
-static func ramp_of(id: String) -> Dictionary:
+## Pistes des modèles 3D importés de Maison Solis : un petit tapis plat devant la porte (mesuré sur le glTF, 16 px/m).
+## x : centre de la piste (px, depuis le centre du bâtiment), nose : z du bord de la porte (le nez du véhicule s'y arrête),
+## z0 : z du centre d'un véhicule qui attend juste devant la façade, w : largeur de la piste.
+## La piste est plus courte qu'un véhicule : il s'y insère par l'avant, le reste du châssis dépasse devant le bâtiment.
+const RAMPS_SOLIS := {
+	"raffinerie": {"x": 14.4, "nose": 16.8, "z0": 46.0, "w": 23.0},
+	"fonderie": {"x": 17.6, "nose": 23.6, "z0": 46.0, "w": 21.0},
+}
+
+
+## Rampe d'un bâtiment (vide s'il n'en a pas). Maison Solis : la piste de son modèle 3D importé.
+static func ramp_of(id: String, faction := "") -> Dictionary:
+	if faction == "solis" and RAMPS_SOLIS.has(id) and solis_glb(id, faction):
+		return RAMPS_SOLIS[id]
 	return RAMPS.get(id, {})
 
 

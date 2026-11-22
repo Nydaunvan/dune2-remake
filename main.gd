@@ -875,16 +875,16 @@ func _open_area(c: Vector2i, avoid: Vector2i, cap: int) -> int:
 
 
 ## Case au pied de la rampe d'un bâtiment à rampe (une seule case suffit pour se présenter, décharger et repartir).
-func ramp_foot_cell(id: String, cell: Vector2i) -> Vector2i:
-	var q: Dictionary = Models.ramp_of(id)
+func ramp_foot_cell(id: String, cell: Vector2i, fid := "") -> Vector2i:
+	var q: Dictionary = Models.ramp_of(id, fid)
 	var size: Vector2i = GameData.BUILDINGS[id]["size"]
 	var foot := Vector2(cell) * TILE + Vector2(size) * TILE / 2.0 + Vector2(float(q["x"]), float(q["z0"]) + 4.0)
 	return _world_to_cell(foot)
 
 
 ## Le pied de rampe doit rester libre et garder au moins une case voisine libre (entrée / sortie).
-func ramp_foot_ok(id: String, cell: Vector2i, extra: Dictionary) -> bool:
-	var fc := ramp_foot_cell(id, cell)
+func ramp_foot_ok(id: String, cell: Vector2i, extra: Dictionary, fid := "") -> bool:
+	var fc := ramp_foot_cell(id, cell, fid)
 	if occupied.has(fc) or extra.has(fc):
 		return false
 	# espace ouvert autour du pied : une impasse de quelques cases ne suffit pas pour ressortir
@@ -3096,9 +3096,9 @@ func _can_place(id: String, cell: Vector2i, team := 0) -> bool:
 		for dy in size.y:
 			mine[cell + Vector2i(dx, dy)] = true
 	for b in buildings:
-		if b.alive and not Models.ramp_of(b.id).is_empty() and not ramp_foot_ok(b.id, b.cell, mine):
+		if b.alive and not Models.ramp_of(b.id, faction_id_of(b.team)).is_empty() and not ramp_foot_ok(b.id, b.cell, mine, faction_id_of(b.team)):
 			return false
-	if not Models.ramp_of(id).is_empty() and not ramp_foot_ok(id, cell, {}):
+	if not Models.ramp_of(id, faction_id_of(team)).is_empty() and not ramp_foot_ok(id, cell, {}, faction_id_of(team)):
 		return false
 	# Zone de construction : autour d'un Chantier. Une seconde base exige un nouvel engin de chantier.
 	var center := Vector2(cell) + Vector2(size) / 2.0
