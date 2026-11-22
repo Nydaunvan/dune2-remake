@@ -23,7 +23,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_centrale_solaire",
@@ -49,7 +49,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_raffinerie_solaire",
@@ -75,7 +75,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_fonderie_de_precision",
@@ -101,7 +101,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_usine_d_assemblage",
@@ -127,7 +127,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_tourelle_de_garde",
@@ -153,7 +153,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_mur_de_plastacier",
@@ -178,7 +178,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_reservoir_d_epice",
@@ -204,7 +204,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_reservoir_de_minerai",
@@ -230,7 +230,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_centre_de_veille",
@@ -256,7 +256,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_baie_de_reparation",
@@ -282,7 +282,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_reacteur_solaire",
@@ -308,7 +308,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_rampe_de_roquettes",
@@ -334,7 +334,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_aerodrome",
@@ -360,7 +360,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_tour_sonique",
@@ -386,7 +386,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_mortier_lourd",
@@ -412,7 +412,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_comptoir_technique",
@@ -438,7 +438,7 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   },
   {
     "id": "solis_canon_solaire",
@@ -464,6 +464,6 @@
       "PNG alpha 1024",
       "source Blender"
     ],
-    "etat": "Modèle 3D produit"
+    "etat": "Modèle 3D V2 détaillé, articulations conservées"
   }
 ]
