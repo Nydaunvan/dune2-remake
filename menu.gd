@@ -56,18 +56,19 @@ func _ready() -> void:
 	btns.add_theme_constant_override("separation", 20)
 	btns.alignment = BoxContainer.ALIGNMENT_CENTER
 	vb.add_child(btns)
-	var campaign := PlateButton.new("CAMPAGNE", 3)
+	# Plaques illustrées de l'accueil (assets/ui/menu) : icône à gauche, texte dans la zone libre
+	var campaign := _plate_btn("CAMPAGNE", "01_Campagne")
 	campaign.pressed.connect(_open_campaign)
-	var skirmish := PlateButton.new("ESCARMOUCHE", 2)
+	var skirmish := _plate_btn("ESCARMOUCHE", "02_Escarmouche")
 	skirmish.pressed.connect(_open_skirmish)
-	var load_btn := PlateButton.new("CHARGER", 5)
+	var load_btn := _plate_btn("CHARGER", "03_Charger")
 	load_btn.pressed.connect(_open_load)
-	var guide_btn := PlateButton.new("GUIDE", 4)
+	var guide_btn := _plate_btn("GUIDE", "04_Guide")
 	guide_btn.pressed.connect(func() -> void: Guide.open(self, selected))
-	var quit := PlateButton.new("QUITTER", 1)
+	var quit := _plate_btn("QUITTER", "05_Quitter")
 	quit.pressed.connect(get_tree().quit)
 	for b in [campaign, skirmish, load_btn, guide_btn, quit]:
-		b.custom_minimum_size = Vector2(250, 64)
+		b.custom_minimum_size = Vector2(330, 61)
 		btns.add_child(b)
 
 	_hint = _label("Campagne : 15 à 18 missions par faction — Escarmouche : détruisez la ou les bases adverses", 15,
@@ -122,6 +123,13 @@ func _ready() -> void:
 			_check_update()
 		else:
 			_on_update_found(Updater.last_info)
+
+
+func _plate_btn(text: String, file: String) -> PlateButton:
+	var b := PlateButton.new(text, 1)
+	b.plate = PlateButton.load_plate("res://assets/ui/menu/%s.png" % file)
+	b.font_size = 20
+	return b
 
 
 func _upd_status(text: String, col: Color, retry := false) -> void:
