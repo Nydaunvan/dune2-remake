@@ -49,7 +49,7 @@ static func move_kind(id: String, faction := "") -> String:
 
 ## Pivot de tourelle (x, y, z du modèle) des unités à tourelle indépendante. Vector3.INF si l'unité n'en a pas.
 const TURRET_PIVOTS := {
-	"sentinelle": Vector3(0, 11, 0), "egide": Vector3(-1, 16, 0), "resonateur": Vector3(4, 16, 0), "brute": Vector3(-2, 21, 0),
+	"sentinelle": Vector3(0, 11, 0), "egide": Vector3(-0.3, 13.4, 0), "resonateur": Vector3(4, 16, 0), "brute": Vector3(-2, 21, 0),
 	"ombre": Vector3(-4, 12, 0), "prisme": Vector3(-2, 15.5, 0), "obelisque": Vector3(-3, 17, 0),
 }
 
@@ -187,7 +187,7 @@ static func _build_model(id: String, accent: Color, faction := "") -> Node3D:
 ## Les projectiles partent de là : même point que le bout du canon dessiné ci-dessous.
 const MUZZLES := {
 	"sentinelle": [Vector3(17, 14, 0)],
-	"egide": [Vector3(24, 16.5, 0)],
+	"egide": [Vector3(27, 17.4, 0)],
 	"resonateur": [Vector3(13, 23, 0)],
 	"belier": [Vector3(12, 15.5, 0)],
 	"brute": [Vector3(31, 22, 0)],
@@ -521,7 +521,38 @@ static func _sentinelle(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
 	_ball(t, 2.5, Vector3(2, 2, 0), hi)
 
 
+## Modèle 3D importé de l'Égide (pack « Solis_Egide_Godot_2K », ~4 m de long). Axes du GLB : avant −Z, Y haut, mètres.
+const EGIDE_GLB := "res://assets/egide/Egide.glb"
+const EGIDE_PX_PER_M := 11.0
+static var _egide_scene: PackedScene
+
+
+## Instance du GLB mise au repère du jeu (avant +X, 1 unité = 1 pixel du monde). Sans tourelle si `turret_only` est faux.
+static func _egide_instance(turret_only: bool, pivot: Vector3) -> Node3D:
+	var g := Node3D.new()
+	g.transform = Transform3D(Basis(Vector3.UP, -PI / 2.0).scaled(Vector3.ONE * EGIDE_PX_PER_M), Vector3.ZERO)
+	var inst: Node3D = _egide_scene.instantiate()
+	g.add_child(inst)
+	var tur := inst.find_child("TurretYaw", true, false) as Node3D
+	if turret_only:
+		# on ne garde que la tourelle ; le groupe est décalé pour que son axe de rotation soit à l'origine
+		for c in tur.get_parent().get_children():
+			if c != tur:
+				(c as Node3D).visible = false
+		g.position = -pivot
+	else:
+		tur.visible = false
+	return g
+
+
 static func _egide(r: Node3D, body: Color, hi: Color, _acc: Color) -> void:
+	if ResourceLoader.exists(EGIDE_GLB):
+		if _egide_scene == null:
+			_egide_scene = load(EGIDE_GLB)
+		r.add_child(_egide_instance(false, Vector3.ZERO))
+		var gt := _tur(r, TURRET_PIVOTS["egide"])
+		gt.add_child(_egide_instance(true, TURRET_PIVOTS["egide"]))
+		return
 	_tracks(r, 32.0, 9.0, 6.0, 7.0)
 	_box(r, Vector3(30, 6, 15), Vector3(0, 10, 0), body)
 	_box(r, Vector3(9, 3.5, 15), Vector3(14, 9, 0), body.lightened(0.1), Vector3(0, 0, -0.5))
