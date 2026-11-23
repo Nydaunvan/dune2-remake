@@ -1653,8 +1653,8 @@ func _zoom(factor: float) -> void:
 var panning := false
 const SKIRMISH_DIFF := [
 	{"slowdown": 2.0, "grace": 600.0, "pause": 120.0, "max_army": 14, "wave": 4, "skill": 0.25},
-	{"grace": 430.0, "pause": 90.0, "skill": 0.6},
-	{"slowdown": 1.1, "grace": 300.0, "pause": 60.0, "max_army": 30, "wave": 8, "skill": 0.95},
+	{"raw": true, "slowdown": 1.15, "grace": 330.0, "pause": 70.0, "max_army": 28, "wave": 8, "skill": 0.8, "income": 1.1, "ramp": 1.2},
+	{"raw": true, "slowdown": 0.8, "grace": 210.0, "pause": 30.0, "max_army": 48, "wave": 14, "skill": 1.0, "income": 1.6, "ramp": 1.8, "credits": 3000, "ore": 3000},
 ]
 
 

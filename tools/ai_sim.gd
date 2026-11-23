@@ -4,6 +4,8 @@ var main
 var frame := 0
 func _initialize() -> void:
 	GameSession.mode = "skirmish"
+	if OS.has_environment("DIFF"):
+		GameSession.skirm_diff = int(OS.get_environment("DIFF"))
 	GameSession.faction = "solis"
 	main = load("res://main.tscn").instantiate()
 	root.add_child(main)

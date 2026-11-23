@@ -25,6 +25,8 @@ var credits := 1500
 var ore := 1500
 var active := true
 var skill := 0.6             # finesse de jeu (0..1)
+var income_mult := 1.0       # multiplicateur de revenus (difficulté « difficile »)
+var ramp_mult := 1.0         # rythme de montée en puissance de l'armée
 
 var build_q := {}
 var unit_q := {}
@@ -87,6 +89,9 @@ func setup(p_game, p_faction: String, p_team := 1) -> void:
 
 ## Réglages de mission (campagne) ou de difficulté (escarmouche).
 func configure(p: Dictionary) -> void:
+	if p.get("raw", false):
+		_configure_raw(p)
+		return
 	slowdown = float(p.get("slowdown", slowdown / EASE_SLOW)) * EASE_SLOW
 	wave_grace = float(p.get("grace", wave_grace / EASE_GRACE)) * EASE_GRACE
 	wave_pause = float(p.get("pause", wave_pause / EASE_PAUSE)) * EASE_PAUSE
@@ -108,7 +113,22 @@ func configure(p: Dictionary) -> void:
 	skill = clampf(float(p.get("skill", skill)), 0.0, 1.0)
 
 
+## Réglages bruts (sans l'adoucissement global) : niveaux « normal » et « difficile » de l'escarmouche.
+func _configure_raw(p: Dictionary) -> void:
+	slowdown = float(p.get("slowdown", 1.0))
+	wave_grace = float(p.get("grace", 240.0))
+	wave_pause = float(p.get("pause", 60.0))
+	max_army = int(p.get("max_army", 30))
+	wave_size = int(p.get("wave", 8))
+	income_mult = float(p.get("income", 1.0))
+	ramp_mult = float(p.get("ramp", 1.0))
+	credits = int(p.get("credits", 1500))
+	ore = int(p.get("ore", 1500))
+	skill = clampf(float(p.get("skill", 0.9)), 0.0, 1.0)
+
+
 func add_income(kind: String, amount: int) -> void:
+	amount = int(round(amount * income_mult))
 	if kind == "spice":
 		earned_spice += amount
 	else:
@@ -621,7 +641,7 @@ func _has_gap(cell: Vector2i, size: Vector2i) -> bool:
 ## Montée en puissance progressive : l'IA ne peut pas aligner d'emblée toute son armée.
 ## La taille autorisée croît avec le temps de jeu (plus vite pour une IA habile).
 func _army_limit() -> int:
-	var ramp := 4 + int(game.game_time / 80.0 * (0.5 + skill))
+	var ramp := 4 + int(game.game_time / 80.0 * (0.5 + skill) * ramp_mult)
 	return mini(max_army, ramp)
 
 
@@ -633,10 +653,12 @@ func _under_cap() -> bool:
 func _think_units() -> void:
 	var harv := _count("recolteur")
 	var miners := _count("mineur")
-	var harv_goal := 2 + (1 if _count("raffinerie") >= 2 else 0) + (1 if skill > 0.6 and game.game_time > 600.0 else 0)
+	var harv_goal := 2 + (1 if _count("raffinerie") >= 2 else 0) + (1 if skill > 0.6 and game.game_time > 600.0 else 0) \
+			+ (1 if skill >= 0.9 and game.game_time > 240.0 else 0)
 	# Le minerai nourrit bâtiments, améliorations ET unités : plus de mineurs, surtout si on en manque
 	var miner_goal := 1 + (1 if skill > 0.25 and game.game_time > 120.0 else 0) \
-			+ (1 if skill > 0.45 and game.game_time > 420.0 else 0)
+			+ (1 if skill > 0.45 and game.game_time > 420.0 else 0) \
+			+ (1 if skill >= 0.9 and game.game_time > 300.0 else 0)
 	if ore < 150 and credits > 600 and miners >= miner_goal:
 		miner_goal += 1
 	if unit_q.is_empty():
