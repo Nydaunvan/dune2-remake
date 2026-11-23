@@ -167,6 +167,7 @@ func _build_sidebar() -> void:
 	event_log.position = Vector2(14, 0)
 	event_log.size = Vector2(272, 112)
 	log_panel.add_child(event_log)
+	log_panel.visible = false # encart « journal » supprimé de l'interface (le flux d'événements reste alimenté)
 
 	# Onglets
 	var tabs := [["building", "BÂTIMENTS", UiStyle.GOLD], ["unit", "UNITÉS", UiStyle.GOLD]]

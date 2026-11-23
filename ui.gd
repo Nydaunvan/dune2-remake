@@ -247,6 +247,7 @@ func _build_log() -> void:
 	event_log.position = li.position
 	event_log.size = li.size
 	log_panel.add_child(event_log)
+	log_panel.visible = false # encart « journal » supprimé de l'interface (le flux d'événements reste alimenté)
 
 
 ## Cadre de sélection : bandeau du kit en bas, avec emplacement de portrait intégré.
