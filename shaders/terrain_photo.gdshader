@@ -263,7 +263,7 @@ void fragment() {
 			vec3 no;
 			vec4 oa = mat_sample(ore_a, ore_n, wp, ore_scale, no);
 			vec3 ore_col = oa.rgb * mix(1.0, oa.a, 0.6) * vec3(0.78, 0.98, 1.35);
-			float spark = step(0.97, hash(floor(wp / 4.0) + floor(TIME * 1.2))) * smoothstep(0.5, 0.1, length(fract(wp / 4.0) - 0.5)) * vis(8.0, pw);
+			float spark = 0.0; // scintillement du minerai retiré
 			ore_col += vec3(0.5, 0.8, 1.0) * spark * 0.5;
 			col_r = mix(col_r, ore_col, om * 0.9);
 			lit_r = mix(lit_r, dot(to_screen_normal(no, tex_relief), L) - L.z, om);

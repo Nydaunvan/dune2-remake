@@ -144,7 +144,7 @@ void fragment() {
 	col_r *= 0.9 + 0.2 * vnoise(wp * 0.7);
 	float om = smoothstep(ore_t - 0.08, ore_t + 0.1, ore + (fbm(cp * 3.0) - 0.5) * 0.2);
 	vec2 sc = fract(cp * 12.0) - 0.5;
-	float spark = smoothstep(0.22, 0.0, length(sc)) * step(0.94, hash(floor(cp * 12.0) + floor(TIME * 1.5)));
+	float spark = 0.0; // scintillement du minerai retiré
 	col_r = mix(col_r, ore_c * (0.75 + 0.5 * vnoise(cp * 8.0)) + vec3(spark * 0.6), om * 0.85);
 	col_r = mix(col_r, mount_c, smoothstep(mountain_h - 0.08, mountain_h, h) * 0.7);
 	col_r = mix(col_r, rim_c, (1.0 - smoothstep(0.0, 0.05, h - rock_h)) * 0.5);

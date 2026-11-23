@@ -274,7 +274,7 @@ void fragment() {
 		float om = smoothstep(ore_t - 0.08, ore_t + 0.1, ore + (fbm(cp * 3.0) - 0.5) * 0.2);
 		if (om > 0.001) {
 			vec2 sc = fract(cp * 12.0) - 0.5;
-			float spark = smoothstep(0.22, 0.0, length(sc)) * step(0.94, hash(floor(cp * 12.0) + floor(TIME * 1.5)));
+			float spark = 0.0; // scintillement du minerai retiré
 			vec3 ore_col = ore_c * (0.75 + 0.5 * vnoise(cp * 8.0)) + vec3(spark * 0.6);
 			if (dt > 0.3) {
 				// éclats de cristal : chaque facette a sa clarté, les arêtes brillent
