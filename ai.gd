@@ -27,6 +27,7 @@ var active := true
 var skill := 0.6             # finesse de jeu (0..1)
 var income_mult := 1.0       # multiplicateur de revenus (difficulté « difficile »)
 var ramp_mult := 1.0         # rythme de montée en puissance de l'armée
+var ambition := 0.0          # > 0 : expansion totale (plus de raffineries/usines/défenses, améliorations en parallèle)
 
 var build_q := {}
 var unit_q := {}
@@ -122,6 +123,7 @@ func _configure_raw(p: Dictionary) -> void:
 	wave_size = int(p.get("wave", 8))
 	income_mult = float(p.get("income", 1.0))
 	ramp_mult = float(p.get("ramp", 1.0))
+	ambition = float(p.get("ambition", 0.0))
 	credits = int(p.get("credits", 1500))
 	ore = int(p.get("ore", 1500))
 	skill = clampf(float(p.get("skill", 0.9)), 0.0, 1.0)
@@ -357,6 +359,10 @@ func _next_building() -> String:
 		return "raffinerie"
 	if defs < 2:
 		return tower
+	if ambition > 0.0:
+		var eb := _elite_building(t, harv)
+		if eb != "":
+			return eb
 	if skill >= 0.4 and _count("radar") < 1 and t > 240.0:
 		return "radar"
 	if skill >= 0.35 and _count("usine") < 2 and t > 300.0:
@@ -369,16 +375,18 @@ func _next_building() -> String:
 		if tb != "":
 			return tb
 	var tower_goal := mini(1 + int(skill * 3.0 + t / 360.0), 7)
+	if ambition > 0.0:
+		tower_goal = 2 if _count("mineur") < 2 else mini(3 + int(t / 200.0), 14)
 	if defs < tower_goal:
 		return tower
 	# Comme le joueur, l'IA est plafonnée par ses stocks : elle construit des silos quand elle approche de la limite
-	if skill >= 0.3 and _count("silo") < 4 and credits > 0.8 * game.storage_cap("spice", team):
+	if skill >= 0.3 and _count("silo") < (7 if ambition > 0.0 else 4) and credits > 0.8 * game.storage_cap("spice", team):
 		return "silo"
-	if skill >= 0.3 and _count("silo_minerai") < 4 and ore > 0.8 * game.storage_cap("ore", team):
+	if skill >= 0.3 and _count("silo_minerai") < (7 if ambition > 0.0 else 4) and ore > 0.8 * game.storage_cap("ore", team):
 		return "silo_minerai"
-	if skill >= 0.6 and t > 780.0:
+	if skill >= 0.6 and t > (480.0 if ambition > 0.0 else 780.0):
 		for hid in _heavy_ids():
-			var cap := 1 if GameData.def(hid)["weapon"] == "orbital" else 2
+			var cap := 1 if GameData.def(hid)["weapon"] == "orbital" else (3 if ambition > 0.0 else 2)
 			if _count(hid) < cap and _available(hid) and (skill >= 0.75 or GameData.def(hid)["weapon"] != "orbital"):
 				return hid
 	if skill >= 0.5:
@@ -391,6 +399,21 @@ func _next_building() -> String:
 		return "reparation"
 	if skill >= 0.7 and t > 900.0 and _count("fonderie") < 2:
 		return "fonderie"
+	return ""
+
+
+## Expansion « totale » : économie large (raffineries, fonderies), plusieurs usines, aérodromes et ateliers de réparation.
+func _elite_building(t: float, harv: int) -> String:
+	var plan := [
+		["raffinerie", 2, 80.0, 1], ["radar", 1, 150.0, 0], ["fonderie", 2, 200.0, 0], ["usine", 2, 170.0, 0],
+		["silo", 1, 240.0, 0], ["aerodrome", 1, 330.0, 0], ["raffinerie", 3, 400.0, 3], ["usine", 3, 450.0, 0],
+		["reparation", 1, 420.0, 0], ["silo_minerai", 1, 360.0, 0], ["fonderie", 3, 650.0, 0], ["aerodrome", 2, 700.0, 0],
+		["reparation", 2, 800.0, 0], ["usine", 4, 900.0, 0], ["raffinerie", 4, 1000.0, 5],
+	]
+	for st in plan:
+		if t < float(st[2]) or _count(st[0]) >= int(st[1]) or harv < int(st[3]) or not _available(st[0]):
+			continue
+		return st[0]
 	return ""
 
 
@@ -471,7 +494,7 @@ func _support_building() -> String:
 			continue
 		if not (d.has("heal") or d.has("aura_regen") or d.has("income") or d.has("ore_income") or int(d.get("vision", 0)) > 12):
 			continue
-		var delay := 600.0 + 120.0 * float(_count_support())
+		var delay := (240.0 + 60.0 * float(_count_support())) if ambition > 0.0 else (600.0 + 120.0 * float(_count_support()))
 		if t > delay and _count(id) < 1 and _available(id):
 			return id
 	return ""
@@ -506,6 +529,8 @@ func _think_build() -> void:
 	if GameData.BUILDINGS.has(want) and game.power_produced(team) - game.power_used(team) < -int(GameData.BUILDINGS[want]["power"]):
 		want = "centrale"
 	# Mêmes règles que le joueur : 10 % du prix pour lancer, le reste est prélevé au fil des travaux
+	if ambition > 0.0 and want != "centrale" and want != "fonderie" and _count("mineur") < 2 and ore < 250 and game.game_time > 60.0:
+		return # le minerai sert d'abord aux mineurs
 	if not _available(want) or ore < _cost(want) * game.START_FRAC or credits < GameData.sol_cost(want) * game.START_FRAC:
 		return
 	build_q = {"id": want, "progress": 0.0, "ready": false, "cost": _cost(want), "sol": GameData.sol_cost(want),
@@ -516,14 +541,17 @@ func _think_build() -> void:
 ## Améliorations qui débloquent des unités et des bâtiments : prioritaires dès que leur heure est venue.
 func _priority_upgrade() -> bool:
 	var t: float = game.game_time
-	if _economy_first() or _upgrades_running() >= 1:
+	if _economy_first() or _upgrades_running() >= _max_upgrades():
 		return false
 	var plan: Array = []
-	if skill >= 0.2:
+	if ambition > 0.0:
+		plan = [["usine", 2, 90.0], ["chantier", 2, 140.0], ["centrale", 2, 200.0], ["usine", 3, 260.0], ["raffinerie", 2, 300.0],
+				["fonderie", 2, 340.0], ["chantier", 3, 380.0], ["centrale", 3, 420.0], ["raffinerie", 3, 520.0], ["fonderie", 3, 560.0]]
+	elif skill >= 0.2:
 		plan.append(["usine", 2, 150.0])
-	if skill >= 0.3:
+	if skill >= 0.3 and ambition <= 0.0:
 		plan.append(["chantier", 2, 280.0])
-	if skill >= 0.45:
+	if skill >= 0.45 and ambition <= 0.0:
 		plan.append(["usine", 3, 520.0])
 		plan.append(["centrale", 2, 400.0])
 	for step in plan:
@@ -573,11 +601,17 @@ func _upgrades_running() -> int:
 	return n
 
 
+func _max_upgrades() -> int:
+	return 3 if ambition > 0.0 else 1
+
+
 func _try_upgrade() -> void:
-	if _economy_first() or _upgrades_running() >= 1:
+	if _economy_first() or _upgrades_running() >= _max_upgrades():
 		return
 	var order := ["usine", "chantier", "centrale", "raffinerie", "fonderie", "tourelle", "radar"]
-	var reserve := 400 if skill < 0.5 else 250
+	if ambition > 0.0:
+		order += ["batterie", "aerodrome", "reparation", "silo", "silo_minerai"] + _heavy_ids()
+	var reserve := 400 if skill < 0.5 else (60 if ambition > 0.0 else 250)
 	for id in order:
 		for b in game.buildings:
 			if b.team != team or b.id != id or not b.alive:
@@ -599,7 +633,7 @@ func _place(id: String) -> bool:
 		for f in (game.spice_fields if id == "raffinerie" else game.ore_fields):
 			if field.x < 0.0 or base.distance_to(f) < base.distance_to(field):
 				field = f
-	for reach in [11, 16]:
+	for reach in ([11, 16, 24] if ambition > 0.0 else [11, 16]):
 		var best := Vector2i(-1, -1)
 		var best_s := INF
 		for dx in range(-reach, reach + 1):
@@ -653,12 +687,14 @@ func _under_cap() -> bool:
 func _think_units() -> void:
 	var harv := _count("recolteur")
 	var miners := _count("mineur")
-	var harv_goal := 2 + (1 if _count("raffinerie") >= 2 else 0) + (1 if skill > 0.6 and game.game_time > 600.0 else 0) \
+	var harv_goal := (2 * _count("raffinerie") + 1 if ambition > 0.0 else 2 + (1 if _count("raffinerie") >= 2 else 0)) + (1 if skill > 0.6 and game.game_time > 600.0 else 0) \
 			+ (1 if skill >= 0.9 and game.game_time > 240.0 else 0)
 	# Le minerai nourrit bâtiments, améliorations ET unités : plus de mineurs, surtout si on en manque
 	var miner_goal := 1 + (1 if skill > 0.25 and game.game_time > 120.0 else 0) \
 			+ (1 if skill > 0.45 and game.game_time > 420.0 else 0) \
 			+ (1 if skill >= 0.9 and game.game_time > 300.0 else 0)
+	if ambition > 0.0:
+		miner_goal = 1 + 2 * _count("fonderie") + (1 if game.game_time > 600.0 else 0)
 	if ore < 150 and credits > 600 and miners >= miner_goal:
 		miner_goal += 1
 	if unit_q.is_empty():
